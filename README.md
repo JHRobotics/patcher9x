@@ -61,7 +61,7 @@ make RELEASE=1 PROFILE=djgpp
 make strip
 ```
 
-**Executable file name for most real operation called `patcher9x`. For dos called `patch9x.exe`
+**Executable file name for most real operation systems called `patcher9x`. For dos called `patch9x.exe`
   because file names are limited to 8+3 characters.**
 
 ## Patching proccess
