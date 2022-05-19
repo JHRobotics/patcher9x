@@ -25,7 +25,8 @@
 *******************************************************************************/
 #include "patcher9x.h"
 
-static const char help[] = "Patch Windows 95/98/ME for run on actual CPUs - AMD ZEN 2+, Intel Tiger Lake+\n\n"
+static const char help[] = "Patch Windows 95/98/ME for run on actual CPUs - AMD ZEN 2+, Intel Tiger Lake+\n"
+	"Version: " PATCHER9X_VERSION_STR "\n\n"
 	"Usage:\n%s [path] [batch options]\n"
 	"path: path to installed windows directory or directory with windows instalation\n"
 	"options:\n"
@@ -460,6 +461,203 @@ int main(int argc, char **argv)
   	}
   	else if(options.mode == MODE_EXACT)
   	{
+  		char *out = (char*)options.output;
+  		char *out2 = NULL;
+  		char *out3 = NULL;
+  		
+  		char *upath = (char*)options.path;
+  		if(upath == NULL)
+  		{
+  			upath = (char*)default_path;
+  		}
+  		
+  		if(options.cab_extract)
+  		{
+  			int r;
+  			if(out == NULL)
+  			{
+  				out = "VMM32.@WX";
+  			}
+  			else
+  			{
+  				out = fs_path_get2(out, NULL, "@WX");
+  			}
+  			
+  			if(fs_is_dir(upath))
+  			{
+  				r = action_extract_cabs(&options, upath, out);
+  			}
+  			else
+  			{
+  				r = action_extract_cab(&options, upath, out);
+  			}
+  			
+  			if(options.wx_extract)
+  			{
+  				out2 = fs_path_get2(out, NULL, "@WL");
+  				
+  				r = action_extract_vxd(&options, out, out2);
+  				
+  				if(r == PATCH_OK)
+  				{
+	  				if(options.patch)
+	  				{
+	  					out3 = fs_path_get2(out, NULL, "@WP");
+	  					r = action_patch(&options, out2, out3);
+	  					
+	  					if(r == PATCH_OK)
+	  					{
+			  				if(options.output)
+			  				{
+			  					fs_rename(out3, options.output);
+			  				}
+			  				else
+			  				{
+			  					fs_rename(out3, "VMM.VXD");
+			  				}
+	  					}
+	  					else
+			  			{
+			  				report_error(r);
+			  			}
+	  				}
+	  				else
+	  				{
+		  				if(options.output)
+		  				{
+		  					fs_rename(out2, options.output);
+		  				}
+		  				else
+		  				{
+		  					fs_rename(out2, "VMM.VXD");
+		  				}
+	  				}
+	  			}
+	  			else
+	  			{
+	  				report_error(r);
+	  			}
+  			}
+  			else if(options.patch)
+  			{
+	  			out2 = fs_path_get2(out, NULL, "@WP");
+	  			r = action_patch(&options, out, out2);
+	  					
+	  			if(r == PATCH_OK)
+	  			{
+			  		if(options.output)
+			  		{
+			  			fs_rename(out2, options.output);
+			  		}
+			  		else
+			  		{
+			  			fs_rename(out2, "VMM.VXD");
+			  		}
+	  			}
+	  			else
+			  	{
+			  		report_error(r);
+			  	}
+  			}
+  			else
+  			{
+  				if(options.output)
+  				{
+  					fs_rename(out, options.output);
+  				}
+  				else
+  				{
+  					fs_rename(out, "VMM32.VXD");
+  				}
+  			}
+  			
+  		} // cab_extract
+  		else if(options.wx_extract)
+  		{
+  			int r;
+  			if(out == NULL)
+  			{
+  				out = "VMM.VXD";
+  			}
+  			else
+  			{
+  				out = fs_path_get2(out, NULL, "@WP");
+  			}
+  			
+  			r = action_extract_vxd(&options, upath, out);
+  				
+  			if(r == PATCH_OK)
+  			{
+	  			if(options.patch)
+	  			{
+	  				out2 = fs_path_get2(out, NULL, "@WP");
+	  				r = action_patch(&options, out, out2);
+	  				
+	  				if(r == PATCH_OK)
+	  				{
+			 				if(options.output)
+			 				{
+			 					fs_rename(out2, options.output);
+			 				}
+			 				else
+			 				{
+			 					fs_rename(out2, "VMM.VXD");
+			 				}
+	  				}
+	  				else
+			 			{
+			 				report_error(r);
+			 			}
+	  			}
+	  			else
+	  			{
+		  			if(options.output)
+		  			{
+		  				fs_rename(out2, options.output);
+		  			}
+		  			else
+		  			{
+		  				fs_rename(out2, "VMM.VXD");
+		  			}
+	  			}
+	  		}
+	  		else
+	  		{
+	  			report_error(r);
+	  		}
+  		} // VX extact
+  		else if(options.patch)
+  		{
+  			int r;
+  			if(out == NULL)
+  			{
+  				out = "VMM.VXD";
+  			}
+  			else
+  			{
+  				out = fs_path_get2(out, NULL, "@WP");
+  			}
+  			
+	  		r = action_patch(&options, upath, out);
+	  		
+	  		if(r == PATCH_OK)
+	  		{
+			  	if(options.output)
+			  	{
+			  		fs_rename(out, options.output);
+			  	}
+			  	else
+			  	{
+			  		fs_rename(out, "VMM.VXD");
+			  	}
+	  		}
+	  		else
+			  {
+			  	// reposet_errr
+			  }
+  		} // patch
+  		
+  		
   		
   	}
   	else

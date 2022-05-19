@@ -554,6 +554,17 @@ char *fs_basename(const char *path)
 			return str;
 		}
 	}
+	else
+	{
+		/* path is basename only, only copy */
+		char *str = malloc(path_len+1);
+		if(str)
+		{
+			memcpy(str, path, path_len+1);
+			
+			return str;
+		}
+	}
 	
 	return NULL;
 }

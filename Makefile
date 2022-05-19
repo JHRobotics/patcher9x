@@ -17,7 +17,7 @@ HOST_CFLAGS=-g -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -I./mspa
 
 OUTNAME=patcher9x$(SUFIX)
 
-CPP   ?= cpp
+CPP   = cpp
 CC    ?= gcc
 STRIP ?= strip
 

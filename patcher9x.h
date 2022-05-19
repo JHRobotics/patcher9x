@@ -34,6 +34,8 @@
 #include <extstring.h>
 #include <pew.h>
 
+#include "version.h"
+
 #define PATCH_OK           0
 #define PATCH_E_READ       1
 #define PATCH_E_WRITE      2

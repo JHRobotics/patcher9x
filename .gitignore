@@ -1,6 +1,9 @@
 # configure outs
 /vmm/dump.bin
 
+#release bins
+/release/
+
 # tests
 /test/
 
