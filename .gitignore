@@ -1,0 +1,19 @@
+# configure outs
+/vmm/dump.bin
+
+# tests
+/test/
+
+# syncthing
+/.stfolder/
+/.stignore
+
+# python
+__pycache__
+*.pyc
+
+# generated and temporary files
+*.o
+*.bak
+*.gen
+*.exe

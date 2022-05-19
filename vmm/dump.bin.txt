@@ -1,0 +1,23 @@
+If you want obtain dump.bin you need:
+1) VMM32.VXD from instalation (from instalation NOT from windows/system directory),
+   it is by default packed in CABs. If you look at position 0x10000, there should be magic
+   "W3" (0x57 0x33). If there is "W4", that file is packed and you must use alternate
+   way to optain dump.
+-- or --
+2) Extracted VMM.VXD, to extract you can use "this" tool:
+   (patcher9x -wx-extract <path_to_vmm32.vxd> -o VMM.VXD)
+   second option is DOS utility VXDLIB from here:
+   http://www.tbcnet.com/~clive/vcomwinp.html (offline, still accesible by Archive.org:
+   https://web.archive.org/web/20071007160416/http://www.tbcnet.com/~clive/vcomwinp.html)
+
+Search for (HEX): 56 57 8B 74 24 0C 8A 56 02 F6 C2 80
+For Windows 98 SE it is on 0x2EE70 (VMM32.VXD) od 0x1EAF0 (VMM.VXD)
+
+Copy from this position exactly 1040 bytes and save to dump.bin
+
+On most unix system you could do that:
+- search in file
+  $ LANG=C grep -obUaP '\x56\x57\x8B\x74\x24\x0C\x8A\x56\x02\xF6\xC2\x80' VMM.VXD
+  result: something like: 125680:VW??t?????$
+- copy segment from file
+  $ dd if=VMM.VXD bs=1 skip=125680 count=1040 of=dump.bin
