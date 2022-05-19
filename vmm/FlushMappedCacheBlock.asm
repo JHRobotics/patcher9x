@@ -14,9 +14,9 @@
 ; see if some of this symbols moved.
 ;
 ; Origin of this bug is described there:
-;   https://blog.stuffedcow.net/2015/08/win9x-tlb-invalidation-bug/
-; and THIS bug is described there:
 ;   https://blog.stuffedcow.net/2015/08/pagewalk-coherence/
+; and THIS bug is described there:
+;   https://blog.stuffedcow.net/2015/08/win9x-tlb-invalidation-bug/
 ; Big thanks to Henry Wong (www.stuffedcow.net) for discovering specific
 ; code sequnce.
 ; ***/

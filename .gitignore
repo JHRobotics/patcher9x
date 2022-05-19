@@ -13,6 +13,7 @@ __pycache__
 *.pyc
 
 # generated and temporary files
+/doc/tmp/
 *.o
 *.bak
 *.gen

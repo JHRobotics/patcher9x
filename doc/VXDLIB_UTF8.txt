@@ -1,0 +1,479 @@
+
+FREEWARE:
+
+    This software may NOT be distributed or bundled with any product
+    that is sold for commercial profit without the explict permission
+    of the author. In cases where the author has consented, the PKUNZIP(tm)
+    authentication message which normally reads :
+
+        Authentic files Verified!   # EYC098
+        Tenth Planet Software International
+
+    will additionally indicate the commercial entity to which permission
+    has been granted. If authentication is not present, please contact
+    the author to obtain a bona fide copy.
+
+Disclaimer:
+
+    The author hereby disclaims all warranties relating to this software,
+    whether express or implied, including without limitation any implied
+    warranties of merchantability or fitness for a particular purpose.
+    The author will not be liable for any special, incidental,
+    consequential, indirect or similar damages due to loss of data or any
+    other reason, even if the author or an agent of the author has been
+    advised of the possibility of such damages.  In no event shall the
+    author's liability for any damages ever exceed the price paid for
+    the software, regardless of the form of the claim.  The person
+    using the software bears all risk as to the quality and performance
+    of the software.
+
+VxDLIB:
+
+    This tool was primarily designed to extract Windows Virtual Device
+    Drivers (VxDs) from W3 (WIN386.EXE) & W4 (VMM32.VXD) format archive
+    files. The W4 format is unique to Windows '95 and is a compressed W3
+    image, the compression algorithm is the same as that used by DoubleSpace
+    (aka DriveSpace) and MRCI (Microsoft's Realtime Compression Interface),
+    and uses a Lempel Ziv (LZ) technique to replace repeating data patterns.
+    This tool can also unpack a W4 file so that tools like Andrew Schulman's
+    W3MAP can work as they did with Windows 3.xx. Unpacking the file will
+    also allow you to examine the file with regular hex editors. Unpacked
+    files will typically take up far more space, my copy of VMM32.VXD went
+    from 0.7MB to 2.0MB. A temporary file is created during pack/unpack
+    operations, so this program should be run from the directory where the
+    W3/W4 file resides. Files can be packed, or repacked, using this tool.
+    I have been able to achieve higher compression ratios than Microsoft's
+    DEVLIB tool by finding the best match in the history buffer rather than
+    just a good one. Compression speeds are markedly slower than DEVLIB,
+    this is because I'm lazy and wrote this tool in C, not highly optimized
+    assembler as Microsoft did, and not because I'm an Electronics Engineer!
+
+    If you found this tool to be mildly useful or entertaining please send
+    me some Email, positive feedback is always good to get and makes writing
+    FREEWARE worth while. If you didn't like this tool, discard it, and keep
+    your sentiments to yourself.
+
+
+Clive Turvey, October 7, 1996.
+DeKalb, IL., USA & Southampton, ENGLAND.
+
+Email : 74011.1732@compuserve.com
+      : clive@tbcnet.com
+
+URL   : http://www.tbcnet.com/~clive
+
+------------------------------------------------------------------------------
+
+VxDLIB v1.01 (c) Copyright Tenth Planet Software Intl., C Turvey 1995-1996.
+			   All rights reserved. Non-Commercial use only.
+
+ ====     ===			This FREEWARE product was written by Clive
+  \\      / th			Turvey, an English Electronics Engineer.
+   \\    /
+    \\  /   Planet		It is designed to replace the DEVLIB utility
+     \\/     Software		provided by Microsoft in the Win95 DDK.
+     /\\      International
+    /  \\			If you like the software, or find a problem
+   /    \\   CIS 74011,1732	post some Email to 74011.1732@compuserve.com
+  /      \\
+ ===     ====
+
+Usage : VxDLIB <-l[ist]> <W3/W4 file>
+	VxDLIB <-d[ump]> <W3/W4 file>
+	VxDLIB <-p[ack]> <W3/W4 file>
+	VxDLIB <-u[npack]> <W4 file>
+	VxDLIB <-e[xtract]> <W3/W4 file> <VxD>
+
+
+Example of list command, W4 files will be decompressed into a temporary W3
+file first.
+
+C:\>VxDLIB -l VMM32.VXD
+
+VxDLIB v1.01 (c) Copyright Tenth Planet Software Intl., C Turvey 1995-1996.
+			   All rights reserved. Non-Commercial use only.
+
+Unpacking VMM32.VXD to VxDLIB.$$$
+  100% complete
+
+Listing VxDLIB.$$$
+
+vxds:
+  VMM        VDD        VFLATD     VMOUSE     VSHARE     VWIN32     VFBACKUP
+  VCOMM      COMBUFF    VCD        VPD        IFSMGR     IOS        SPOOLER
+  VFAT       VCACHE     VCOND      VCDFSD     INT13      VXDLDR     VDEF
+  DYNAPAGE   CONFIGMG   EBIOS      VMD        DOSNET     VPICD      VTD
+  REBOOT     VDMAD      VSD        V86MMGR    PAGESWAP   DOSMGR     VMPOLL
+  SHELL      PARITY     BIOSXLAT   VMCPD      VTDAPI     PERF       VKD
+ 42 total vxd(s)
+
+C:\>
+
+
+Example of dump command, W4 files will be decompressed into a temporary W3
+file first.
+
+C:\>VxDLIB -d VMM32.VXD
+
+VxDLIB v1.01 (c) Copyright Tenth Planet Software Intl., C Turvey 1995-1996.
+			   All rights reserved. Non-Commercial use only.
+
+Unpacking VMM32.VXD to VxDLIB.$$$
+  100% complete
+
+Dumping VxDLIB.$$$
+
+vxds:
+  VMM      : LE header offset    14400, size     8E55
+  VDD      : LE header offset    65000, size     18F6
+  VFLATD   : LE header offset    78000, size      38A
+  VMOUSE   : LE header offset    7A000, size      D55
+  VSHARE   : LE header offset    83000, size      5C3
+  VWIN32   : LE header offset    87000, size     1136
+  VFBACKUP : LE header offset    95000, size      711
+  VCOMM    : LE header offset    99000, size      8B7
+  COMBUFF  : LE header offset    A2000, size      27B
+  VCD      : LE header offset    A5000, size      6EB
+  VPD      : LE header offset    AB000, size      392
+  IFSMGR   : LE header offset    B1000, size     37EE
+  IOS      : LE header offset    DA000, size     177C
+  SPOOLER  : LE header offset    EB000, size      60E
+  VFAT     : LE header offset    F2000, size      DB3
+  VCACHE   : LE header offset   101000, size      5F2
+  VCOND    : LE header offset   106000, size      9E8
+  VCDFSD   : LE header offset   114000, size      343
+  INT13    : LE header offset   11A000, size      356
+  VXDLDR   : LE header offset   11D000, size      52F
+  VDEF     : LE header offset   126000, size      20D
+  DYNAPAGE : LE header offset   129000, size      45B
+  CONFIGMG : LE header offset   130000, size     181A
+  EBIOS    : LE header offset   146000, size      225
+  VMD      : LE header offset   14B000, size      305
+  DOSNET   : LE header offset   14E000, size      259
+  VPICD    : LE header offset   152000, size      DE6
+  VTD      : LE header offset   15E000, size      585
+  REBOOT   : LE header offset   166000, size      367
+  VDMAD    : LE header offset   16C000, size      C32
+  VSD      : LE header offset   177000, size      1C0
+  V86MMGR  : LE header offset   179000, size     1424
+  PAGESWAP : LE header offset   191000, size      1CF
+  DOSMGR   : LE header offset   195000, size     18D0
+  VMPOLL   : LE header offset   1B0000, size      3FD
+  SHELL    : LE header offset   1B8000, size     1164
+  PARITY   : LE header offset   1CC000, size      198
+  BIOSXLAT : LE header offset   1CF000, size      21D
+  VMCPD    : LE header offset   1D4000, size      2F0
+  VTDAPI   : LE header offset   1D8000, size      385
+  PERF     : LE header offset   1DD000, size      4F7
+  VKD      : LE header offset   1E3000, size      C27
+ 42 total vxd(s)
+
+C:\>
+
+
+Example of pack command, W4 files will be decompressed into a temporary W3
+file first and then recompressed. The compression algorithm was written to
+pack the file as tightly as possible, so the resultant file will be smaller
+than that created by Microsoft's DEVLIB utility.
+
+C:\>VxDLIB -p VMM32.VXD
+
+VxDLIB v1.01 (c) Copyright Tenth Planet Software Intl., C Turvey 1995-1996.
+			   All rights reserved. Non-Commercial use only.
+
+Unpacking VMM32.VXD to VxDLIB.$$$
+  100% complete
+
+Packing VxDLIB.$$$ to VMM32.VXD
+  100% complete
+
+Size of library:                        2031616
+Size of compressible portion:           1949696
+Size of chunk map:                      952
+New size of compressible portion:       660607 (33% of original)
+New size of library:                    743495 (36% of original)
+
+C:\>
+
+
+Example of the unpack command, W4 files will be decompressed into a W3 file
+of the same name via a temporary file that is renamed to match the original
+after the original is deleted. The W3 file can then be examined with tools
+like W3MAP.
+
+C:\>VxDLIB -u VMM32.VXD VMM.VXD
+
+VxDLIB v1.01 (c) Copyright Tenth Planet Software Intl., C Turvey 1995-1996.
+			   All rights reserved. Non-Commercial use only.
+
+Unpacking VMM32.VXD to VxDLIB.$$$
+  100% complete
+
+C:\>
+
+
+Example of extract command, W4 files will be decompressed into a temporary W3
+file first and then the specified VxD will be extracted. The extracted VxD
+can then be examined by the likes of V Communications' Sourcer. Multiple VxDs
+can be extracted using wildcards, like V?D, VC* or V?O*.
+
+C:\>VxDLIB -e VMM32.VXD VMM.VXD
+
+VxDLIB v1.01 (c) Copyright Tenth Planet Software Intl., C Turvey 1995-1996.
+			   All rights reserved. Non-Commercial use only.
+
+Unpacking VMM32.VXD to VxDLIB.$$$
+  100% complete
+
+Extracting VMM.VXD from VxDLIB.$$$
+
+VMM.VXD      00014400 00065000 00050C00
+
+C:\>VxDLIB -e VMM32.VXD V?O*.VXD
+
+VxDLIB v1.01 (c) Copyright Tenth Planet Software Intl., C Turvey 1995-1996.
+			   All rights reserved. Non-Commercial use only.
+
+Unpacking VMM32.VXD to VxDLIB.$$$
+  100% complete
+
+Extracting V?O*.VXD from VxDLIB.$$$
+
+VMOUSE.VXD   0007A000 00083000 00009000
+VCOMM.VXD    00099000 000A2000 00009000
+VCOND.VXD    00106000 00114000 0000E000
+
+C:\>
+
+------------------------------------------------------------------------------
+
+Technical Stuff:
+
+ Wx VxD Library EXE Header
+
+      00h ┌──────────────────┐  <──┐
+          │ DOS 2 Compatible │     │
+          │    EXE Header    │     │
+      1Ch ├──────────────────┤     │
+          │      unused      │     │
+          ├──────────────────┤     │
+      3Ch │  Offset to       │     ├── VMM32 DOS Portion
+          │  Wx VxD Library  │     │
+          │  EXE Header      │     │
+      40h ├──────────────────┤     │
+          │  VMM32 DOS Stub  │     │
+          │  Loader Program  │     │
+          │   Reloc. Table   │     │
+          └──────────────────┘  <──┘
+
+      xxh ┌──────────────────┐  <──┐
+          │    W3 Header     │     │
+          ├──────────────────┤     │
+          │    VxD Table     │     │
+          ├──────────────────┤     │
+          │ First VxD        │     │
+          │ Linear Executable│     ├── W3 VxD Library
+          ├──────────────────┤     │
+                  ....             │
+          ├──────────────────┤     │
+          │ Final VxD        │     │
+          │ Linear Executable│     │
+          └──────────────────┘  <──┘
+
+                   or
+
+      xxh ┌──────────────────┐  <──┐
+          │    W4 Header     │     │
+          ├──────────────────┤     │
+          │   Chunk Table    │     │
+          ├──────────────────┤     │
+          │ First Compressed │     │
+          │       Chunk      │     ├── W4 VxD Library
+          ├──────────────────┤     │
+                  ....             │
+          ├──────────────────┤     │
+          │ Final Compressed │     │
+          │       Chunk      │     │
+          └──────────────────┘  <──┘
+
+ W3 Header
+
+          ┌─────┬─────┬─────┬─────┐
+      00h │ 'W'   '3' │OS-Lo OS-Hi│
+          ├─────┴─────┼─────┴─────┤
+      04h │ VxD Count │   - 0 -   │
+          ├───────────┼───────────┤
+      08h │   - 0 -   │   - 0 -   │
+          ├───────────┼───────────┤
+      0Ch │   - 0 -   │   - 0 -   │
+          ├───────────┴───────────┴───────────────────────┐
+      10h │ VxD #1 Name padded to 8 bytes with spaces     │
+          ├───────────────────────┬───────────────────────┘
+      18h │ VxD #1 LE File Offset │
+          ├───────────────────────┤
+      1Ch │ VxD #1 LE Header Size │
+          ├───────────────────────┴───────────────────────┐
+      10h │ VxD #2 Name padded to 8 bytes with spaces     │
+          ├───────────────────────┬───────────────────────┘
+      18h │ VxD #2 LE File Offset │
+          ├───────────────────────┤
+      1Ch │ VxD #2 LE Header Size │
+          ├───────────────────────┤
+                    .....
+          ├───────────────────────┴───────────────────────┐
+      xxh │ VxD #x Name padded to 8 bytes with spaces     │
+          ├───────────────────────┬───────────────────────┘
+          │ VxD #x LE File Offset │
+          ├───────────────────────┤
+          │ VxD #x LE Header Size │
+          └───────────────────────┘
+
+ W4 Header
+
+          ┌─────┬─────┬─────┬─────┐
+      00h │ 'W'   '4' │OS-Lo OS-Hi│
+          ├─────┴─────┼─────┴─────┤
+      04h │ Chunk Size│Chunk Count│
+          ├─────┬─────┼───────────┤
+      08h │ 'D'   'S' │   - 0 -   │
+          ├─────┴─────┼───────────┤
+      0Ch │   - 0 -   │   - 0 -   │
+          ├───────────┴───────────┤
+      10h │ Chunk #1 File Offset  │
+          ├───────────────────────┤
+      14h │ Chunk #2 File Offset  │
+          ├───────────────────────┤
+                    .....
+          ├───────────────────────┤
+      xxh │ Chunk #x File Offset  │
+          ├───────────────────────┤
+ Chunk #1 │  Compressed Chunk #1  │
+                    .....
+          │                       │
+          ├───────────────────────┤
+ Chunk #2 │  Compressed Chunk #2  │
+                    .....
+          │                       │
+          ├───────────────────────┤
+                    .....
+          ├───────────────────────┤
+ Chunk #x │  Compressed Chunk #x  │
+                    .....
+          │                       │
+          └───────────────────────┘
+      EOF
+
+OS : Indicated the Windows version, 0x0400, Windows 4.0
+
+Chunk Size : This WORD defines the size of the chunks. The loader expects
+the chunk size to be 8K. This is much like the concept of a disk cluster.
+I originally called chunks, clusters until I found that Microsoft refers
+to them as chunks in DEVLIB (Win95 DDK).
+
+Chunk Count : This WORD defines the number of chunks contained in the file.
+The loader verifies this is less than 1024
+
+Chunk # File Offset : This DWORD defines an absolute file offset from the
+beginning of the EXE file to the start of the compressed chunk, the loader
+expects the chunks are consecutive order, the size of the final chunk is
+deterined using the file length
+
+The first Compressed chunk follows immediately after the last Chunk # File
+Offset entry.
+
+Data encoded as either a Raw Byte or Depth usually followed by Count, a depth
+of 0 and 4415 are special cases which require no count component. The depth of
+0 indicates the end of the compressed chunk, and a depth of 4415 defines a 512
+byte boundary has been reached, the first byte is not counted as a 512 byte
+boundary.
+
+  MSB...............................LSB
+
+                     ┌─────────────┬───┐
+                     │a b c d e f g 0 1│    Raw 1abcdefg, No Depth or Count
+                     ├─────────────┼───┤
+                     │a b c d e f g 1 0│    Raw 0abcdefg, No Depth or Count
+                     └─────────────┴───┘
+
+  Depth                                  or
+
+                       ┌───────────────┐
+                       │0 0 0 0 0 0 0 0│    Quit, No Count
+               ┌───────┼───────────┬───┤
+               │ Count │a b c d e f 0 0│          abcdef         (1..63)
+         ┌─────┴─┬─────┴─────────┬─┴───┤
+         │ Count │a b c d e f g h 0 1 1│    64  + abcdefgh      (64..319)
+ ┌───────┼───────┴───────────────┼─────┤
+ │ Count │a b c d e f g h i j k m 1 1 1│    320 + abcdefghijkm (320..4414)
+ └───────┼───────────────────────┴─────┤
+         │1 1 1 1 1 1 1 1 1 1 1 1 1 1 1│    Sector Break, No Count
+         └─────────────────────────────┘
+
+  Count
+
+                                     ┌─┐
+                                     │1│    2
+                                 ┌─┬─┴─┤
+                                 │a 1 0│    3   + a          (3..4)
+                             ┌───┼─┴───┤
+                             │a b 1 0 0│    5   + ab         (5..8)
+                         ┌───┴─┬─┴─────┤
+                         │a b c 1 0 0 0│    9   + abc        (9..16)
+                     ┌───┴───┬─┴───────┤
+                     │a b c d 1 0 0 0 0│    17  + abcd      (17..32)
+                 ┌───┴─────┬─┴─────────┤
+                 │a b c d e 1 0 0 0 0 0│    33  + abcde     (33..64)
+             ┌───┴───────┬─┴───────────┤
+             │a b c d e f 1 0 0 0 0 0 0│    65  + abcdef    (65..128)
+         ┌───┴─────────┬─┴─────────────┤
+         │a b c d e f g 1 0 0 0 0 0 0 0│    129 + abcdefg  (129..256)
+     ┌───┴───────────┬─┴───────────────┤
+     │a b c d e f g h 1 0 0 0 0 0 0 0 0│    257 + abcdefgh (257..512)
+     └───────────────┼─────────────────┤
+                     │0 0 0 0 0 0 0 0 0│    Quit - Illegal Encoding
+                     └─────────────────┘
+
+------------------------------------------------------------------------------
+
+I have finished writing Windows Source Version 3, which is now available
+from V Communications Inc.
+
+What is Windows Source?
+
+Windows Source is an add-on to V Communications' Sourcer disassembler
+which preprocesses executable, dynamic link library, device drivers and
+VxD files for Windows 3.x, Windows '95 & Windows NT. It also provides
+support for OS/2 1.x, 2.x & Warp.
+
+Where possible symbolic debug information included in separate .SYM,
+.DBG files, or included in Codeview or COFF debugging sections.
+
+Windows Source Web Page : http://www.tbcnet.com/~clive/vcomwinp.html
+
+------------------------------------------------------------------------------
+
+For more information about V Communications software :
+
+Sourcer, Bios Preprocessor, Windows Source,
+
+V Communications, Inc., 4320 Stevens Creek Blvd.,
+Suite 120, San Jose, CA 95129-9944.
+
+Orders: 800-648-8266 (USA & Canada)
+Phone : 408-296-4224
+Fax   : 408-296-4441
+BBS   : 408-296-5334
+URL   : http://www.v-com.com
+Email : sales@v-com.com
+
+These tools are highly recommended, be sure to let them know Clive Turvey
+sent you.
+
+------------------------------------------------------------------------------
+
+Andrew Schulman's Unauthorized Windows 95 updates along with this software
+can be found at :
+
+	http://www.ora.com
+
+
