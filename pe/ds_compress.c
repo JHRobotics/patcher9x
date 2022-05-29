@@ -122,20 +122,148 @@ void ds_out_chr(uint8_t c, bitstream_t *out)
 	
 	if((c & 0x80) != 0)
 	{
-		buf2 = (c & 0x7F) << 2 | 0x1; // 0b01
+		buf2 = ((c & 0x7F) << 2) | 0x1; // 0b01
 	}
 	else
 	{
-		buf2 = (c & 0x7F) << 2 | 0x2; // 0b10
+		buf2 = ((c & 0x7F) << 2) | 0x2; // 0b10
 	}
 	
 	bs_write_bit_le(out, buf2, 9);
 }
 
 /**
+ * Find nearest and largest same string in block
+ * NOTE: dummy and slow (O2 complexity)
+ *
+ **/
+static int ds_find(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_pos, size_t *dst_len)
+{
+	size_t max_len = endpos - startpos;
+	
+	if(max_len > startpos)
+	{
+		max_len = startpos;
+	}
+	
+	//printf("max_len = %zu\n", max_len);
+	
+	while(max_len >= 2)
+	{
+		size_t pos = startpos-max_len;
+		
+		do
+		{
+			if(startpos - pos > 4414)
+			{
+				break;
+			}
+			
+			if(memcmp(block+pos, block+startpos, max_len) == 0)
+			{
+				*dst_pos = pos;
+				*dst_len = max_len;
+				return 1;
+			}
+		} while(pos--);
+		
+		max_len--;
+	}
+	
+	return 0;	
+}
+
+/**
+ * Find nearest and largest same string in block
+ * NOTE: still dummy (same bad complexity) but little faster
+ *
+ **/
+static int ds_find_fast(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_pos, size_t *dst_len)
+{
+	size_t max_len = endpos - startpos;
+	
+	if(max_len > startpos)
+	{
+		max_len = startpos;
+	}
+		
+	while(max_len >= 2)
+	{
+		size_t pos = startpos-max_len;
+		
+		for(;;)
+		{
+			if(startpos - pos > 1024)
+			{
+				break;
+			}
+			
+			if(memcmp(block+pos, block+startpos, max_len) == 0)
+			{
+				*dst_pos = pos;
+				*dst_len = max_len;
+				
+				return 1;
+			}
+			
+			if(pos > max_len)
+			{
+				pos -= max_len;
+			}
+			else
+			{
+				break;
+			}
+		}
+		
+		if(max_len > 32)
+		{
+			max_len /= 2;
+		}
+		else if(max_len > 10)
+		{
+			max_len -= 2;
+		}
+		else
+		{
+			max_len--;
+		}
+		
+	}
+	
+	return 0;	
+}
+
+INLINE int ds_rle(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_len)
+{
+	size_t pos = startpos;
+	size_t len = 0;
+	//printf("ds_rle(mem, %zu, %zu, dst_len);\n", startpos, endpos);
+	
+	while(pos < endpos)
+	{
+		if(block[pos] != block[startpos])
+		{
+			break;
+		}
+		
+		len++;
+		pos++;
+	}
+	
+	if(len >= 3)
+	{
+		*dst_len = len;
+		return 1;
+	}
+	
+	return 0;
+}
+
+/**
  * Compress memory block to bitstream using DS (DriveSpace/DoubleSpace) compression
  *
- * NOTE: THIS IS VERY SIMPLE IMPEMENTATION, compress radio is equvalent as produces RLE.
+ * NOTE: THIS IS VERY SIMPLE IMPEMENTATION, compress radio is somewere as produces RLE.
  *
  * @param block: source data
  * @param block_size: source size
@@ -144,14 +272,14 @@ void ds_out_chr(uint8_t c, bitstream_t *out)
  **/
 void ds_compress(void *block, size_t block_size, bitstream_t *out)
 {
-	uint8_t *ptr;
-	size_t j, i, k;
+	uint8_t *ptr = block;
+	size_t j, i;
 	size_t segment_count = block_size/FS_SEGMENT_SIZE;
 	if(block_size % FS_SEGMENT_SIZE != 0)
 	{
 		segment_count++;
 	}
-	
+		
 	for(i = 0; i < segment_count; i++)
 	{
 		size_t smax = block_size - (i*FS_SEGMENT_SIZE);
@@ -159,36 +287,47 @@ void ds_compress(void *block, size_t block_size, bitstream_t *out)
 		{
 			smax = FS_SEGMENT_SIZE;
 		}
-			
-		ptr = ((uint8_t*)block)+(i*FS_SEGMENT_SIZE);
-				
-		for(j = 0; j < smax; j++)
+						
+		for(j = 0; j < smax; /*j++*/)
 		{
-			uint8_t c = ptr[j];
-			size_t repeat = 0;
-			for(k = j+1; k < smax; k++,repeat++)
+			size_t act_pos = (i*FS_SEGMENT_SIZE) + j;
+			size_t act_end = (i*FS_SEGMENT_SIZE) + smax;
+			size_t find_pos = 0;
+			size_t find_len = 0;
+			size_t rle_len  = 0;
+			
+			if(ds_find_fast(ptr, act_pos, act_end, &find_pos, &find_len))
 			{
-				if(ptr[k] != c)
-				{
-					break;
-				}
+				#ifdef HEAVY_DEBUG
+				printf("ds_out_pos() = %zu %zu\n", find_pos, find_len);
+				#endif
+				ds_out_pos(find_len, act_pos-find_pos, out);
+				j += find_len;
 			}
-			
-			//printf("(%u) Write char: %02X, repeat: %d\n", j, c, repeat);	
-			ds_out_chr(c, out);
-			
-			if(repeat >= 2)
+			else if(ds_rle(ptr, act_pos, act_end, &rle_len))
 			{
-				//printf("(%u) %02X, repeat: %d\n", j, c, repeat);
-				ds_out_pos(repeat, 1, out);
-				j += repeat;
+				#ifdef HEAVY_DEBUG
+				printf("ds_rle() = %zu\n", rle_len);
+				#endif
+				ds_out_chr(ptr[act_pos], out);
+				ds_out_pos(rle_len-1, 1, out);
+				j += rle_len;
+			}
+			else
+			{
+				ds_out_chr(ptr[act_pos], out);
+				j++;
 			}
 		} // for j
 		
 		/* sector break */
 		bs_write_bit_le(out, ((4415-320) << 3) | 0x7, 15);
-		
 	} // for i
+
+	/* in original files there's no terminate blocks, but VXDLIB add it,
+	   so here is for safety
+	 */
+	bs_write_bit_le(out, 0, 8);
 	
 	bs_write_flush(out);
 }

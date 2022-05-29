@@ -66,7 +66,7 @@ OBJS_OUT=$(OBJS_GUEST) unpacker.g.o patch.g.o trace.g.o patcher9x.g.o
 
 OBJS_HOST=system/bpatcher.h.o
 
-TESTS=test_bitstream$(SUFIX) test_pe$(SUFIX) test_pe2$(SUFIX) test_ds$(SUFIX) test_ds_compress$(SUFIX) test_w3$(SUFIX) test_patch$(SUFIX)
+TESTS=test_bitstream$(SUFIX) test_pe$(SUFIX) test_pe2$(SUFIX) test_ds$(SUFIX) test_ds_compress$(SUFIX) test_w3$(SUFIX) test_patch$(SUFIX) test_ds2$(SUFIX)
 
 all: $(OUTNAME)
 
@@ -100,7 +100,10 @@ test_w3$(SUFIX): $(OBJS_GUEST) test/test_w3.g.o
 
 test_ds$(SUFIX): $(OBJS_GUEST) test/test_ds.g.o
 	$(GUEST_CC) $(GUEST_CFLAGS) -o test_ds$(SUFIX) $(OBJS_GUEST) test/test_ds.g.o $(GUEST_LDFLAGS)
-	
+
+test_ds2$(SUFIX): $(OBJS_GUEST) test/test_ds2.g.o
+	$(GUEST_CC) $(GUEST_CFLAGS) -o test_ds2$(SUFIX) $(OBJS_GUEST) test/test_ds2.g.o $(GUEST_LDFLAGS)
+
 test_ds_compress$(SUFIX): $(OBJS_GUEST) test/test_ds_compress.g.o
 	$(GUEST_CC) $(GUEST_CFLAGS) -o test_ds_compress$(SUFIX) $(OBJS_GUEST) test/test_ds_compress.g.o $(GUEST_LDFLAGS)
 	
