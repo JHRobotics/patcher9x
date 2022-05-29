@@ -465,6 +465,26 @@ INLINE void bs_write_bit_le(bitstream_t *bs, uint32_t b, int cnt)
 }
 
 /**
+ * Return number of bits, thats in internal cache and
+ * still needs be writen in stream
+ *
+ * @param bs: bit stream
+ *
+ **/
+INLINE int bs_cnt_tmp_bits(bitstream_t *bs)
+{
+	if(bs->type == BITSTREAM_MEM)
+	{
+		return bs->bs_mem.bpos;
+	}
+	else if(bs->type == BITSTREAM_FILE)
+	{
+		return bs->bs_file.bpos;
+	}
+	return 0;
+}
+
+/**
  * Write final byte to stream. Unused bits are padded with 0
  *
  * @param bs: bit stream
@@ -473,19 +493,10 @@ INLINE void bs_write_bit_le(bitstream_t *bs, uint32_t b, int cnt)
 INLINE void bs_write_flush(bitstream_t *bs)
 {
 	uint32_t zero = 0;
-	if(bs->type == BITSTREAM_MEM)
+	int waiting  = bs_cnt_tmp_bits(bs);
+	if(waiting != 0)
 	{
-		if(bs->bs_mem.bpos != 0)
-		{
-			bs_write_bit_le(bs, zero, 8 - bs->bs_mem.bpos);
-		}
-	}
-	else if(bs->type == BITSTREAM_FILE)
-	{
-		if(bs->bs_file.bpos != 0)
-		{
-			bs_write_bit_le(bs, zero, 8 - bs->bs_file.bpos);
-		}
+		bs_write_bit_le(bs, zero, 8 - waiting);
 	}
 }
 
