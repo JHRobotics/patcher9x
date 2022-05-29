@@ -153,7 +153,7 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 				w3 = pe_w3_read(&dos, &pe, fp);
 				if(w3 != NULL)
 				{
-					//printf("here1\n");
+					printf("Compressing file, please wait...\n");
 					if(pe_w3_to_w4(w3, dstfile) != PE_OK)
 					{
 						status = PATCH_E_CONVERT;
@@ -170,6 +170,51 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 				status = PATCH_E_READ;
 			}
 			fclose(fp);
+		}
+		
+		if(status == PATCH_OK)
+		{
+			w4 = NULL;
+			fp = FOPEN_LOG(dstfile, "rb");
+			if(fp != NULL)
+			{
+				t = pe_read(&dos, &pe, fp);
+				if(t == PE_W4)
+				{
+					w4 = pe_w4_read(&dos, &pe, fp);
+					if(w4 != NULL)
+					{
+						if(pe_w4_check(w4) != PE_OK)
+						{
+							printf("Warning: W4 file is not loadable, leaving in W3 format!\n");
+							
+							pe_w4_free(w4);
+							w4 = NULL;
+							fclose(fp);
+							fp = NULL;
+							
+							fs_unlink(dstfile);
+							fs_rename(tmpname, dstfile);
+						}
+						else
+						{
+							/* file is valid, remove temp */
+							fs_unlink(tmpname);
+						}
+					}
+				}
+				else
+				{
+					status = PATCH_E_READ;
+				}
+			}
+			else
+			{
+				status = PATCH_E_READ;
+			}
+			
+			if(w4 != NULL) pe_w4_free(w4);
+			if(fp != NULL) fclose(fp);		
 		}
 	}
 	

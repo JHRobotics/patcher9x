@@ -171,6 +171,7 @@ typedef struct _pe_w3_t
 #define PE_ERROR_FWRITE 9
 #define PE_ERROR_FSEEK  10
 #define PE_ERROR_NO_FOUND 11
+#define PE_ERROR_COMPAT  12
 
 #define PE_W4_CHUNKSIZE 8192
 
@@ -178,6 +179,7 @@ int      pe_read(dos_header_t *dos, pe_header_t *pe, FILE *fp);
 pe_w4_t *pe_w4_read(dos_header_t *dos, pe_header_t *pe, FILE *fp);
 pe_w4_t *pe_w4_alloc(size_t data_size);
 void     pe_w4_free(pe_w4_t *w4);
+int      pe_w4_check(pe_w4_t *w4);
 
 pe_w3_t *pe_w3_read(dos_header_t *dos, pe_header_t *pe, FILE *fp);
 void pe_w3_free(pe_w3_t *w4);

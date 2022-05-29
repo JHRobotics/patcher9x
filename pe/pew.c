@@ -201,17 +201,11 @@ size_t pe_w4_decompress(pe_w4_t *w4, void *buf, size_t chunk_id)
 	{
 		return 0;
 	}
-	
+
 	if(fseek(w4->fp, w4->chunks[chunk_id], SEEK_SET) == 0)
 	{
 		bs_file(&in, w4->fp);
-		//memset(buf, 0, w4->pe->w4.chunk_size);
 		size = ds_decompress(&in, buf, w4->pe->w4.chunk_size);
-		
-		/*if(size != 0 && chunk_id != (w4->chunks_cnt != 0))
-		{
-			return w4->pe->w4.chunk_size;
-		}*/
 	}
 	
 	return size;
@@ -278,12 +272,15 @@ int pe_w3_to_w4(pe_w3_t *w3, const char *dst)
 	w4 = pe_w4_alloc(w3_fs - w3->pe_pos);
 	if(w4)
 	{
+		memset(&hw4, 0, sizeof(pe_header_t));
+		
 		hw4.magic[0] = 'W';
 		hw4.magic[1] = '4';
 		hw4.w4.os_low = w3->pe->w3.os_low;
 		hw4.w4.os_hi  = w3->pe->w3.os_hi;
 		hw4.w4.chunk_size = PE_W4_CHUNKSIZE;
 		hw4.w4.chunk_count = w4->chunks_cnt;
+
 		memcpy(&hw4.w4.compression, "DS", 2);
 		
 		fw = fopen(dst, "wb");
@@ -337,6 +334,33 @@ int pe_w3_to_w4(pe_w3_t *w3, const char *dst)
 		
 		pe_w4_free(w4);
 	} // if w4
+	
+	return PE_OK;
+}
+
+/**
+ * Check if W4 file could be decompresed by legacy loaders.
+ *
+ * NOTE: Simply compressed chunks cannot exceed decompessed size.
+ *
+ * @return: PE_OK if file is compatible
+ **/
+int pe_w4_check(pe_w4_t *w4)
+{
+	size_t i;
+	
+	if(w4->pe->w4.chunk_size != PE_W4_CHUNKSIZE)
+	{
+		return PE_ERROR_COMPAT;
+	}
+	
+	for(i = 0; i < w4->chunks_cnt; i++)
+	{
+		if((w4->chunks[i+1] - w4->chunks[i]) > w4->pe->w4.chunk_size)
+		{
+			return PE_ERROR_COMPAT;
+		}
+	}
 	
 	return PE_OK;
 }
