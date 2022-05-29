@@ -1,0 +1,7 @@
+0.5.8
+- fixed problem, that patched compressed files were not loadable
+  (system crash if you directly apply patch on system/vmm32.vxd)
+
+0.5.0
+- first public release
+- Windows 98 and Windows 98 SE are only supported

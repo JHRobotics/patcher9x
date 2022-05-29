@@ -8,6 +8,14 @@ The Bug is described there: https://blog.stuffedcow.net/2015/08/win9x-tlb-invali
 ## Requirements
 This patch works for Windows 98 / Windows 98 SE. Work on port to other 9x system (95, ME) is in progress.
 
+## Download
+Binary files and bootable floppy image are in [Releases](https://github.com/JHRobotics/patcher9x/releases/)
+
+IMA file is bootable floppy (FREEDOS) usable in virtual machine to simple boot and patch installed system.
+Binaries for win32 are Windows 98 compatible, so can be run from safe mode (Hold CTRL on start-up). Binaries
+for other system are for create patched installation (in theory you can mount virtual HDD image and patch installed
+system on it but do it using boot floppy is much simple).
+
 ## Installation
 Simplest way is download bootable floppy image. After boot (you will see `A:\`) run
 ```
