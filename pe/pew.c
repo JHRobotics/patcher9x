@@ -244,10 +244,18 @@ int pe_w4_to_w3(pe_w4_t *w4, const char *dst)
 				}
 			}
 			
-			//w4_decompress
+			free(buf);
+		}
+		else
+		{
+			return PE_ERROR_MALLOC;
 		}
 		
 		fclose(fw);
+	}
+	else
+	{
+		return PE_ERROR_FOPEN;
 	}
 	
 	return PE_OK;

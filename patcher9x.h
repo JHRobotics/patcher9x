@@ -45,10 +45,18 @@
 #define PATCH_E_WRONG_TYPE 6
 #define PATCH_E_CONVERT    7
 #define PATCH_E_NOTFOUND   8
+#define PATCH_E_PATCHED    9
 
 #define PATCH_FORCE_W3 1
 #define PATCH_FORCE_W4 2
 
+#if defined(__MSDOS__) || (defined(_WIN32) && !defined(_WIN64))
+#define RUN_WITHOUT_ARGS
+#endif
+
+#if defined(__MSDOS__)
+#define DOS_MODE
+#endif
 
 int cab_search_unpack(const char *dirname, const char *infilename, const char *out);
 int cab_unpack(const char *srccab, const char *infilename, const char *out);
@@ -58,7 +66,7 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 
 int patch_apply(const char *srcfile, const char *dstfile);
 int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int force_format);
-int patch_backup_file(const char *path);
+int patch_backup_file(const char *path, int nobackup);
 
 void print_trace();
 FILE *fopen_log(const char *fn, const char *mode, const char *file, int line);

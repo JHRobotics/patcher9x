@@ -47,21 +47,24 @@ void print_trace()
 	int p = 1;
 	unsigned int i = PATCHER_TRACE_CNT_DOWN(patcher_trace_act);
 	
-	printf("Invalid file operations:\n");
-	for(;;)
+	if(patcher_trace[i].valid)
 	{
-		if(patcher_trace[i].valid)
+		printf("Invalid file operations:\n");
+		for(;;)
 		{
-			printf("\t%d: %s, %d: %s(%s, %s)\n", p++,
-			 patcher_trace[i].src_file, patcher_trace[i].src_line, patcher_trace[i].fn_name,
-			 patcher_trace[i].dst_name, patcher_trace[i].dst_mode
-			);
+			if(patcher_trace[i].valid)
+			{
+				printf("\t%d: %s, %d: %s(%s, %s)\n", p++,
+				 patcher_trace[i].src_file, patcher_trace[i].src_line, patcher_trace[i].fn_name,
+				 patcher_trace[i].dst_name, patcher_trace[i].dst_mode
+				);
+			}
+			else
+			{
+				break;
+			}
+			
+			i = PATCHER_TRACE_CNT_DOWN(i);
 		}
-		else
-		{
-			break;
-		}
-		
-		i = PATCHER_TRACE_CNT_DOWN(i);
 	}
 }

@@ -2,6 +2,10 @@
 #include <bpatcher.h>
 #include "vmm_patch.h"
 
+/**
+ * Apply patch and if check failure check if applied.
+ *
+ **/
 int patch_apply(const char *srcfile, const char *dstfile)
 {
 	int status = PATCH_OK;
@@ -15,7 +19,6 @@ int patch_apply(const char *srcfile, const char *dstfile)
 		bs_mem(&check, (uint8_t*)vmm_orig_check, sizeof(vmm_orig_check));
 			
 		pos = search_sieve_file(fp, vmm_orig, sizeof(vmm_orig), &check);
-		//printf("search_sieve_file: %lld\n", pos);
 		if(pos >= 0)
 		{
 			FILE *fw = FOPEN_LOG(dstfile, "wb");
@@ -56,7 +59,17 @@ int patch_apply(const char *srcfile, const char *dstfile)
 		}
 		else
 		{
-			status = PATCH_E_CHECK;
+			fseek(fp, 0, SEEK_SET);
+			bs_reset(&check);
+			pos = search_sieve_file(fp, vmm_patch, sizeof(vmm_patch), &check);
+			if(pos >= 0)
+			{
+				status = PATCH_E_PATCHED;
+			}
+			else
+			{
+				status = PATCH_E_CHECK;
+			}
 		}
 		fclose(fp);
 	}
@@ -68,9 +81,12 @@ int patch_apply(const char *srcfile, const char *dstfile)
 	return status;
 }
 
+/**
+ * Apply patch on W3/W4 file and compress/decompress if it is W4 file
+ *
+ **/
 int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int force_format)
 {
-	
 	int status = PATCH_OK;
 	int w4_decompres = 0;
 	int is_w3        = 0;
@@ -90,7 +106,6 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 			w4 = pe_w4_read(&dos, &pe, fp);
 			if(w4 != NULL)
 			{
-				//printf("here1\n");
 				if(pe_w4_to_w3(w4, tmpname) == PE_OK)
 				{
 					w4_decompres = 1;
@@ -221,16 +236,25 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 	return status;
 }
 
-int patch_backup_file(const char *path)
+/**
+ * Backup file
+ *
+ **/
+int patch_backup_file(const char *path, int nobackup)
 {
 	FILE *fr, *fw;
 	int status = -1;
-	char *backupname = fs_path_get2(path, NULL, "bak");
+	char *backupname;
+	
+	if(nobackup)
+	{
+		return PATCH_OK;
+	}
+	
+	backupname = fs_path_get2(path, NULL, "bak");
 	
 	if(backupname)
 	{
-		//printf("BAKUP: %s -> %s\n", path, backupname);
-		
 		if(!fs_file_exists(backupname))
 		{
 			fr = FOPEN_LOG(path, "rb");
@@ -254,13 +278,13 @@ int patch_backup_file(const char *path)
 			{
 				status = PATCH_E_READ;
 			}
-			
-			fs_path_free(backupname);
 		}
 		else
 		{
 			status = PATCH_OK;
 		}
+		
+		fs_path_free(backupname);
 	}
 	else
 	{

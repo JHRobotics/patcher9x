@@ -172,6 +172,8 @@ typedef struct _pe_w3_t
 #define PE_ERROR_FSEEK  10
 #define PE_ERROR_NO_FOUND 11
 #define PE_ERROR_COMPAT  12
+#define PE_ERROR_MALLOC 13
+
 
 #define PE_W4_CHUNKSIZE 8192
 

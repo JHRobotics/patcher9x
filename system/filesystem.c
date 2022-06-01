@@ -583,6 +583,7 @@ int fs_is_dir(const char *path)
 	}
 	#else
 	struct stat path_stat;
+	memset(&path_stat, 0, sizeof(struct stat));
 	stat(path, &path_stat);
 	return S_ISDIR(path_stat.st_mode);
 	#endif
