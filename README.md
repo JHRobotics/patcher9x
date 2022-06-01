@@ -1,14 +1,20 @@
-# Patch for Windows 9x to fix TLB invalidation bug
+# Patch for Windows 98 to fix TLB invalidation bug
 
-MS Windows 95/98/ME won't run on newer CPU (even in virtual machine) due to "TLB invalidation bug".
+MS Windows 98 won't run on newer CPU (even in virtual machine) due to "TLB invalidation bug".
 The Bug is described there: https://blog.stuffedcow.net/2015/08/win9x-tlb-invalidation-bug/
 
 ![Bug animation on Windows 98](/doc/shell32.gif)
 
 ## Requirements
-This patch works for Windows 98 / Windows 98 SE. Work on port to other 9x system (95, ME) is in progress.
+
+This patch only works for Windows 98 / Windows 98 SE. Windows 95 probably hasn't this bug, but has another named
+"CPU speed limit", there is patch for it [Windows 95 patch](http://www.tmeeco.eu/9X4EVER/GOODIES/FIX95CPU_V3_FINAL.ZIP).
+Windows 98 FE (First Edition) and Windows 98 Beta releases has same bug as Windows 95 too.
+
+Windows ME has this bug in code, but from my observation, the system call this code very rarely.
 
 ## Download
+
 Binary files and bootable floppy image are in [Releases](https://github.com/JHRobotics/patcher9x/releases/)
 
 IMA file is bootable floppy (FREEDOS) usable in virtual machine to simple boot and patch installed system.
@@ -17,6 +23,7 @@ for other system are for create patched installation (in theory you can mount vi
 system on it but do it using boot floppy is much simple).
 
 ## Installation
+
 Simplest way is download bootable floppy image. After boot (you will see `A:\`) run
 ```
 patch9x
@@ -24,7 +31,9 @@ patch9x
 Patch will be run in interactive mode and the default strategy (extract `VMM.VXD` from `VMM32.VMX` and apply patch)
 is probably best way. After reboot operation system could start successfully.
 
-![Successfuly working Windows 98](/doc/intel-i5-1135.gif)
+![Successfuly working Windows 98 - Intel](/doc/intel-i5-1135.gif)
+
+![Successfuly working Windows 98 - AMD](/doc/amd-5-3500u.png)
 
 ### Patching installation media
 Copy content of win98 folder from CD / extract it from ISO image. Run 
@@ -87,3 +96,6 @@ search in `VMM32.VXD` file.
 
 [More info about W3/W4 files](doc/VXDLIB_UTF8.txt)
 
+## Development
+
+In future I would like include patch "CPU speed limit" (95, 98 FE) and patch 48-bit LBA (95, 98, ME). 
