@@ -8,7 +8,7 @@ The Bug is described there: https://blog.stuffedcow.net/2015/08/win9x-tlb-invali
 ## Requirements
 
 This patch only works for Windows 98 / Windows 98 SE. Windows 95 probably hasn't this bug, but has another named
-"CPU speed limit", there is patch for it [Windows 95 patch](http://www.tmeeco.eu/9X4EVER/GOODIES/FIX95CPU_V3_FINAL.ZIP).
+"CPU speed limit", there is patch for it: [Windows 95 patch](http://www.tmeeco.eu/9X4EVER/GOODIES/FIX95CPU_V3_FINAL.ZIP).
 Windows 98 FE (First Edition) and Windows 98 Beta releases has same bug as Windows 95 too.
 
 Windows ME has this bug in code, but from my observation, the system call this code very rarely.
@@ -99,3 +99,5 @@ search in `VMM32.VXD` file.
 ## Development
 
 In future I would like include patch "CPU speed limit" (95, 98 FE) and patch 48-bit LBA (95, 98, ME). 
+
+
