@@ -1,3 +1,11 @@
+0.6.13
+- more testing and stability
+- fixed memory leaks
+- temporary files cleanup
+- fixed generating bad file names 
+- "-patch" command line option renamed to "-patch-tlb" for adding future patches
+- "-v" command line option to print version
+
 0.5.8
 - fixed problem, that patched compressed files were not loadable
   (system crash if you directly apply patch on system/vmm32.vxd)
