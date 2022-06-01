@@ -55,8 +55,8 @@ ifdef VERSION_PATCH
  GUEST_CFLAGS := $(GUEST_CFLAGS) -DPATCHER9X_PATCH=$(VERSION_PATCH)
 endif
 
-DEPS_HOST=Makefile system/bitstream.h
-DEPS_GUEST=Makefile system/bitstream.h vmm_patch.h
+DEPS_HOST=Makefile system/bitstream.h version.h
+DEPS_GUEST=Makefile system/bitstream.h vmm_patch.h version.h
 
 OBJS_GUEST=mspack/cabc.g.o mspack/cabd.g.o mspack/crc32.g.o mspack/hlpc.g.o mspack/hlpd.g.o mspack/chmc.g.o mspack/chmd.g.o mspack/kwajc.g.o mspack/kwajd.g.o mspack/litc.g.o \
  mspack/litd.g.o mspack/lzssd.g.o mspack/lzxc.g.o mspack/lzxd.g.o mspack/mszipc.g.o mspack/mszipd.g.o mspack/oabc.g.o mspack/oabd.g.o mspack/qtmd.g.o mspack/system.g.o \
