@@ -10,7 +10,7 @@
 ; make enough space to inject modification of CR3 register.
 ;
 ; NOTE that some "symbols" are relocated and you'll need to modify relocation
-; table in VMM.VXD if they're move. Define -Drellocate and compare binary to
+; table in VMM.VXD if they're move. Define -Drelocate and compare binary to
 ; see if some of this symbols moved.
 ;
 ; Origin of this bug is described there:
