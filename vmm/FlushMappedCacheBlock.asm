@@ -1,24 +1,37 @@
 ;/*** FLAT assembler source
 ;
 ; This is larger disassembly of VMM.VXD at file position 0x1eaf0
-; main bug is in function "FlushMappedCacheBlock" at aprox. line 290
+; main bug is in function "FlushMappedCacheBlock" at aprox. line 371
 ;
 ; after assembly binary size should be exactly 1040 bytes
-; NOTE that after assembly with defined originalcode=1 code isn't binary same as
+; NOTE that after assembly with defined -Doriginalcode code isn't binary same as
 ; original code - thanks to Intel, x86 have multiple opcodes for same instruc-
-; tion. On other hand thanks Intel to keep 8 and 16bit instruction so I could
-; make enought space to inject modification of CR3 register.
+; tion. On other hand thanks Intel to keep 8 and 16bit instructions so I could
+; make enough space to inject modification of CR3 register.
 ;
 ; NOTE that some "symbols" are relocated and you'll need to modify relocation
-; table in VMM.VXD if they're move. Define rellocate=1 and compare binary to
+; table in VMM.VXD if they're move. Define -Drellocate and compare binary to
 ; see if some of this symbols moved.
 ;
 ; Origin of this bug is described there:
 ;   https://blog.stuffedcow.net/2015/08/pagewalk-coherence/
 ; and THIS bug is described there:
 ;   https://blog.stuffedcow.net/2015/08/win9x-tlb-invalidation-bug/
-; Big thanks to Henry Wong (www.stuffedcow.net) for discovering specific
-; code sequnce.
+; Big thanks to Henry Wong (www.stuffedcow.net) for discovered specific
+; code sequence.
+;
+; Compilation: this file has to be preprocessed by CPP (C preprocessor).
+; Example #1:
+;   preprocess:
+;     cpp -nostdinc -E -P FlushMappedCacheBlock.asm -o patched.gen
+;   compilation:
+;	    fasm patched.gen patched.bin
+;
+; Example #2 (generate original code):
+;     cpp -nostdinc -E -P -Doriginalcode FlushMappedCacheBlock.asm -o patched.gen
+;   compilation:
+;	    fasm patched.gen patched.bin
+;
 ; ***/
 
 
@@ -358,7 +371,7 @@ mov eax,[esp+0x10]                      ; 8B442410
 mov [ecx],edx                           ; 8911
 ; TLB BUG here, needs to insert something like this:
 ; mov eax,cr3
-;  mov cr3,eax
+; mov cr3,eax
 #ifdef originalcode
         mov ecx,0x400                  ; B900040000
         ; ^ could be writen as "XOR ECX, ECX \n MOV CH, 0x4"
