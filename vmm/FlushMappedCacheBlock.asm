@@ -25,11 +25,11 @@
 use32
 
 #ifdef relocate
-	org 0x3FFECF8F
-	dptr equ not
+  org 0x3FFECF8F
+  dptr equ not
 #else
-	org 0xC0013070
-	dptr equ 0+
+  org 0xC0013070
+  dptr equ 0+
 #endif
 
 func0:
@@ -130,16 +130,16 @@ test byte [ecx+0x3],0x8                 ; F6410308
 jz L10                                  ; 7429
 cmp [dword (dptr 0x1507c)],ebp          ; 392D7C500100
 jnz L11                                 ; 750A
-mov eax,[dptr 0x15ed0]                       ; A1D05E0100
-mov [dptr 0x1507c],eax                       ; A37C500100
+mov eax,[dptr 0x15ed0]                  ; A1D05E0100
+mov [dptr 0x1507c],eax                  ; A37C500100
 L11:
 push ebp                                ; 55
 call 0xc0005e7a                         ; E80E2DFFFF
 push ebx                                ; 53
 call 0xc0008a28                         ; E8B658FFFF
-mov eax,[dptr 0x14f54]                       ; A1544F0100
+mov eax,[dptr 0x14f54]                  ; A1544F0100
 inc eax                                 ; 40
-mov [dptr 0x14f54],eax                       ; A3544F0100
+mov [dptr 0x14f54],eax                  ; A3544F0100
 L10:
 mov word [ebp+0x8],0xf188               ; 66C7450888F1
 push dword [dword (dptr+0x15078)]       ; FF3578500100
@@ -160,10 +160,10 @@ mov word [ebp+0xa],0x1                  ; 66C7450A0100
 mov [ebp+0x4],edx                       ; 895504
 and byte [eax+0x3],0xe7                 ; 806003E7
 call 0xc0008a19                         ; E85758FFFF
-mov eax,[dptr 0x14f54]                       ; A1544F0100
+mov eax,[dptr 0x14f54]                  ; A1544F0100
 push ebx                                ; 53
 dec eax                                 ; 48
-mov [dptr 0x14f54],eax                       ; A3544F0100
+mov [dptr 0x14f54],eax                  ; A3544F0100
 call 0xc0008a46                         ; E87358FFFF
 push 0x0                                ; 6A00
 push dword [esp+0x20]                   ; FF742420
@@ -181,10 +181,10 @@ push esi                                ; 56
 push edi                                ; 57
 push ebp                                ; 55
 mov ebx,[dword (dptr 0x14f54)]          ; 8B1D544F0100
-mov edi,[dword (dptr 0x15f6c)]                 ; 8B3D6C5F0100
+mov edi,[dword (dptr 0x15f6c)]          ; 8B3D6C5F0100
 mov esi,ebx                             ; 8BF3
 mov eax,edi                             ; 8BC7
-imul eax,[dword (dptr 0x12718)]                ; 0FAF0518270100
+imul eax,[dword (dptr 0x12718)]         ; 0FAF0518270100
 mov ebp,0x64                            ; BD64000000
 sub edx,edx                             ; 2BD2
 div ebp                                 ; F7F5
@@ -214,13 +214,13 @@ push ebx                                ; 53
 push esi                                ; 56
 push edi                                ; 57
 push ebp                                ; 55
-mov eax,[dptr 0x14f64]                ; A1644F0100
+mov eax,[dptr 0x14f64]                  ; A1644F0100
 mov esi,[esp+0x24]                      ; 8B742424
 inc eax                                 ; 40
-mov [dptr 0x14f64],eax                       ; A3644F0100
-mov eax,[dptr 0x14f6c]                       ; A16C4F0100
+mov [dptr 0x14f64],eax                  ; A3644F0100
+mov eax,[dptr 0x14f6c]                  ; A16C4F0100
 inc eax                                 ; 40
-mov [dptr 0x14f6c],eax                       ; A36C4F0100
+mov [dptr 0x14f6c],eax                  ; A36C4F0100
 L16:
 push 0x0                                ; 6A00
 push esi                                ; 56
@@ -238,10 +238,10 @@ or edi,edi                              ; 0BFF
 jz L15                                  ; 7415
 push ebx                                ; 53
 call 0xc0003e9d                         ; E8200CFFFF
-mov eax,[dptr 0x14f70]                       ; A1704F0100
+mov eax,[dptr 0x14f70]                  ; A1704F0100
 inc eax                                 ; 40
 or edi,edi                              ; 0BFF
-mov [dptr 0x14f70],eax                       ; A3704F0100
+mov [dptr 0x14f70],eax                  ; A3704F0100
 jnz L16                                 ; 75C5
 L15:
 push 0x1                                ; 6A01
@@ -328,7 +328,7 @@ mov [esi],eax                           ; 8906
         jmp skip_injected               ; eb0b
         flushtable:   
         mov ecx,cr3                     ; 0f20d9
-				mov cr3,ecx                     ; 0f22d9
+        mov cr3,ecx                     ; 0f22d9
         nop                             ; 90
         xor ecx,ecx                     ; 31c9
         jmp flushtable_back             ; ebxx 
@@ -358,7 +358,7 @@ mov eax,[esp+0x10]                      ; 8B442410
 mov [ecx],edx                           ; 8911
 ; TLB BUG here, needs to insert something like this:
 ; mov eax,cr3
-;	mov cr3,eax
+;  mov cr3,eax
 #ifdef originalcode
         mov ecx,0x400                  ; B900040000
         ; ^ could be writen as "XOR ECX, ECX \n MOV CH, 0x4"
