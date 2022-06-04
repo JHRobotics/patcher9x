@@ -122,6 +122,18 @@ vmm/reloc.bin: vmm/FlushMappedCacheBlock.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate vmm/FlushMappedCacheBlock.asm -o vmm/reloc.gen
 	$(FASM) vmm/reloc.gen vmm/reloc.bin
 
+vmm/patchedme.bin: vmm/FlushMappedCacheBlockME.asm
+	$(CPP) -nostdinc -E -P vmm/FlushMappedCacheBlockME.asm -o vmm/patchedme.gen
+	$(FASM) vmm/patchedme.gen vmm/patchedme.bin
+ 
+vmm/originalme.bin: vmm/FlushMappedCacheBlockME.asm
+	$(CPP) -nostdinc -E -P -Doriginalcode vmm/FlushMappedCacheBlockME.asm -o vmm/originalme.gen
+	$(FASM) vmm/originalme.gen vmm/originalme.bin
+
+vmm/relocme.bin: vmm/FlushMappedCacheBlockME.asm
+	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate vmm/FlushMappedCacheBlockME.asm -o vmm/relocme.gen
+	$(FASM) vmm/relocme.gen vmm/relocme.bin
+
 makepatch$(HOST_SUFIX): $(OBJS_HOST) vmm/makepatch.h.o
 	$(HOST_CC) $(HOST_CFLAGS) -o makepatch$(HOST_SUFIX) $(OBJS_HOST) vmm/makepatch.h.o $(HOST_LDFLAGS)
 	
@@ -133,8 +145,12 @@ vmm_patch.h: vmm/patched.bin vmm/original.bin vmm/reloc.bin makepatch$(HOST_SUFI
 	$(MV) vmm_patch.tmp vmm_patch.h
 
 vmm/fasmdiff.h: vmm/original.bin vmm/dump.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) > vmm/fasmdiff.tmp
+	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff vmm/dump.bin vmm/original.bin > vmm/fasmdiff.tmp
 	$(MV) vmm/fasmdiff.tmp vmm/fasmdiff.h
+
+vmm/fasmdiff_me.h: vmm/originalme.bin vmm/dumpme.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_me vmm/dumpme.bin vmm/originalme.bin 0x1D8 0x3F20 > vmm/fasmdiff_me.tmp
+	$(MV) vmm/fasmdiff_me.tmp vmm/fasmdiff_me.h
 
 clean:
 	-$(RM) *.o

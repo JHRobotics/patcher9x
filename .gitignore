@@ -1,5 +1,6 @@
-# configure outs
+# dumps from original Microsoft files
 /vmm/dump.bin
+/vmm/dumpme.bin
 
 #release bins
 /release/
