@@ -39,13 +39,6 @@
 #include <dirent.h>
 #endif
 
-#ifdef _WIN32
-	#define PATH_SEPARATOR "\\"
-	#define PATH_SEPARATOR_ALT "/"
-#else
-	#define PATH_SEPARATOR "/"
-#endif
-
 #define INT_MAGIC 0xF011EECC
 
 static char name_buffer[MAX_PATH];

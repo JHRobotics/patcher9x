@@ -31,7 +31,7 @@
 #define DEFAULT_OUTPUT_LE "VMM.VXD"
 #define DEFAULT_OUTPUT_VX "VMM32.VXD"
 
-static const char help[] = "Patch Windows 98 for run on actual CPUs - AMD ZEN 2+, Intel Tiger Lake+\n"
+static const char help[] = "Patch for Windows 98/Me for run on newest CPUs - AMD ZEN 2+, Intel Tiger Lake+\n"
 	"Version: " PATCHER9X_VERSION_STR "\n\n"
 	"Usage:\n%s [path] [batch options]\n"
 	"path: path to installed windows directory or directory with windows instalation\n"
@@ -47,6 +47,7 @@ static const char help[] = "Patch Windows 98 for run on actual CPUs - AMD ZEN 2+
 	"\t-force-w3: when patching WMM32.VXD, leave it as W3 file\n"
 	"\t-force-w4: when patching WMM32.VXD, always compress to W4 file\n"
 	"\t-no-backup: don't backup overwrited files\n"
+	"\t-millennium: use patch code for Windows Me - UNTESTED!\n"
 	"\t-i <file>: override input file name\n"
 	"\t-o <file>: override output file name\n"
 	"\n"
@@ -103,6 +104,7 @@ typedef struct _options_t
 	int force_w3;
 	int force_w4;
 	int no_backup;
+	int millennium;
 	const char *input;
 	const char *output;
 } options_t;
@@ -215,6 +217,10 @@ static int read_arg(options_t *options, int argc, char **argv)
 		else if(istrcmp(arg, "-no-backup") == 0)
 		{
 			options->no_backup = 1;
+		}
+		else if(istrcmp(arg, "-millennium") == 0)
+		{
+			options->millennium = 1;
 		}
 		else if(istrcmp(arg, "-auto") == 0 || istrcmp(arg, "-y") == 0 )
 		{
@@ -446,17 +452,22 @@ static int action_extract_vxd(options_t *options, const char *path, const char *
 
 static int action_patch(options_t *options, const char *path, const char *out)
 {
-	int flags = 0;
+	int flags = APPLY_VMM_98;
 	char *tmpname;
 	int t = PATCH_E_MEM;
 	
 	if(options->force_w3)
 	{
-		flags = PATCH_FORCE_W3;
+		flags |= PATCH_FORCE_W3;
 	}
 	else if(options->force_w4)
 	{
-		flags = PATCH_FORCE_W4;
+		flags |= PATCH_FORCE_W4;
+	}
+	
+	if(options->millennium)
+	{
+		flags |= APPLY_VMM_ME;
 	}
 	
 	tmpname = fs_path_get2(out, "VMM32.@W4", NULL);
@@ -743,7 +754,17 @@ static int run_interactive(options_t *options)
   			
   	upath_dir = 1;
   			
-  	test_file = fs_path_get(upath, "base4.cab", NULL);
+  	test_file = fs_path_get(upath, "BASE4.CAB", NULL); /* Windows 98 install */
+  	if(test_file)
+  	{
+  		if(fs_file_exists(test_file))
+  		{
+  			dir_is_install = 1;
+  		}
+  		fs_path_free(test_file);
+  	}
+  	
+  	test_file = fs_path_get(upath, "BASE2.CAB", NULL); /* Windows Me install */
   	if(test_file)
   	{
   		if(fs_file_exists(test_file))
@@ -753,7 +774,7 @@ static int run_interactive(options_t *options)
   		fs_path_free(test_file);
   	}
   			
-  	test_file = fs_path_get(upath, "kernel32.dll", NULL);
+  	test_file = fs_path_get(upath, "KERNEL32.DLL", NULL); /* SYSTEM folder */
   	if(test_file)
   	{
   		if(fs_file_exists(test_file))
@@ -763,7 +784,7 @@ static int run_interactive(options_t *options)
   		fs_path_free(test_file);
   	}
   			
-  	test_file = fs_path_get(upath, "command.com", NULL);
+  	test_file = fs_path_get(upath, "COMMAND.COM", NULL); /* WINDOWS folder */
   	if(test_file)
   	{
   		if(fs_file_exists(test_file))
@@ -773,7 +794,7 @@ static int run_interactive(options_t *options)
   		fs_path_free(test_file);
   	}
   			
-  	test_file = fs_path_get(upath, "vmm32.vxd", NULL);
+  	test_file = fs_path_get(upath, "VMM32.VXD", NULL);
   	if(test_file)
   	{
   		if(fs_file_exists(test_file))
@@ -790,6 +811,10 @@ static int run_interactive(options_t *options)
   	else if(dir_is_system && dir_have_vmm32)
   	{
   		default_ans = 1;
+  		if(options->millennium)
+  		{
+  			default_ans = 2;
+  		}
   	}
   	else if(dir_is_windows)
   	{
@@ -947,7 +972,14 @@ static int run_interactive(options_t *options)
  			
  			if(upath_dir)
  			{
-  			out_ptr = out = fs_path_get2(upath, "VMM32.VXD", NULL);
+ 				out_ptr = out = fs_path_get2(upath, "VMM32" PATH_SEPARATOR "VMM.VXD", NULL);
+ 				
+ 				if(!fs_file_exists(out_ptr))
+ 				{
+ 					fs_path_free(out);
+ 					out_ptr = out = NULL;
+  				out_ptr = out = fs_path_get2(upath, "VMM32.VXD", NULL);
+  			}
   		}
   		else
   		{
@@ -1155,10 +1187,12 @@ int main(int argc, char **argv)
   	if(options.print_version)
   	{
   		printf("%s\n", PATCHER9X_VERSION_STR);
+  		return EXIT_SUCCESS;
   	}
   	else if(options.print_help)
   	{
   		print_help(argv[0]);
+  		return EXIT_SUCCESS;
   	} 
   	else if(options.mode == MODE_EXACT)
   	{

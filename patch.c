@@ -1,76 +1,204 @@
 #include "patcher9x.h"
 #include <bpatcher.h>
 #include "vmm_patch.h"
+#include "vmm_patch_me1.h"
+#include "vmm_patch_me2.h"
+
+#define ME_BLOCK_DISTANCE 16148
+
+#define SIZEOF_MAX(_a, _b) (sizeof(_a) > sizeof(_b) ? sizeof(_a) : sizeof(_b)) 
+
+/**
+ * Apply VMM patch for Windows 98
+ *
+ **/
+int patch_apply_98(FILE *fp, const char *dstfile)
+{
+	int status = PATCH_OK;
+	
+	ssize_t pos;
+	bitstream_t check, patch;
+	bs_mem(&check, (uint8_t*)vmm_patch_orig_check, sizeof(vmm_patch_orig_check));
+				
+	pos = search_sieve_file(fp, vmm_patch_orig, sizeof(vmm_patch_orig), &check);
+	if(pos >= 0)
+	{
+		FILE *fw = FOPEN_LOG(dstfile, "wb");
+		if(fw != NULL)
+		{
+			void *buf = malloc(sizeof(vmm_patch));
+			if(buf != NULL)
+			{
+				fseek(fp, 0, SEEK_SET);
+				fs_file_copy(fp, fw, 0);
+				
+				fseek(fp, pos, SEEK_SET);
+				if(fread(buf, 1, sizeof(vmm_patch), fp) == sizeof(vmm_patch))
+				{
+					bs_mem(&patch, (uint8_t*)vmm_patch_modif, sizeof(vmm_patch_modif));
+					patch_sieve(buf, vmm_patch, sizeof(vmm_patch), &patch);
+			
+					fseek(fw, pos, SEEK_SET);
+					fwrite(buf, 1, sizeof(vmm_patch), fw);							
+				}
+				else
+				{
+					status = PATCH_E_READ;
+				}
+				
+				free(buf);
+			}
+			else
+			{
+				status = PATCH_E_MEM;
+			}
+			fclose(fw);
+		}
+		else
+		{
+			status = PATCH_E_WRITE;
+		}
+	}
+	else
+	{
+		fseek(fp, 0, SEEK_SET);
+		bs_reset(&check);
+		pos = search_sieve_file(fp, vmm_patch, sizeof(vmm_patch), &check);
+		if(pos >= 0)
+		{
+			status = PATCH_E_PATCHED;
+		}
+		else
+		{
+			status = PATCH_E_CHECK;
+		}
+	}	
+	
+	return status;
+}
+
+/**
+ * Apply VMM patch for Windows Me
+ *
+ **/
+int patch_apply_me(FILE *fp, const char *dstfile)
+{
+	int status = PATCH_OK;
+	ssize_t pos_a, pos_b;
+	bitstream_t check, patch;
+			
+	bs_mem(&check, (uint8_t*)vmm_patch_me1_orig_check, sizeof(vmm_patch_me1_orig_check));
+	pos_a = search_sieve_file(fp, vmm_patch_me1_orig, sizeof(vmm_patch_me1_orig), &check);
+	
+	fseek(fp, 0, SEEK_SET);
+	
+	bs_mem(&check, (uint8_t*)vmm_patch_me2_orig_check, sizeof(vmm_patch_me2_orig_check));
+	pos_b = search_sieve_file(fp, vmm_patch_me2_orig, sizeof(vmm_patch_me2_orig), &check);
+	
+	//printf("pos_a: %zd, pos_b: %zd\n", pos_a, pos_b);
+	
+	if(pos_a >= 0 && (pos_b - pos_a) == ME_BLOCK_DISTANCE)
+	{
+		FILE *fw = FOPEN_LOG(dstfile, "wb");
+		if(fw != NULL)
+		{
+			void *buf = malloc(SIZEOF_MAX(vmm_patch_me1, vmm_patch_me2));
+			if(buf != NULL)
+			{
+				fseek(fp, 0, SEEK_SET);
+				fs_file_copy(fp, fw, 0);
+				
+				fseek(fp, pos_a, SEEK_SET);
+				if(fread(buf, 1, sizeof(vmm_patch_me1), fp) == sizeof(vmm_patch_me1))
+				{
+					bs_mem(&patch, (uint8_t*)vmm_patch_me1_modif, sizeof(vmm_patch_me1_modif));
+					patch_sieve(buf, vmm_patch_me1, sizeof(vmm_patch_me1), &patch);
+					
+					fseek(fw, pos_a, SEEK_SET);
+					fwrite(buf, 1, sizeof(vmm_patch_me1), fw);							
+				}
+				else
+				{
+					status = PATCH_E_READ;
+				}
+						
+				fseek(fp, pos_b, SEEK_SET);
+				if(fread(buf, 1, sizeof(vmm_patch_me2), fp) == sizeof(vmm_patch_me2))
+				{
+					bs_mem(&patch, (uint8_t*)vmm_patch_me2_modif, sizeof(vmm_patch_me2_modif));
+					patch_sieve(buf, vmm_patch_me2, sizeof(vmm_patch_me2), &patch);
+					
+					fseek(fw, pos_b, SEEK_SET);
+					fwrite(buf, 1, sizeof(vmm_patch_me2), fw);							
+				}
+				else
+				{
+					status = PATCH_E_READ;
+				}
+				
+				
+				free(buf);
+			}
+			else
+			{
+				status = PATCH_E_MEM;
+			}
+			fclose(fw);
+		}
+		else
+		{
+			status = PATCH_E_WRITE;
+		}
+	}
+	else
+	{
+		fseek(fp, 0, SEEK_SET);
+		bs_mem(&check, (uint8_t*)vmm_patch_me1_orig_check, sizeof(vmm_patch_me1_orig_check));
+		pos_a = search_sieve_file(fp, vmm_patch_me1, sizeof(vmm_patch_me1), &check);
+		if(pos_a >= 0)
+		{
+			status = PATCH_E_PATCHED;
+		}
+		else
+		{
+			status = PATCH_E_CHECK;
+		}
+	}
+	
+	return status;
+}
 
 /**
  * Apply patch and if check failure check if applied.
  *
  **/
-int patch_apply(const char *srcfile, const char *dstfile)
+int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applied)
 {
-	int status = PATCH_OK;
+	int status = PATCH_E_NOTFOUND;
 	FILE        *fp;
 	
 	fp = FOPEN_LOG(srcfile, "rb");
 	if(fp)
 	{
-		ssize_t pos;
-		bitstream_t check, patch;
-		bs_mem(&check, (uint8_t*)vmm_orig_check, sizeof(vmm_orig_check));
-			
-		pos = search_sieve_file(fp, vmm_orig, sizeof(vmm_orig), &check);
-		if(pos >= 0)
+		do
 		{
-			FILE *fw = FOPEN_LOG(dstfile, "wb");
-			if(fw != NULL)
+			if((flags & APPLY_VMM_98) != 0)
 			{
-				void *buf = malloc(sizeof(vmm_patch));
-				if(buf != NULL)
+				status = patch_apply_98(fp, dstfile);
+				if(status == PATCH_OK || status == PATCH_E_PATCHED)
 				{
-					fseek(fp, 0, SEEK_SET);
-					fs_file_copy(fp, fw, 0);
-					
-					fseek(fp, pos, SEEK_SET);
-					if(fread(buf, 1, sizeof(vmm_patch), fp) == sizeof(vmm_patch))
-					{
-						bs_mem(&patch, (uint8_t*)vmm_patch_modif, sizeof(vmm_patch_modif));
-						patch_sieve(buf, vmm_patch, sizeof(vmm_patch), &patch);
-						
-						fseek(fw, pos, SEEK_SET);
-						fwrite(buf, 1, sizeof(vmm_patch), fw);							
-					}
-					else
-					{
-						status = PATCH_E_READ;
-					}
-					
-					free(buf);
+					break;
 				}
-				else
-				{
-					status = PATCH_E_MEM;
-				}
-				fclose(fw);
-			}
-			else
+			} // VMM_98
+	
+			if((flags & APPLY_VMM_ME) != 0)
 			{
-				status = PATCH_E_WRITE;
-			}
+				fseek(fp, 0, SEEK_SET);
+				status = patch_apply_me(fp, dstfile);
+			} // VMM_ME
 		}
-		else
-		{
-			fseek(fp, 0, SEEK_SET);
-			bs_reset(&check);
-			pos = search_sieve_file(fp, vmm_patch, sizeof(vmm_patch), &check);
-			if(pos >= 0)
-			{
-				status = PATCH_E_PATCHED;
-			}
-			else
-			{
-				status = PATCH_E_CHECK;
-			}
-		}
+		while(0);
+		
 		fclose(fp);
 	}
 	else
@@ -85,7 +213,7 @@ int patch_apply(const char *srcfile, const char *dstfile)
  * Apply patch on W3/W4 file and compress/decompress if it is W4 file
  *
  **/
-int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int force_format)
+int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int flags)
 {
 	int status = PATCH_OK;
 	int w4_decompres = 0;
@@ -132,8 +260,8 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 	{
 		if(w4_decompres)
 		{
-			status = patch_apply(tmpname, dstfile);
-			if(force_format != PATCH_FORCE_W3)
+			status = patch_apply(tmpname, dstfile, flags, NULL);
+			if((flags & PATCH_FORCE_W3) == 0)
 			{
 				fs_rename(dstfile, tmpname);
 			}
@@ -144,14 +272,14 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 		}
 		else
 		{
-			if(is_w3 && force_format == PATCH_FORCE_W4)
+			if(is_w3 && (flags & PATCH_FORCE_W4) != 0)
 			{
-				status = patch_apply(srcfile, tmpname);
+				status = patch_apply(srcfile, tmpname, flags, NULL);
 				w4_decompres = 1;
 			}
 			else
 			{
-				status = patch_apply(srcfile, dstfile);
+				status = patch_apply(srcfile, dstfile, flags, NULL);
 			}
 		}
 	}

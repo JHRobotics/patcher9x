@@ -37,6 +37,13 @@ typedef void *fs_dir_t;
 #define MAX_PATH 4096
 #endif
 
+#if defined(_WIN32) || defined(__MSDOS__)
+	#define PATH_SEPARATOR "\\"
+	#define PATH_SEPARATOR_ALT "/"
+#else
+	#define PATH_SEPARATOR "/"
+#endif
+
 fs_dir_t   *fs_dir_open(const char *path);
 void        fs_dir_close(fs_dir_t **dir);
 const char *fs_dir_read(fs_dir_t *dir, int filter);

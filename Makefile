@@ -56,7 +56,7 @@ ifdef VERSION_PATCH
 endif
 
 DEPS_HOST=Makefile system/bitstream.h version.h
-DEPS_GUEST=Makefile system/bitstream.h vmm_patch.h version.h
+DEPS_GUEST=Makefile system/bitstream.h vmm_patch.h vmm_patch_me1.h vmm_patch_me2.h version.h
 
 OBJS_GUEST=mspack/cabc.g.o mspack/cabd.g.o mspack/crc32.g.o mspack/hlpc.g.o mspack/hlpd.g.o mspack/chmc.g.o mspack/chmd.g.o mspack/kwajc.g.o mspack/kwajd.g.o mspack/litc.g.o \
  mspack/litd.g.o mspack/lzssd.g.o mspack/lzxc.g.o mspack/lzxd.g.o mspack/mszipc.g.o mspack/mszipd.g.o mspack/oabc.g.o mspack/oabd.g.o mspack/qtmd.g.o mspack/system.g.o \
@@ -122,16 +122,16 @@ vmm/reloc.bin: vmm/FlushMappedCacheBlock.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate vmm/FlushMappedCacheBlock.asm -o vmm/reloc.gen
 	$(FASM) vmm/reloc.gen vmm/reloc.bin
 
-vmm/patchedme.bin: vmm/FlushMappedCacheBlockME.asm
-	$(CPP) -nostdinc -E -P vmm/FlushMappedCacheBlockME.asm -o vmm/patchedme.gen
+vmm/patchedme.bin: vmm/FlushMappedCacheBlockMe.asm
+	$(CPP) -nostdinc -E -P vmm/FlushMappedCacheBlockMe.asm -o vmm/patchedme.gen
 	$(FASM) vmm/patchedme.gen vmm/patchedme.bin
  
-vmm/originalme.bin: vmm/FlushMappedCacheBlockME.asm
-	$(CPP) -nostdinc -E -P -Doriginalcode vmm/FlushMappedCacheBlockME.asm -o vmm/originalme.gen
+vmm/originalme.bin: vmm/FlushMappedCacheBlockMe.asm
+	$(CPP) -nostdinc -E -P -Doriginalcode vmm/FlushMappedCacheBlockMe.asm -o vmm/originalme.gen
 	$(FASM) vmm/originalme.gen vmm/originalme.bin
 
-vmm/relocme.bin: vmm/FlushMappedCacheBlockME.asm
-	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate vmm/FlushMappedCacheBlockME.asm -o vmm/relocme.gen
+vmm/relocme.bin: vmm/FlushMappedCacheBlockMe.asm
+	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate vmm/FlushMappedCacheBlockMe.asm -o vmm/relocme.gen
 	$(FASM) vmm/relocme.gen vmm/relocme.bin
 
 makepatch$(HOST_SUFIX): $(OBJS_HOST) vmm/makepatch.h.o
@@ -141,8 +141,16 @@ makediff$(HOST_SUFIX): $(OBJS_HOST) vmm/makediff.h.o
 	$(HOST_CC) $(HOST_CFLAGS) -o makediff$(HOST_SUFIX) $(OBJS_HOST) vmm/makediff.h.o $(HOST_LDFLAGS)
 
 vmm_patch.h: vmm/patched.bin vmm/original.bin vmm/reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) 1040 448 492 > vmm_patch.tmp
+	$(RUNPATH)makepatch$(HOST_SUFIX) 98 vmm_patch 1040 448 492 > vmm_patch.tmp
 	$(MV) vmm_patch.tmp vmm_patch.h
+	
+vmm_patch_me1.h: vmm/patchedme.bin vmm/originalme.bin vmm/relocme.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) me vmm_patch_me1 16320 12 461 > vmm_patch_me1.tmp
+	$(MV) vmm_patch_me1.tmp vmm_patch_me1.h
+
+vmm_patch_me2.h: vmm/patchedme.bin vmm/originalme.bin vmm/relocme.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) me vmm_patch_me2 16320 16160 160 > vmm_patch_me2.tmp
+	$(MV) vmm_patch_me2.tmp vmm_patch_me2.h
 
 vmm/fasmdiff.h: vmm/original.bin vmm/dump.bin makediff$(HOST_SUFIX)
 	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff vmm/dump.bin vmm/original.bin > vmm/fasmdiff.tmp

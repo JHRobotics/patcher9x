@@ -1,6 +1,6 @@
 ;/*** FLAT assembler source
 ;
-; Windows Millenium Edition TLB patch
+; Windows Millennium Edition TLB patch
 ; for more informations see FlushMappedCacheBlock.asm
 ;
 ; ***/

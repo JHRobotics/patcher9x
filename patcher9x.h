@@ -47,8 +47,11 @@
 #define PATCH_E_NOTFOUND   8
 #define PATCH_E_PATCHED    9
 
-#define PATCH_FORCE_W3 1
-#define PATCH_FORCE_W4 2
+#define PATCH_FORCE_W3 0x1
+#define PATCH_FORCE_W4 0x2
+#define APPLY_VMM_98   0x4
+#define APPLY_VMM_ME   0x8
+
 
 #if defined(__MSDOS__) || (defined(_WIN32) && !defined(_WIN64))
 #define RUN_WITHOUT_ARGS
@@ -64,8 +67,8 @@ int cab_search_unpack(const char *dirname, const char *infilename, const char *o
 
 int wx_unpack(const char *src, const char *infilename, const char *out, const char *tmpname);
 
-int patch_apply(const char *srcfile, const char *dstfile);
-int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int force_format);
+int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applied);
+int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int flags);
 int patch_backup_file(const char *path, int nobackup);
 
 void print_trace();
