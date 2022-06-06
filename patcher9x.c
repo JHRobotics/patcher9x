@@ -869,6 +869,7 @@ static int run_interactive(options_t *options)
  			char *out   = NULL;
  			char *inptr = NULL;
  			char *in    = NULL;
+ 			char *tmp   = NULL;
   		char *dirname = fs_dirname(upath);
   		
   		if(upath_dir)
@@ -893,37 +894,44 @@ static int run_interactive(options_t *options)
 	  				}
 	  			}
 	  					
-	  			out = fs_path_get(out_vmm32_dir, "VMM.VXD", NULL);
-	  			if(out)
+	  			tmp = fs_path_get(out_vmm32_dir, "VMM.@LE", NULL);
+	  			if(tmp)
 	  			{
-	  				if(fs_is_writeable_dir(out, NULL))
-	  				{
-	  					fprintf(stderr, "Error: %s is not writeable directory\n", out_vmm32_dir);
-	  				}
-	  				else
-	  				{
-	  					int t;
-	  					
-	  					patch_backup_file(out, options->no_backup);
-	  					if((t = action_extract_vxd(options, in, out)) == PATCH_OK)
-	  					{
-	  						if((t = action_patch(options, out, out)) == PATCH_OK)
-	  						{
-	  							patch_success++;
-	  						}
-	  						else
-	  						{
-	  							report_error(t);
-	  						}
-	  					}
-	  					else
-	  					{
-	  						report_error(t);
-	  					}
-	  				}
-	  						
-	  				fs_path_free(out);
-	  			}
+		  			out = fs_path_get(out_vmm32_dir, "VMM.VXD", NULL);
+		  			if(out)
+		  			{
+		  				if(fs_is_writeable_dir(out, NULL))
+		  				{
+		  					fprintf(stderr, "Error: %s is not writeable directory\n", out_vmm32_dir);
+		  				}
+		  				else
+		  				{
+		  					int t;
+		  					
+		  					patch_backup_file(out, options->no_backup);
+		  					if((t = action_extract_vxd(options, in, tmp)) == PATCH_OK)
+		  					{
+		  						if((t = action_patch(options, tmp, out)) == PATCH_OK)
+		  						{
+		  							fs_unlink(tmp);
+		  							patch_success++;
+		  						}
+		  						else
+		  						{
+		  							fs_unlink(tmp);
+		  							report_error(t);
+		  						}
+		  					}
+		  					else
+		  					{
+		  						report_error(t);
+		  					}
+		  				}
+		  						
+		  				fs_path_free(out);
+		  			}
+		  			fs_path_free(tmp);
+		  		}
 	  					
 	  			fs_path_free(out_vmm32_dir);
 	  			if(dirname != NULL)
