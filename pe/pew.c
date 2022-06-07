@@ -201,11 +201,20 @@ size_t pe_w4_decompress(pe_w4_t *w4, void *buf, size_t chunk_id)
 	{
 		return 0;
 	}
-
+	
 	if(fseek(w4->fp, w4->chunks[chunk_id], SEEK_SET) == 0)
 	{
-		bs_file(&in, w4->fp);
-		size = ds_decompress(&in, buf, w4->pe->w4.chunk_size);
+		size = w4->chunks[chunk_id+1] - w4->chunks[chunk_id];
+		/* if compresed block size equals decompresed block size, this means it is raw (uncompresed) block */
+		if(size == w4->pe->w4.chunk_size) 
+		{
+			size = fread(buf, 1, w4->pe->w4.chunk_size, w4->fp);
+		}
+		else
+		{
+			bs_file(&in, w4->fp);
+			size = ds_decompress(&in, buf, w4->pe->w4.chunk_size);
+		}
 	}
 	
 	return size;
@@ -316,7 +325,8 @@ int pe_w3_to_w4(pe_w3_t *w3, const char *dst)
 			buf = malloc(PE_W4_CHUNKSIZE);
 			if(buf != NULL)
 			{
-				size_t i;
+				size_t i, j;
+				ssize_t check;
 				bs_file(&bsw4, fw);
 				
 				/* compress 8k chunks */
@@ -328,6 +338,26 @@ int pe_w3_to_w4(pe_w3_t *w3, const char *dst)
 					block_size = fread(buf, 1, PE_W4_CHUNKSIZE, w3->fp);
 					//printf("Compress: %d source pos: %d\n", block_size, w4->chunks[i]);
 					ds_compress(buf, block_size, &bsw4);
+					
+					/* check if size is equals or great than PE_W4_CHUNKSIZE
+					 * (means compresed data are larger than uncompressed)
+					 * If true, seek back and write block as is
+					 */
+					check = ftell(fw);
+					if(check - w4->chunks[i] >= PE_W4_CHUNKSIZE)
+					{
+						fseek(fw, w4->chunks[i], SEEK_SET);
+						fwrite(buf, block_size, 1, fw);
+						/* if it is last block pad to PE_W4_CHUNKSIZE */
+						for(j = block_size; j < PE_W4_CHUNKSIZE; j++)
+						{
+							/* 0xE5 - clean marker 
+							 * from Windows Undocumented File Formats, p. 248
+							 */
+							fputc(0xE5, fw);
+						}
+					}
+					
 				}
 				
 				free(buf);
@@ -364,7 +394,7 @@ int pe_w4_check(pe_w4_t *w4)
 	
 	for(i = 0; i < w4->chunks_cnt; i++)
 	{
-		if((w4->chunks[i+1] - w4->chunks[i]) > w4->pe->w4.chunk_size)
+		if((w4->chunks[i+1] - w4->chunks[i]) >= w4->pe->w4.chunk_size)
 		{
 			return PE_ERROR_COMPAT;
 		}
