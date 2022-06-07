@@ -1,9 +1,12 @@
-# Patch for Windows 98 to fix TLB invalidation bug
+# Patch for Windows 98/Me to fix TLB invalidation bug
 
 MS Windows 98 won't run on newer CPU (even in virtual machine) due to "TLB invalidation bug".
 The Bug is described there: https://blog.stuffedcow.net/2015/08/win9x-tlb-invalidation-bug/
 
 ![Bug animation on Windows 98](/doc/shell32.gif)
+
+If you want run Virtual Machine without restriction with Windows 98 on AMD Zen 2 and newer (Ryzen 3000+)
+or Intel Core 11th generation and newer (code names Rocket Lake, Tiger Lake) you probably need this patch.
 
 ## Requirements
 
@@ -11,7 +14,14 @@ This patch only works for Windows 98 / Windows 98 SE. Windows 95 probably hasn't
 "CPU speed limit", there is patch for it: [Windows 95 patch](http://www.tmeeco.eu/9X4EVER/GOODIES/FIX95CPU_V3_FINAL.ZIP).
 Windows 98 FE (First Edition) and Windows 98 Beta releases has same bug as Windows 95 too.
 
-Windows ME has this bug in code, but from my observation, the system call this code very rarely.
+Windows Me has this bug in code, but from my observation, the system call this code very rarely. 
+But testing code for Windows Me is present, if you want test it, call program with `-millennium` argument.
+```
+patcher9x -millennium
+```
+
+Some Millennium updates installs new VMM.VXD file - KB 296773 (ME296773.exe). Patch is compatible with this update, but
+after updating you need to install the patch again.
 
 ## Download
 

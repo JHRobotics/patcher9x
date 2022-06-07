@@ -218,7 +218,12 @@ static int read_arg(options_t *options, int argc, char **argv)
 		{
 			options->no_backup = 1;
 		}
-		else if(istrcmp(arg, "-millennium") == 0)
+		else if(istrcmp(arg, "-millennium") == 0
+			/* for idiots like me, who cannot write "millennium" correctly */
+			|| istrcmp(arg, "-milenium") == 0
+			|| istrcmp(arg, "-millenium") == 0
+			|| istrcmp(arg, "-milennium") == 0
+		)
 		{
 			options->millennium = 1;
 		}

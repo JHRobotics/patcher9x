@@ -1,3 +1,8 @@
+0.6.23
+- (untested) Windows Millennium Edition support (with -millennium argument)
+- some minor fixes for copy/backup/patch files operations
+- fixed processing W4 files (DS compressions/decompressions bugs)
+
 0.6.13
 - more testing and stability
 - fixed memory leaks
