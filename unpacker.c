@@ -1,38 +1,494 @@
+/******************************************************************************
+ * Copyright (c) 2022 Jaroslav Hensl                                          *
+ *                                                                            *
+ * Permission is hereby granted, free of charge, to any person                *
+ * obtaining a copy of this software and associated documentation             *
+ * files (the "Software"), to deal in the Software without                    *
+ * restriction, including without limitation the rights to use,               *
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell          *
+ * copies of the Software, and to permit persons to whom the                  *
+ * Software is furnished to do so, subject to the following                   *
+ * conditions:                                                                *
+ *                                                                            *
+ * The above copyright notice and this permission notice shall be             *
+ * included in all copies or substantial portions of the Software.            *
+ *                                                                            *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,            *
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES            *
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                   *
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT                *
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,               *
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING               *
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR              *
+ * OTHER DEALINGS IN THE SOFTWARE.                                            *
+ *                                                                            *
+*******************************************************************************/
 #include "patcher9x.h"
 
+#define cfhdrPREV_CABINET       0x0001
+#define cfhdrNEXT_CABINET       0x0002
+#define cfhdrRESERVE_PRESENT    0x0004
+
+/*
+ * MS CAB format
+ *
+ * FROM: https://docs.microsoft.com/en-us/previous-versions//bb267310(v=vs.85)?redirectedfrom=MSDN
+ */
+#define CAB_MAX_STR 255
+
+#pragma pack(push)
+#pragma pack(1)
+typedef struct _mscab_t
+{
+	uint8_t   signature[4];  /*inet file signature */
+  uint32_t  reserved1;     /* reserved */
+  uint32_t  cbCabinet;     /* size of this cabinet file in bytes */
+  uint32_t  reserved2;     /* reserved */
+  uint32_t  coffFiles;     /* offset of the first CFFILE entry */
+  uint32_t  reserved3;     /* reserved */
+  uint8_t   versionMinor;  /* cabinet file format version, minor */
+  uint8_t   versionMajor;  /* cabinet file format version, major */
+  uint16_t  cFolders;      /* number of CFFOLDER entries in this */
+                           /*    cabinet */
+  uint16_t  cFiles;        /* number of CFFILE entries in this cabinet */
+  uint16_t  flags;         /* cabinet file option indicators */
+  uint16_t  setID;         /* must be the same for all cabinets in a */
+                           /*    set */
+  uint16_t  iCabinet;      /* number of this cabinet file in a set */
+} mscab_t;
+#pragma pack(pop)
+
+/* CAB list item */
+typedef struct _cab_list_item_t
+{
+	char *filename;
+	struct mscabd_cabinet *cab;
+	struct _cab_list_item_t *next;
+} cab_list_item_t;
+
+/* CAB list */
+typedef struct _cab_list_t
+{
+	cab_list_item_t *first;
+	cab_list_item_t *last;
+} cab_list_t;
+
+/* allocate and add item to the end of list */
+static cab_list_item_t *cab_list_add(cab_list_t *list)
+{
+	cab_list_item_t *item = malloc(sizeof(cab_list_item_t));
+	if(item)
+	{
+		memset(item, 0, sizeof(cab_list_item_t));
+		item->next = NULL;
+		if(list->last == NULL)
+		{
+			list->last = list->first = item;
+		}
+		else
+		{
+			list->last->next = item;
+			list->last = item;
+		}
+		
+		return item;
+	}
+	
+	return NULL;
+}
+
+/* free all items in list and call fs_path_free on all stored filename */
+static void cab_list_clear(cab_list_t *list)
+{
+	cab_list_item_t *item;
+	while(list->first != NULL)
+	{
+		item = list->first;
+		list->first = item->next;
+		
+		if(item->filename != NULL)
+		{
+			fs_path_free(item->filename);
+		}
+		
+		free(item);
+	}
+	list->last = NULL;
+}
+
+/* init list for first usage */
+static void cab_list_init(cab_list_t *list)
+{
+	list->first = NULL;
+	list->last = NULL;
+}
+
+/**
+ * Read string form CAB header
+ *
+ * @param fp: ponter to open file
+ * @param buf: destination to write string bytes. String will be terminated with '\0'
+ *             Destination should be at last CAB_MAX_STR bytes len.
+ *             Could be NULL, if value doesn't matter and you need to seek to next header.
+ *
+ **/
+static void cab_read_str(FILE *fp, char *buf)
+{
+	int c = 0;
+	int i = 0;
+	for(i = 0; i < CAB_MAX_STR; i++)
+	{
+		c = fgetc(fp);
+		if(c == EOF || c == '\0')
+		{
+			if(buf != NULL)
+			{
+				*buf = '\0';
+			}
+			break;
+		}
+		if(buf != NULL)
+		{
+			*buf = c;
+			buf++;
+		}
+	}
+	
+	if(buf != NULL)
+	{
+		*buf = '\0';
+	}
+}
+
+/**
+ * Open CAB and try to find prev and next part if archive is multivolume
+ *
+ * @param srccab: patch to archive
+ * @param prevcab: pointer to pointer to file name of previous part of archive if the part is exists.
+ *                 If not destination will be set to NULL. Paramater could be NULL if on previous part not matter.
+ *                 Unused result should be free with 'fs_path_free'
+ * @param nextcab: same behavior as prevcab but for next part of archive
+ *
+ **/
+static void cab_analyze(const char *srccab, char **prevcab, char **nextcab)
+{
+	char prevfile[CAB_MAX_STR];
+	char nextfile[CAB_MAX_STR];
+	
+	FILE *fr = fopen(srccab, "rb");
+	char *ptr;
+	if(fr != NULL)
+	{
+		mscab_t header;
+		fread(&header, sizeof(mscab_t), 1, fr);
+		if(memcmp(header.signature, "MSCF", 4) == 0)
+		{
+			if((header.flags & cfhdrRESERVE_PRESENT) != 0)
+			{
+				uint16_t cbCFHeader;
+				fread(&cbCFHeader, sizeof(uint16_t), 1, fr);
+				cab_read_str(fr, NULL); /* read (and ignore) cbCFFolder */
+				cab_read_str(fr, NULL); /* read (and ignore) cbCFData */
+				fseek(fr, cbCFHeader, SEEK_CUR); /* skip abReserve */
+			}
+			
+			if((header.flags & cfhdrPREV_CABINET) != 0)
+			{
+				cab_read_str(fr, prevfile); /* read szCabinetPrev */
+				cab_read_str(fr, NULL); /* read (and ignore) szDiskPrev */
+				
+				if(prevcab != NULL)
+				{
+					*prevcab = NULL;
+					mscab_t header_test;
+					FILE *test;
+					int valid = 0;
+					
+					ptr = fs_path_get2(srccab, prevfile, NULL);
+					if(ptr != NULL)
+					{
+						test = fopen(ptr, "rb");
+						if(test)
+						{
+							fread(&header_test, sizeof(mscab_t), 1, test);
+							
+							/* check if is CAB and setID match with source */
+							if(memcmp(header_test.signature, "MSCF", 4) == 0 &&
+								header_test.setID == header.setID)
+							{
+								/* check sequence */
+								if(header.iCabinet == header_test.iCabinet+1)
+								{
+									*prevcab = ptr;
+									valid = 1;
+								}
+							}
+							
+							fclose(test);
+						}
+						
+						if(!valid)
+						{
+							fs_path_free(ptr);
+						}
+					}
+				}
+			} // cfhdrPREV_CABINET
+		
+			if((header.flags & cfhdrNEXT_CABINET) != 0)
+			{
+				cab_read_str(fr, nextfile); /* read szCabinetNext */
+				cab_read_str(fr, NULL); /* read (and ignore) szDiskNext */
+				
+				if(nextcab != NULL)
+				{
+					*nextcab = NULL; /* clear */
+					mscab_t header_test;
+					FILE *test;
+					int valid = 0;
+					
+					ptr = fs_path_get2(srccab, nextfile, NULL);
+					if(ptr != NULL)
+					{
+						test = fopen(ptr, "rb");
+						if(test)
+						{
+							fread(&header_test, sizeof(mscab_t), 1, test);
+							
+							/* check if is CAB and setID match with source */
+							if(memcmp(header_test.signature, "MSCF", 4) == 0 &&
+								header_test.setID == header.setID)
+							{
+								/* check sequence */
+								if(header.iCabinet+1 == header_test.iCabinet)
+								{
+									*nextcab = ptr;
+									valid = 1;
+								}
+							}
+							
+							fclose(test);
+						}
+						
+						if(!valid)
+						{
+							fs_path_free(ptr);
+						}
+					}
+				}
+			} // cfhdrNEXT_CABINET
+		} // is MS CAB
+		
+		fclose(fr);
+	} // fr != NULL
+}
+
+/**
+ * Unpack file form CAB archive, multivolume archives are supported too
+ * 
+ * @param srccab: path to archive
+ * @param infilename: filename in archive to extract
+ * @param out: path to extact (with filename)
+ *
+ * @return: number of extracet files (should be 0 or 1)
+ **/
 int cab_unpack(const char *srccab, const char *infilename, const char *out)
 {
 	int cnt = 0;
+	char *search;
   struct mscab_decompressor *cabd;
   struct mscabd_cabinet *cab;
+  struct mscabd_cabinet *cabptr;
   struct mscabd_file *file;
+  cab_list_item_t *item;
+  cab_list_item_t *item_first_cab = NULL;
+  cab_list_item_t *item_last_cab = NULL;
   
-	if ((cabd = mspack_create_cab_decompressor(NULL)))
+  // printf("CAB: %s\n", srccab);
+  
+  if((cabd = mspack_create_cab_decompressor(NULL)) == NULL)
 	{
-		if ((cab = cabd->open(cabd, srccab)))
+		return 0;
+	}
+
+	cab_list_t prevlist;
+	cab_list_t nextlist;
+	
+	cab_list_init(&prevlist);
+	cab_list_init(&nextlist);
+	
+	/* search for archive previous parts */
+	search = (char*)srccab;
+	do
+	{
+		char *prev = NULL;
+		
+		cab_analyze(search, &prev, NULL);
+		if(prev != NULL)
 		{
-			for (file = cab->files; file; file = file->next)
+			item = cab_list_add(&prevlist);
+			if(item != NULL)
 			{
-				if(istrcmp(file->filename, infilename) == 0)
+				item->filename = prev;
+				item->cab = cabd->open(cabd, item->filename);
+				// printf("PREV: %s\n", item->filename);
+			}
+		}
+		search = prev;
+	} while(search != NULL);
+	
+	/* search for archive next parts */
+	search = (char*)srccab;
+	do
+	{
+		char *next = NULL;
+		
+		cab_analyze(search, NULL, &next);
+		if(next != NULL)
+		{
+			item = cab_list_add(&nextlist);
+			if(item != NULL)
+			{
+				item->filename = next;
+				item->cab = cabd->open(cabd, item->filename);
+				// printf("NEXT: %s\n", item->filename);
+			}
+		}
+		search = next;
+	} while(search != NULL);
+	
+	cab = cabd->open(cabd, srccab);
+	if(cab)
+	{
+		/* links archives - prev */
+		cabptr = cab;
+		for(item = prevlist.first; item != NULL; item = item->next)
+		{
+			if(item->cab)
+			{
+				cabd->prepend(cabd, cabptr, item->cab);
+				cabptr = item->cab;
+			}
+			
+			if(item->next == NULL)
+			{
+				item_first_cab = item;
+			}
+		}
+		
+		/* links archives - next */
+		cabptr = cab;
+		for(item = nextlist.first; item != NULL; item = item->next)
+		{
+			if(item->cab)
+			{
+				cabd->append(cabd, cabptr, item->cab);
+				cabptr = item->cab;
+			}
+			
+			if(item->next == NULL)
+			{
+				item_last_cab = item;
+			}
+		}
+		
+		cabptr = cab;
+		if(item_first_cab != NULL && item_first_cab->cab != NULL)
+		{
+			/* try start with first archive */
+			cabptr = item_first_cab->cab;
+		}
+		
+		for (file = cabptr->files; file; file = file->next)
+		{
+			if(istrcmp(file->filename, infilename) == 0)
+			{
+				/* nice message for user */
+				char *cab_first = NULL;
+				char *cab_last = NULL;
+				
+				if(item_first_cab == NULL && item_last_cab == NULL)
 				{
-					//printf("\t%s\n", file->filename);
-					
-					int t = cabd->extract(cabd, file, out);
-					if(t == MSPACK_ERR_OK)
+					cab_first = fs_basename(srccab);
+					if(cab_first)
 					{
-						cnt++;
-						break;
+						printf("Extracting %s from %s ... ", file->filename, cab_first);
+						fs_path_free(cab_first);
 					}
 				}
-      }
-      cabd->close(cabd, cab);
+				else
+				{
+					if(item_first_cab != NULL)
+					{
+						cab_first = fs_basename(item_first_cab->filename);
+					}
+					else
+					{
+						cab_first = fs_basename(srccab);
+					}
+					
+					if(item_last_cab != NULL)
+					{
+						cab_last = fs_basename(item_last_cab->filename);
+					}
+					else
+					{
+						cab_last = fs_basename(srccab);
+					}
+					
+					if(cab_first != NULL && cab_last != NULL)
+					{
+						printf("Extracting %s from multivolume (%s - %s) ... ", file->filename, cab_first, cab_last);
+					}
+					
+					if(cab_first != NULL) fs_path_free(cab_first);
+					if(cab_last  != NULL) fs_path_free(cab_last);
+				}
+				
+				int t = cabd->extract(cabd, file, out);
+				if(t == MSPACK_ERR_OK)
+				{
+					printf("SUCCESS\n");
+					cnt++;
+					break;
+				}
+				else if(t == MSPACK_ERR_NONEXT) /* special for multivolume error (no next file) */
+				{
+					printf("FAILURE (multivolume archive - next archive part is missing)\n");
+				}
+				else if(t == MSPACK_ERR_NOPREV) /* special for multivolume error (no previous file) */
+				{
+					printf("FAILURE (multivolume archive - previous archive part is missing)\n");
+				}
+				else
+				{
+					printf("FAILURE (%d)\n", t);
+				}
+			}
     }
-    mspack_destroy_cab_decompressor(cabd);
-  }
+    
+    cabd->close(cabd, cab);    
+  } // cab
+  
+  cab_list_clear(&prevlist);
+  cab_list_clear(&nextlist);
+  
+  mspack_destroy_cab_decompressor(cabd);
   
   return cnt;
 }
 
+/**
+ * Search in folder for CAB files and in them search for specified file. If file names is found function will stop
+ * search for next archives.
+ *
+ * @param dirname: dirname with cab files
+ * @param infilename: filename in archive to extract
+ * @param out: path to extact (with filename)
+ *
+ * @return: number of extracet files (should be 0 or 1)
+ *
+ **/
 int cab_search_unpack(const char *dirname, const char *infilename, const char *out)
 {
 	fs_dir_t *dir = fs_dir_open(dirname);
@@ -64,6 +520,16 @@ int cab_search_unpack(const char *dirname, const char *infilename, const char *o
   return cnt;
 }
 
+/**
+ * Extract driver form VMM32.VXD or diffent W3/W4 file.
+ * 
+ * @param src: path to W3/W4 file
+ * @param infilename: driver in archive to extract (without *.VXD extension)
+ * @param out: path to extact (with filename)
+ * @param tmpname: path to temporary file in writeable location
+ *
+ * @return: PATCH_OK on success otherwise one of PATCH_E_* error code
+ ***/
 int wx_unpack(const char *src, const char *infilename, const char *out, const char *tmpname)
 {
 	dos_header_t dos, dos2;

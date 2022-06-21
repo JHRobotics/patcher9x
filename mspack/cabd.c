@@ -1040,9 +1040,11 @@ static int cabd_extract(struct mscab_decompressor *base,
 
   /* extraction impossible if no folder, or folder needs predecessor */
   if (!fol || fol->merge_prev) {
-    sys->message(NULL, "ERROR; file \"%s\" cannot be extracted, "
-                 "cabinet set is incomplete", file->filename);
-    return self->error = MSPACK_ERR_DECRUNCH;
+    // JH: muted and assign specific error code
+    //sys->message(NULL, "ERROR; file \"%s\" cannot be extracted, "
+    //            "cabinet set is incomplete", file->filename);
+    //return self->error = MSPACK_ERR_DECRUNCH;
+    return self->error = MSPACK_ERR_NOPREV;
   }
 
   /* if file goes beyond what can be decoded, given an error.
@@ -1370,8 +1372,9 @@ static int cabd_sys_read_block(struct mspack_system *sys,
 
     /* advance to next member in the cabinet set */
     if (!(d->data = d->data->next)) {
-      sys->message(d->infh, "WARNING; ran out of cabinets in set. Are any missing?");
-      return MSPACK_ERR_DATAFORMAT;
+    	//JH: error muted
+      //sys->message(d->infh, "WARNING; ran out of cabinets in set. Are any missing?");
+      return MSPACK_ERR_NONEXT;
     }
 
     /* open next cab file */

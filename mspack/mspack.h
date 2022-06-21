@@ -505,6 +505,10 @@ struct mspack_file {
 #define MSPACK_ERR_CRUNCH      (10)
 /** Error code: error during decompression */
 #define MSPACK_ERR_DECRUNCH    (11)
+/** Error code: missing next archive */
+#define MSPACK_ERR_NONEXT      (12)
+/** Error code: missing prev archive */
+#define MSPACK_ERR_NOPREV      (13)
 
 /* --- functions available in library -------------------------------------- */
 
