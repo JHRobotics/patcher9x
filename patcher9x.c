@@ -41,7 +41,7 @@ static const char help[] = "Patch for Windows 98/Me for run on newest CPUs - AMD
 	"\t-v: print program version\n"
 #endif
 	"\t-auto,-y: use default actions (if path given) and don't bother user\n"
-	"\t-cab-extract: extract VMM32.WXD from MS cab archive\n"
+	"\t-cab-extract: extract VMM32.VXD from MS cab archive\n"
 	"\t-wx-extract: extract WMM.VXD from VMM32.VXD\n"
 	"\t-patch-tlb: apply to file patch\n"
 	"\t-force-w3: when patching VMM32.VXD, leave it as W3 file\n"
@@ -56,8 +56,8 @@ static const char help[] = "Patch for Windows 98/Me for run on newest CPUs - AMD
 	"results patched VMM.VXD copied to system from instalation drive\n"
 #ifndef DOS_MODE
 	"\n"
-	"example: %s C:\\WINDOWS\\SYSTEM\\VMM32.WXD -wx-extract -i INT13 -o INT13.VXD\n"
-	"extract INT13.VXD from VMM32.WXD\n"
+	"example: %s C:\\WINDOWS\\SYSTEM\\VMM32.VXD -wx-extract -i INT13 -o INT13.VXD\n"
+	"extract INT13.VXD from VMM32.VXD\n"
 	"\n"
 	"example: %s D:\\WIN98 -cab-extract -i IOS.VXD -o IOS.VXD\n"
 	"search CAB archives in D:\\WIN98 and extract from them IOS.VXD\n"
