@@ -452,6 +452,10 @@ int cab_unpack(const char *srccab, const char *infilename, const char *out)
 					cnt++;
 					break;
 				}
+				else if(t == MSPACK_ERR_OPEN) /* R/O destination */
+				{
+					printf("FAILURE (cannot create file!)\n");
+				}
 				else if(t == MSPACK_ERR_NONEXT) /* special for multivolume error (no next file) */
 				{
 					printf("FAILURE (multivolume archive - next archive part is missing)\n");

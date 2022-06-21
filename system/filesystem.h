@@ -26,8 +26,6 @@
 #ifndef __FILESYSTEM_H__INCLUDED__
 #define __FILESYSTEM_H__INCLUDED__
 
-typedef void *fs_dir_t;
-
 #define FS_FILTER_FILE 1
 #define FS_FILTER_DIR  2
 
@@ -44,12 +42,20 @@ typedef void *fs_dir_t;
 	#define PATH_SEPARATOR "/"
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef void *fs_dir_t;
+
 fs_dir_t   *fs_dir_open(const char *path);
 void        fs_dir_close(fs_dir_t **dir);
 const char *fs_dir_read(fs_dir_t *dir, int filter);
 
 char       *fs_path_get(const char *dirname, const char *filename, const char *extname);
 char       *fs_path_get2(const char *target, const char *filename, const char *extname);
+char       *fs_path_dup(char *path);
 void        fs_path_free(char *path);
 
 int         fs_ext_match(const char *filename, const char *ext);
@@ -66,5 +72,9 @@ char       *fs_basename(const char *path);
 int         fs_is_dir(const char *path);
 int         fs_unlink(const char *path);
 int         fs_is_writeable_dir(const char *path, const char *tmpname);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __FILESYSTEM_H__INCLUDED__ */

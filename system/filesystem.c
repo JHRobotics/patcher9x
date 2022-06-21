@@ -322,7 +322,7 @@ char *fs_path_get(const char *dirname, const char *filename, const char *extname
 			strncat(buf, filename, (extptr - filename));
 		}
 		
-		if(extname != NULL)
+		if(extname != NULL && strlen(extname) > 0)
 		{
 			strcat(buf, ".");
 			strcat(buf, extname);
@@ -588,11 +588,19 @@ int fs_unlink(const char *path)
 	return unlink(path);
 }
 
+/**
+ * Check if dir is writeable
+ * 
+ * @param path: path to check
+ * @param tmpname: termporaty file name for testing, if NULL use default test file
+ *
+ * @return 0 if is NOT writable otherwise non zero
+ **/
 int fs_is_writeable_dir(const char *path, const char *tmpname)
 {
 	FILE *fp;
 	char *testfile = NULL;
-	int result = -1;
+	int result = 0;
 	const char readbuf[16] = "QWERTYUIOP123456";
 	char writebuf[16];
 	
@@ -630,7 +638,7 @@ int fs_is_writeable_dir(const char *path, const char *tmpname)
 				{
 					if(memcmp(writebuf, readbuf, sizeof(readbuf)) == 0)
 					{
-						result = 0;
+						result = 1;
 					}
 				}
 				fclose(fp);

@@ -46,6 +46,8 @@
 #define PATCH_E_CONVERT    7
 #define PATCH_E_NOTFOUND   8
 #define PATCH_E_PATCHED    9
+#define PATCH_E_NOTFOUNDINCAB    10
+#define PATCH_E_NOTFOUNDINCABS   11
 
 #define PATCH_FORCE_W3 0x1
 #define PATCH_FORCE_W4 0x2
