@@ -1,3 +1,10 @@
+0.6.27
+- Windows Millennium Edition tested and works (use with -millennium argument)
+- Better handling readonly files/media
+  (https://github.com/JHRobotics/patcher9x/issues/3#issuecomment-1159448172)
+- Working with multi volume archives correctly
+  (attempt to fix: https://github.com/JHRobotics/patcher9x/issues/3#issue-1275388352)
+
 0.6.23
 - (untested) Windows Millennium Edition support (with -millennium argument)
 - some minor fixes for copy/backup/patch files operations

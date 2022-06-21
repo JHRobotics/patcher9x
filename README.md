@@ -10,18 +10,31 @@ or Intel Core 11th generation and newer (code names Rocket Lake, Tiger Lake) you
 
 ## Requirements
 
-This patch only works for Windows 98 / Windows 98 SE. Windows 95 probably hasn't this bug, but has another named
+Currently supported operations system:
+
+- Windows 98
+- Windows 98 SE
+- Windows ME
+
+This patch primary targets on **Windows 98** / **Windows 98 SE**. Windows 95 probably hasn't this bug, but has another named
 "CPU speed limit", there is patch for it: [Windows 95 patch](http://www.tmeeco.eu/9X4EVER/GOODIES/FIX95CPU_V3_FINAL.ZIP).
 Windows 98 FE (First Edition) and Windows 98 Beta releases has same bug as Windows 95 too.
 
-Windows Me has this bug in code, but from my observation, the system call this code very rarely. 
-But testing code for Windows Me is present, if you want test it, call program with `-millennium` argument.
+Pathed code for **Windows Me** is present too, if you want install it on Me, call program with `-millennium` argument.
 ```
 patcher9x -millennium
 ```
 
+Fixed code for Windows Me isn't still very well tested. Because from my observation, the system calls this code very rarely
+(for example with driver install/system update).
+
 Some Millennium updates installs new VMM.VXD file - KB 296773 (ME296773.exe). Patch is compatible with this update, but
 after updating you need to install the patch again.
+
+## Updating
+
+If you already applied this patch, you don't need install update - currently all changes are for patcher program,
+the patched code is same.
 
 ## Download
 
