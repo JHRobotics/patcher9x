@@ -77,4 +77,6 @@ void print_trace();
 FILE *fopen_log(const char *fn, const char *mode, const char *file, int line);
 #define FOPEN_LOG(_fn, _mode) fopen_log(_fn, _mode, __FILE__, __LINE__)
 
+void cputest();
+
 #endif /* __PATCHER9X_INCLUDED__ */

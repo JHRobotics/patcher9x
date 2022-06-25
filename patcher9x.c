@@ -98,6 +98,7 @@ typedef struct _options_t
 	const char *path;
 	int print_help;
 	int print_version;
+	int cputest;
 	int cab_extract;
 	int wx_extract;
 	int patch;
@@ -196,6 +197,10 @@ static int read_arg(options_t *options, int argc, char **argv)
 		else if(istrcmp(arg, "-v") == 0)
 		{
 			options->print_version = 1;
+		}
+		else if(istrcmp(arg, "-cputest") == 0)
+		{
+			options->cputest = 1;
 		}
 		else if(istrcmp(arg, "-cab-extract") == 0)
 		{
@@ -1230,7 +1235,12 @@ int main(int argc, char **argv)
   
   if(read_arg(&options, argc, argv) == 0)
   {
-  	if(options.print_version)
+  	if(options.cputest)
+  	{
+  		cputest();
+  		return EXIT_SUCCESS;
+  	}
+  	else if(options.print_version)
   	{
   		printf("%s\n", PATCHER9X_VERSION_STR);
   		return EXIT_SUCCESS;
