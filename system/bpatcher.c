@@ -64,7 +64,7 @@ ssize_t search_sieve(const uint8_t *haystack, size_t haystack_size,
 			}
 			
 			
-			/*if(i > 3)
+/*			if(i > 3)
 			{
 				printf("sieve: %d %d\n", i, j);
 			}*/

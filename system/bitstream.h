@@ -496,6 +496,22 @@ INLINE void bs_write_flush(bitstream_t *bs)
 	int waiting  = bs_cnt_tmp_bits(bs);
 	if(waiting != 0)
 	{
+		bs_write_bit(bs, zero, 8 - waiting);
+	}
+}
+
+/**
+ * Write final byte to stream. Unused bits are padded with 0
+ *
+ * @param bs: bit stream
+ *
+ **/
+INLINE void bs_write_flush_le(bitstream_t *bs)
+{
+	uint32_t zero = 0;
+	int waiting  = bs_cnt_tmp_bits(bs);
+	if(waiting != 0)
+	{
 		bs_write_bit_le(bs, zero, 8 - waiting);
 	}
 }

@@ -329,5 +329,5 @@ void ds_compress(void *block, size_t block_size, bitstream_t *out)
 	 */
 	bs_write_bit_le(out, 0, 8);
 	
-	bs_write_flush(out);
+	bs_write_flush_le(out);
 }
