@@ -532,6 +532,10 @@ INLINE void bs_logic(int func, bitstream_t *a, bitstream_t *b, bitstream_t *y, s
 		{
 			to_read = 32;
 		}
+		else if(to_read % 8 != 0)
+		{
+			to_read += to_read % 8; /* pad operation to whole byte */
+		}
 			
 		switch(func)
 		{
@@ -583,6 +587,10 @@ INLINE int bs_is_zero(bitstream_t *bs, size_t bitsize)
 		if(to_read > 32)
 		{
 			to_read = 32;
+		}
+		else if(to_read % 8 != 0) /* pad operation to whole byte */
+		{
+			to_read += to_read % 8;
 		}
 		
 		buf_test = bs_read_bit(bs, to_read);
