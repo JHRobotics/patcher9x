@@ -11,7 +11,7 @@ If you want obtain dump.bin you need:
    https://web.archive.org/web/20071007160416/http://www.tbcnet.com/~clive/vcomwinp.html)
 
 Search for (HEX): 56 57 8B 74 24 0C 8A 56 02 F6 C2 80
-For Windows 98 SE it is on 0x2EE70 (VMM32.VXD) od 0x1EAF0 (VMM.VXD)
+For Windows 98 SE it is on 0x2EE70 (VMM32.VXD) or 0x1EAF0 (VMM.VXD)
 
 Copy from this position exactly 1040 bytes and save to dump.bin
 

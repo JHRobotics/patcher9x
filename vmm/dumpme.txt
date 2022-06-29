@@ -1,5 +1,0 @@
-X = search (558BEC83EC0CFF05)
-
-X -= 12
-
-dd if=VMMME.VXD bs=1 skip=98256 count=16320 of=dumpme.bin

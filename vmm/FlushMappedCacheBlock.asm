@@ -32,6 +32,10 @@
 ;   compilation:
 ;	    fasm patched.gen patched.bin
 ;
+; variants: version_1: all vanilla 98/98 SE
+;           version_2: Q242161 (Win 98), Q288430 (Win 98 SE)
+;
+;
 ; ***/
 
 
@@ -354,8 +358,12 @@ push 0x0                                ; 6A00
 push 0x3                                ; 6A03
 push 0x1                                ; 6A01
 push edi                                ; 57
-call 0xbffe1420                         ; E882E0FCFF
+call 0xbffe1420                         ; E882E0FCFF (_PageCommit)
 add esp, 0x14                           ; 83C414
+#if defined(version_2)
+        dec dword [dword (dptr 0x126f8)]    ; FF0DF8260100
+        dec dword [dword (dptr 0x12658)]    ; FF0D58260100
+#endif
 mov ecx,0xd                             ; B90D000000
 mov eax,[ebx+0x6]                       ; 8B4306
 sub edx,edx                             ; 2BD2

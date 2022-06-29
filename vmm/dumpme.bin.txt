@@ -1,0 +1,10 @@
+Instruction are simitar to dump.bin (in dump.bin.txt)
+
+Search algorithm is something like:
+ var X = search (558BEC83EC0CFF05)
+ X = X - 12
+ var DUMP = copy(offset=X, length=16320)
+ DUMP -> dumpme.bin
+
+Example
+ dd if=VMM.VXD bs=1 skip=98256 count=16320 of=dumpme.bin
