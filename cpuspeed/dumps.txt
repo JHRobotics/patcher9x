@@ -1,0 +1,15 @@
+More information how to dump are in "vmm/dump.bin.txt"
+
+
+
+dd if=IOS.VXD bs=1 skip=25488 count=53 of=speed_v1_dump.bin
+
+dd if=IOS_95FIX.VXD bs=1 skip=25488 count=44 of=speed_v3_dump.bin
+
+dd if=ESDI_506.PDR bs=1 skip=21004 count=69 of=speed_v5_dump.bin
+
+dd if=SCSIPORT_FIX.PDR bs=1 skip=12166 count=60 of=speed_v8_dump.bin
+
+dd if=NDIS_FE.VXD bs=1 skip=157168 count=112 of=speedndis_v1_dump.bin
+
+dd if=NDIS_SE.VXD bs=1 skip=165312 count=128 of=speedndis_v2_dump.bin
