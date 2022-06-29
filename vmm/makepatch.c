@@ -28,8 +28,25 @@
 #include <ctype.h>
 #include <bitstream.h>
 #include <bpatcher.h>
+
+/* data */
 #include "fasmdiff.h"
+#include "fasmdiff_v2.h"
 #include "fasmdiff_me.h"
+
+#include "../cpuspeed/speed_v1_diff.h"
+#include "../cpuspeed/speed_v2_diff.h"
+#include "../cpuspeed/speed_v3_diff.h"
+#include "../cpuspeed/speed_v4_diff.h"
+
+#include "../cpuspeed/speed_v5_diff.h"
+#include "../cpuspeed/speed_v6_diff.h"
+#include "../cpuspeed/speed_v7_diff.h"
+#include "../cpuspeed/speed_v8_diff.h"
+
+#include "../cpuspeed/speedndis_v1_diff.h"
+#include "../cpuspeed/speedndis_v2_diff.h"
+#include "../cpuspeed/speedndis_v3_diff.h"
 
 #define PREFIX_MAX 255
 
@@ -52,9 +69,32 @@ typedef struct _preset_t
 	size_t dumped_diff_size;
 } preset_t;
 
+#define PRESENT(_dir, _name) {#_name, \
+	_dir "/" #_name "_dump.bin", \
+	_dir "/" #_name "_orig.bin", \
+	_dir "/" #_name ".bin", \
+  _dir "/" #_name "_reloc.bin", \
+  vmm_ ##_name## _diff, sizeof(vmm_ ##_name## _diff)}
+
 preset_t presets[] = {
-	{"98", "vmm/dump.bin",   "vmm/original.bin",   "vmm/patched.bin",   "vmm/reloc.bin",   vmm_fasmdiff,    sizeof(vmm_fasmdiff)},
-	{"me", "vmm/dumpme.bin", "vmm/originalme.bin", "vmm/patchedme.bin", "vmm/relocme.bin", vmm_fasmdiff_me, sizeof(vmm_fasmdiff_me)},
+	{"98",   "vmm/dump.bin",    "vmm/original.bin",    "vmm/patched.bin",    "vmm/reloc.bin",    vmm_fasmdiff,    sizeof(vmm_fasmdiff)},
+	{"98v2", "vmm/dump_v2.bin", "vmm/original_v2.bin", "vmm/patched_v2.bin", "vmm/reloc_v2.bin", vmm_fasmdiff_v2, sizeof(vmm_fasmdiff_v2)},
+	{"me",   "vmm/dumpme.bin",  "vmm/originalme.bin",  "vmm/patchedme.bin",  "vmm/relocme.bin",  vmm_fasmdiff_me, sizeof(vmm_fasmdiff_me)},
+
+	PRESENT("cpuspeed", speed_v1),
+	PRESENT("cpuspeed", speed_v2),
+	PRESENT("cpuspeed", speed_v3),
+	PRESENT("cpuspeed", speed_v4),
+	
+	PRESENT("cpuspeed", speed_v5),
+	PRESENT("cpuspeed", speed_v6),
+	PRESENT("cpuspeed", speed_v7),
+	PRESENT("cpuspeed", speed_v8),
+	
+	PRESENT("cpuspeed", speedndis_v1),
+	PRESENT("cpuspeed", speedndis_v2),
+	PRESENT("cpuspeed", speedndis_v3),
+
 	{NULL, NULL, NULL, NULL, NULL, NULL, 0}
 };
 
@@ -229,6 +269,17 @@ int main(int argc, char *argv[])
 				bs_logic(BS_AND, &patch_diff, &reloc_diff, &cmp, bin_size);
 				bs_reset(&cmp);
 				test_realoc = bs_is_zero(&cmp, bin_size);
+				if(test_realoc == 0)
+				{
+					size_t i = 0;
+					fprintf(stderr, "Realocation issues (one bit -> one byte):\n");
+					for(i = 0; i < bs_calc_size(bin_size); i++)
+					{
+						fprintf(stderr, "%02X ", ((uint8_t*)cmp_mem)[i]);
+					}
+					fprintf(stderr, "\n");
+					
+				}
 				
 				bs_reset(&orig_diff);
 				bs_reset(&reloc_diff);

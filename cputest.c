@@ -30,15 +30,43 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
+/* ^ for QueryPerformanceCounter and QueryPerformanceFrequency */
 #endif
 
 /*
- * Theres assembly code is only for X86/AMD64. 
+ * loop size definitions
+ */
+
+/* original WIN95: NTKERN.VXD, IOS.VXD, ESDI_506.PDR, SCSIPORT.PDR, CS3KIT.EX */
+#define SPEED_V1   0xf4240UL
+
+/* from WIN95/98: NDIS.VXD  */
+#define SPEED_V2  0x100000UL
+
+/* patched WIN95: NTKERN.VXD, IOS.VXD, ESDI_506.PDR, SCSIPORT.PDR, CS3KIT.EX */
+#define SPEED_V3  0x989680UL
+
+/* patched WIN95/98: NDIS.VXD */
+#define SPEED_V4  0xA00000UL
+
+/* new loop for: NTKERN.VXD, IOS.VXD, ESDI_506.PDR, SCSIPORT.PDR, CS3KIT.EX  */
+#define SPEED_V5 0x4C4B400UL
+
+/* new loop for: NDIS.VXD */
+#define SPEED_V6 0x6400000UL
+
+/*
+ * All code is only for X86/AMD64. 
+ *
  */
 #if defined(__x86_64__) || defined(__i386__) || defined(__DJGPP__) || \
 	 (defined(_WIN32 ) && (!defined(_M_ARM) || !defined(_M_ARM64)))
 
+/*
+ * Platfrom depended timer api
+ */
 #if defined(_WIN32)
+	/* Windows have very uprecize clock() function, so using timer from WIN32 api */
 	typedef uint64_t tick_t;
 	static tick_t timer_freq = 0;
 	#define tick(_tick) QueryPerformanceCounter((LARGE_INTEGER*)&(_tick));
@@ -55,9 +83,10 @@
 	}
 	
 #elif defined(__DJGPP__)
+	/* DJGPP has special usec timer using it for better precision */
 	typedef uclock_t tick_t;
 	#define tick(_tick) _tick=uclock()
-	#define TICK_MAX ((sizeof(tick_t) > 4) ? ULLONG_MAX : ULONG_MAX)
+	#define TICK_MAX ((sizeof(tick_t) > 4) ? LLONG_MAX : LONG_MAX)
 		
 	static double clock2ms(tick_t tick)
 	{
@@ -66,9 +95,10 @@
 	
 	#define tick_init() ;
 #else	
+  /* for most platform is clock() precise enought */
 	typedef clock_t tick_t;
 	#define tick(_tick) _tick=clock()
-	#define TICK_MAX ((sizeof(tick_t) > 4) ? ULLONG_MAX : ULONG_MAX)
+	#define TICK_MAX ((sizeof(tick_t) > 4) ? LLONG_MAX : LONG_MAX)
 		
 	static double clock2ms(tick_t tick)
 	{
@@ -78,12 +108,12 @@
 	#define tick_init() ;
 #endif
 
-#define SPEED_V1   0xf4240
-#define SPEED_V2  0x100000
-#define SPEED_V3  0x989680
-#define SPEED_V4  0xA00000
-#define SPEED_V5 0x4C4B400
-
+/**
+ * Original timer function
+ * 
+ * @param repeats: number of loop (original defines in SPEED_* macros) 
+ *
+ **/
 INLINE tick_t looptest(uint32_t repeats)
 {
 	tick_t c1, c2;
@@ -106,8 +136,42 @@ INLINE tick_t looptest(uint32_t repeats)
 
 static void print_cpu()
 {
+	uint32_t cpuid_support = 0;
 	uint32_t info_buf[13];
 	memset(info_buf, 0, sizeof(info_buf));
+	
+#if defined(_M_X64) || defined(__x86_64__) /* 64 bit CPUs are supporting CPUID */
+	cpuid_support = 1;
+#else /* 32 bit mode */	
+	/* cpuid detection:
+	 *  https://www.prowaretech.com/articles/current/assembly/x86/tutorial/page-13
+	 */
+	asm volatile (
+		"pushfl;"               // push eflags on the stack
+		"popl %%eax;"           // pop them into eax
+		"movl %%eax, %%ebx;"    // save to ebx for restoring afterwards
+		"xorl $0x200000,%%eax;" // toggle bit 21
+		"pushl %%eax; "         // push the toggled eflags
+		"popfl;"                // pop them back into eflags
+		"pushfl;"               // push eflags
+		"popl %%eax;"           // pop them back into eax
+		"andl $0x200000,%%eax;" // test only bit 21
+		"andl $0x200000,%%ebx;" // 
+		"cmpl %%eax, %%ebx;"    // see if bit 21 was reset
+		"jz not_supported;"
+		"movl $1,%0;"           // set cpuid_support=1
+		"not_supported:"
+		: "=m" (cpuid_support)
+		:
+		: "%eax", "%ebx"
+	);
+#endif
+	
+	if(cpuid_support == 0)
+	{
+		printf("CPUID not supported\n");
+		return;
+	}
 	
 	asm volatile (
 		"movl $1,%%eax;"
@@ -199,50 +263,67 @@ void cputest()
 		printf("LOOP V5: %.3lf ms\n", clock2ms(t));
 		MIN_TIME(t5, t);
 	}
+	printf("### stats:\n");
+	printf("LOOP V1: %.3lf ms (LOOP = %lu)\n", clock2ms(t1), SPEED_V1);
+	printf("LOOP V2: %.3lf ms (LOOP = %lu)\n", clock2ms(t2), SPEED_V2);
+	printf("LOOP V3: %.3lf ms (LOOP = %lu)\n", clock2ms(t3), SPEED_V3);
+	printf("LOOP V4: %.3lf ms (LOOP = %lu)\n", clock2ms(t4), SPEED_V4);
+	printf("LOOP V5: %.3lf ms (LOOP = %lu)\n", clock2ms(t5), SPEED_V5);
+	
 	printf("### compatibility:\n");
-	if(clock2ms(t1) < 2.5)
+	
+	printf("Windows 95: ");
+	if(clock2ms(t1) < 2.1)
 	{
-		printf("Windows 95: CPU IS TOO FAST\n");
+		printf("CPU is too fast!\n");
 	}
 	else
 	{
-		printf("Windows 95: OK\n");
+		printf("OK\n");
 	}
 	
-	if(clock2ms(t3) < 2.5)
+	printf("Windows 95 + FIX95CPU: ");
+	if(clock2ms(t3) < 2.1)
 	{
-		printf("Windows 95 + FIX95CPU: CPU IS still TOO FAST\n");
+		printf("CPU is still too fast!\n");
 	}
 	else
 	{
-		printf("Windows 95 + FIX95CPU: OK\n");
+		printf("OK\n");
 	}
 	
-	if(clock2ms(t1) < 2.5)
+	printf("Windows 98 (pre 1411): ");
+	if(clock2ms(t1) < 2.1)
 	{
-		printf("Windows 98 pre-release: CPU IS TOO FAST\n");
+		printf("CPU is too fast!\n");
 	}
 	else
 	{
-		printf("Windows 98 pre-release: OK\n");
+		printf("OK\n");
 	}
 	
-	if(clock2ms(t2) < 2.5)
+	printf("Windows 98 FE: ");
+	if(clock2ms(t2) < 1.1)
 	{
-		printf("Windows 98 FE: CPU IS TOO FAST\n");
+		printf("CPU is too fast!\n");
+	}
+	else if(clock2ms(t2) < 2.1)
+	{
+		printf("CPU speed is on bleeding edge\n");
 	}
 	else
 	{
-		printf("Windows 98 FE: OK\n");
+		printf("FE: OK\n");
 	}
 	
-	if(clock2ms(t2) < 2.5)
+	printf("Windows 98 SE: ");
+	if(clock2ms(t2) < 1.1)
 	{
-		printf("Windows 98 SE: potencial problem with NDIS.VXD\n");
+		printf("potencial problem with NDIS.VXD\n");
 	}
 	else
 	{
-		printf("Windows 98 SE: OK\n");
+		printf("OK\n");
 	}
 	
 	printf("Windows ME: not affected\n");
@@ -257,12 +338,16 @@ void cputest()
 	{
 		printf("Status: patch is recomended, but FIX95CPU works with your CPU too\n");
 	}
-	else
+	else if(clock2ms(t4) < 2.5)
 	{
 		printf("patch is highly recomended!\n");
 	}
+	else
+	{
+		printf("patch isn't required, but if it be applied, it'll work.\n");
+	}
 	
-	#if defined(__MSDOS__)
+	#if defined(DOS_MODE)
 		printf("Precision: benchmark ran from DOS, results are precize\n");
 	#else
 		printf("Precision: benchmark ran from OS, results are not completely accurate\n");
@@ -274,6 +359,9 @@ void cputest()
 
 #else /* x86/AMD64 */
 
+/*
+ * Failback for other platforms
+ */
 void cputest()
 {
 	printf("CPU speed test only works for X86/AMD64 CPU!\n");

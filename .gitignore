@@ -1,6 +1,8 @@
 # dumps from original Microsoft files
 /vmm/dump.bin
+/vmm/dump_v2.bin
 /vmm/dumpme.bin
+*_dump.bin
 
 #release bins
 /release/

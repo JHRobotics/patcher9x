@@ -47,7 +47,9 @@ static const char help[] = "Patch for Windows 98/Me for run on newest CPUs - AMD
 	"\t-force-w3: when patching VMM32.VXD, leave it as W3 file\n"
 	"\t-force-w4: when patching VMM32.VXD, always compress to W4 file\n"
 	"\t-no-backup: don't backup overwrited files\n"
-	"\t-millennium: use patch code for Windows Me\n"
+#ifndef DOS_MODE
+	"\t-millennium: ignored, Me patch is included in TLB set\n"
+#endif
 	"\t-i <file>: override input file name\n"
 	"\t-o <file>: override output file name\n"
 	"\n"
@@ -105,7 +107,8 @@ typedef struct _options_t
 	int force_w3;
 	int force_w4;
 	int no_backup;
-	int millennium;
+	uint32_t patches;
+	//int millennium;
 	const char *input;
 	const char *output;
 } options_t;
@@ -215,6 +218,19 @@ static int read_arg(options_t *options, int argc, char **argv)
 		else if(istrcmp(arg, "-patch-tlb") == 0)
 		{
 			options->patch = 1;
+			options->patches |= PATCH_VMM_ALL;
+			options->mode = MODE_EXACT;
+		}
+		else if(istrcmp(arg, "-patch-cpuspeed") == 0)
+		{
+			options->patch = 1;
+			options->patches |= PATCH_CPU_SPEED_ALL;
+			options->mode = MODE_EXACT;
+		}
+		else if(istrcmp(arg, "-patch-cpuspeed-ndis") == 0)
+		{
+			options->patch = 1;
+			options->patches |= PATCH_CPU_SPEED_NDIS_ALL;
 			options->mode = MODE_EXACT;
 		}
 		else if(istrcmp(arg, "-force-w3") == 0)
@@ -236,7 +252,7 @@ static int read_arg(options_t *options, int argc, char **argv)
 			|| istrcmp(arg, "-milennium") == 0
 		)
 		{
-			options->millennium = 1;
+			// ignore
 		}
 		else if(istrcmp(arg, "-auto") == 0 || istrcmp(arg, "-y") == 0 )
 		{
@@ -468,9 +484,18 @@ static int action_extract_vxd(options_t *options, const char *path, const char *
 
 static int action_patch(options_t *options, const char *path, const char *out)
 {
-	int flags = APPLY_VMM_98;
+	uint32_t flags = 0;
 	char *tmpname;
 	int t = PATCH_E_MEM;
+	
+	if(options->mode != MODE_EXACT)
+	{
+		flags = PATCH_VMM_ALL;
+	}
+	else
+	{
+		flags = options->patches;
+	}
 	
 	if(options->force_w3)
 	{
@@ -479,11 +504,6 @@ static int action_patch(options_t *options, const char *path, const char *out)
 	else if(options->force_w4)
 	{
 		flags |= PATCH_FORCE_W4;
-	}
-	
-	if(options->millennium)
-	{
-		flags |= APPLY_VMM_ME;
 	}
 	
 	tmpname = fs_path_get2(out, "VMM32.@W4", NULL);
@@ -699,7 +719,20 @@ static int run_exact(options_t *options)
 		  	}
 		  	else
 		  	{
-		  		fs_rename(out, DEFAULT_OUTPUT_LE);
+		  		if(options->input)
+		  		{
+		  			char *out_vxd = fs_path_get(NULL, options->input, "vxd");
+		  			if(out_vxd)
+		  			{
+		  				fs_rename(out, out_vxd);
+		  				
+		  				fs_path_free(out_vxd);
+		  			}
+		  		}
+		  		else
+		  		{
+		  			fs_rename(out, DEFAULT_OUTPUT_LE);
+		  		}
 		  	}
 	  	}
 	  }
@@ -721,7 +754,8 @@ static int run_exact(options_t *options)
   	}
   	
 		r = action_patch(options, upath, out);
-	  		
+		//printf("action_patch: %d\n", r);
+	  
 	  if(r == PATCH_OK)
 	  {
 		 	if(options->output)
@@ -730,7 +764,7 @@ static int run_exact(options_t *options)
 		 	}
 		 	else
 		 	{
-		 		fs_rename(out, DEFAULT_OUTPUT_LE);
+		 		fs_rename(out, upath);
 		 	}
 	  }
 	  else
@@ -826,11 +860,8 @@ static int run_interactive(options_t *options)
 		}
   	else if(dir_is_system && dir_have_vmm32)
   	{
-  		default_ans = 1;
-  		if(options->millennium)
-  		{
-  			default_ans = 2;
-  		}
+  		/* default selection for now */
+  		default_ans = 2;
   	}
   	else if(dir_is_windows)
   	{
