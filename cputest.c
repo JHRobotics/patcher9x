@@ -136,7 +136,7 @@ INLINE tick_t looptest(uint32_t repeats)
 
 static void print_cpu()
 {
-	uint32_t cpuid_support = 0;
+	volatile uint32_t cpuid_support = 0;
 	uint32_t info_buf[13];
 	memset(info_buf, 0, sizeof(info_buf));
 	
@@ -144,26 +144,22 @@ static void print_cpu()
 	cpuid_support = 1;
 #else /* 32 bit mode */	
 	/* cpuid detection:
-	 *  https://www.prowaretech.com/articles/current/assembly/x86/tutorial/page-13
+	 *  https://wiki.osdev.org/CPUID
 	 */
 	asm volatile (
-		"pushfl;"               // push eflags on the stack
-		"popl %%eax;"           // pop them into eax
-		"movl %%eax, %%ebx;"    // save to ebx for restoring afterwards
-		"xorl $0x200000,%%eax;" // toggle bit 21
-		"pushl %%eax; "         // push the toggled eflags
-		"popfl;"                // pop them back into eflags
-		"pushfl;"               // push eflags
-		"popl %%eax;"           // pop them back into eax
-		"andl $0x200000,%%eax;" // test only bit 21
-		"andl $0x200000,%%ebx;" // 
-		"cmpl %%eax, %%ebx;"    // see if bit 21 was reset
-		"jz not_supported;"
-		"movl $1,%0;"           // set cpuid_support=1
-		"not_supported:"
+		"pushfl;"                           // Save EFLAGS
+		"pushfl;"                           // Store EFLAGS
+		"xorl $0x200000,(%%esp);"           // Invert the ID bit in stored EFLAGS
+		"popfl;"                            // Load stored EFLAGS (with ID bit inverted)
+		"pushfl;"                           // Store EFLAGS again (ID bit may or may not be inverted)
+		"popl %%eax;"                       // eax = modified EFLAGS (ID bit may or may not be inverted)
+		"xorl (%%esp),%%eax;"               // eax = whichever bits were changed
+		"popfl;"                            // Restore original EFLAGS
+		"andl $0x200000,%%eax;"             // eax = zero if ID bit can't be changed, else non-zero
+		"movl %%eax,%0"                     // save result to cpuid_support variable
 		: "=m" (cpuid_support)
 		:
-		: "%eax", "%ebx"
+		: "%eax"
 	);
 #endif
 	
@@ -173,6 +169,7 @@ static void print_cpu()
 		return;
 	}
 	
+	/* cpuid - read brand identification */
 	asm volatile (
 		"movl $1,%%eax;"
 		"cpuid;"
