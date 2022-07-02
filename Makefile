@@ -63,7 +63,7 @@ OBJS_GUEST=mspack/cabc.g.o mspack/cabd.g.o mspack/crc32.g.o mspack/hlpc.g.o mspa
  mspack/litd.g.o mspack/lzssd.g.o mspack/lzxc.g.o mspack/lzxd.g.o mspack/mszipc.g.o mspack/mszipd.g.o mspack/oabc.g.o mspack/oabd.g.o mspack/qtmd.g.o mspack/system.g.o \
  mspack/szddc.g.o mspack/szddd.g.o system/filesystem.g.o system/bpatcher.g.o pe/pew.g.o pe/ds_compress.g.o pe/ds_decompress.g.o
  
-OBJS_OUT=$(OBJS_GUEST) unpacker.g.o patch.g.o trace.g.o patcher9x.g.o cputest.g.o
+OBJS_OUT=$(OBJS_GUEST) unpacker.g.o patch.g.o trace.g.o patcher9x.g.o cputest.g.o files.g.o
 
 OBJS_HOST=system/bpatcher.h.o
 

@@ -144,7 +144,7 @@ void diff_sieve(const uint8_t *data_a, const uint8_t *data_b, size_t data_size,
  * @param needle_size: needle size in bytes
  * @param: sieve: binary sieve to select important bytes in needle
  *
- * @return: if positive return file offet of needle in haystack.
+ * @return: if positive return file offset of needle in haystack.
  *          Else -1 if not found or -2 on error.
  *
  **/
@@ -157,7 +157,12 @@ ssize_t search_sieve_file(FILE *haystack_fp,
 	ssize_t result = -1;
 	ssize_t res_search;
 	size_t  buf_size = BPATCHER_FILE_BUF + needle_size - 1;
+	size_t start_pos;
+	
+	start_pos = ftell(haystack_fp);
+		
 	uint8_t *buf = malloc(buf_size);
+	memset(buf, 0, buf_size);
 	if(buf == NULL)
 	{
 		return -2;
@@ -178,15 +183,18 @@ ssize_t search_sieve_file(FILE *haystack_fp,
 		if(readed != 0)
 		{
 			// FIXME: scan only actual (readed) size!
-			res_search = search_sieve(buf, buf_size, needle, needle_size, sieve);
-			if(res_search >= 0)
+			if(buf_size >= needle_size)
 			{
-				result = offset + res_search;
-				if(offset != 0)
+				res_search = search_sieve(buf, buf_size, needle, needle_size, sieve);
+				if(res_search >= 0)
 				{
-					result -= needle_size-1;
+					result = offset + res_search;
+					if(offset != 0)
+					{
+						result -= needle_size-1;
+					}
+					break;
 				}
-				break;
 			}
 		}
 		
@@ -195,5 +203,10 @@ ssize_t search_sieve_file(FILE *haystack_fp,
 	
 	free(buf);
 	
+	if(result >= 0)
+	{
+		return start_pos + result;
+	}
+		
 	return result;
 }

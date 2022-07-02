@@ -31,7 +31,7 @@
 #define DEFAULT_OUTPUT_LE "VMM.VXD"
 #define DEFAULT_OUTPUT_VX "VMM32.VXD"
 
-static const char help[] = "Patch for Windows 98/Me for run on newest CPUs - AMD ZEN 2+, Intel Tiger Lake+\n"
+static const char help[] = "Patch for Windows 9x for run on newest CPUs - AMD ZEN 2+, Intel Tiger Lake+\n"
 	"Version: " PATCHER9X_VERSION_STR "\n\n"
 	"Usage:\n%s [path] [batch options]\n"
 	"path: path to installed windows directory or directory with windows instalation\n"
@@ -41,8 +41,8 @@ static const char help[] = "Patch for Windows 98/Me for run on newest CPUs - AMD
 	"\t-v: print program version\n"
 #endif
 	"\t-auto,-y: use default actions (if path given) and don't bother user\n"
-	"\t-cab-extract: extract VMM32.VXD from MS cab archive\n"
-	"\t-wx-extract: extract WMM.VXD from VMM32.VXD\n"
+	"\t-cab-extract: extract file from MS cab archive\n"
+	"\t-wx-extract: extract file from VMM32.VXD\n"
 	"\t-patch-tlb: apply TLB patch to file\n"
 	"\t-patch-cpuspeed: apply CPU SPEED patch to file\n"
 	"\t-patch-cpuspeed-ndis: apply CPU SPEED for NDIS.VXD patch to file\n"
@@ -85,11 +85,11 @@ static const char default_path[] = DEFAULT_PATH;
 
 static const char *question_dir_select[] = 
 {
-	"extract VMM.VXD from VMM32.VXD, patch it and save to VMM32 folder",
-	"patch VMM.VXD/VMM32.VXD directly",
+	"patch files, VMM32.VXD will be extracted, extracted files patched",
+	"patch files, VMM32.VXD will be patched directly",
 	"do 1 and 2 simultaneously"	,
-	"scan *.CAB archives, extract VMM32.VXD and patch it directly",
-	"extract VMM32.VXD from selected CAB and patch it directly",
+	"scan *.CAB archives, extract files and patch them (VMM32 directly)",
+	"scan specific CAB file, extract files and patch them (VMM32 directly)",
 };
 
 #define MODE_AUTO        1 /* automaticly determine action from path */
@@ -548,6 +548,50 @@ static void wait_enter()
 	} while(!(c == '\n' || c == EOF));
 }
 
+#define USER_NO   0
+#define USER_YES  1
+#define USER_MORE 2
+
+/**
+ * Wait for user to press Enter
+ *
+ **/
+static int ask_user_patch(options_t *options)
+{
+	int ans = USER_NO;
+	int c;
+	
+	if(options->mode == MODE_AUTO)
+	{
+		return USER_YES;
+	}
+	
+	printf("Apply patch/patches? (Y - Yes, N - No, M - print more information): ");	
+	
+	do
+	{
+		c = fgetc(stdin);
+		switch(c)
+		{
+			case 'y':
+			case 'Y':
+				ans = USER_YES;
+				break;
+			case 'N':
+			case 'n':
+				ans = USER_NO;
+				break;
+			case 'M':
+			case 'm':
+				ans = USER_MORE;
+				break;
+		}
+	} while(!(c == '\n' || c == EOF));
+	
+	return ans;
+}
+
+
 /**
  * Run and do exactly what is on command line
  *
@@ -794,7 +838,11 @@ static int run_interactive(options_t *options)
   int upath_dir = 0;
   int user_ans  = 0;
   int patch_success = 0;
-  		
+  uint32_t lookup_flags = 0;
+  
+  /*
+   * Detection where the path entered by user leads
+   */
   if(fs_is_dir(upath)) /* source is dir */
   {
   	int dir_is_system  = 0;
@@ -817,6 +865,16 @@ static int run_interactive(options_t *options)
   	}
   	
   	test_file = fs_path_get(upath, "BASE2.CAB", NULL); /* Windows Me install */
+  	if(test_file)
+  	{
+  		if(fs_file_exists(test_file))
+  		{
+  			dir_is_install = 1;
+  		}
+  		fs_path_free(test_file);
+  	}
+  	
+  	test_file = fs_path_get(upath, "WIN95_02.CAB", NULL); /* Windows 95 install */
   	if(test_file)
   	{
   		if(fs_file_exists(test_file))
@@ -869,7 +927,7 @@ static int run_interactive(options_t *options)
   	{
   		fprintf(stderr, "Warning: Path looks like Windows directory, please choose \"Windows\\system\" directory!\n");
   	}
-  			
+  	
   	user_ans = ask_user(options, "Select patch mode", question_dir_select, 5, default_ans);
   }
   else if(fs_file_exists(upath)) /* source is file */
@@ -909,327 +967,78 @@ static int run_interactive(options_t *options)
  	{
  		return EXIT_SUCCESS;
  	}
-  	
+  
  	/* extract VMM.VXD */
-  if(user_ans == 1 || user_ans == 3)
+  if(user_ans == 1)
   {
- 		if(options->output == NULL) /* default to VMM32/VMM.VXD */
+  	lookup_flags |= PATCH_LOOKUP_EXTRACTWX;
+  	lookup_flags |= PATCH_LOOKUP_NO_VMM32;
+  }
+  else if(user_ans == 3)
+  {
+  	lookup_flags |= PATCH_LOOKUP_EXTRACTWX;
+  }
+  else if(user_ans == 4)
+  {
+  	lookup_flags |= PATCH_LOOKUP_CABS;
+  }
+  else if(user_ans == 5)
+  {
+  	lookup_flags |= PATCH_LOOKUP_ONE_CAB;
+  }
+  
+  /* Scan dir */
+  if(upath_dir != 0 || user_ans == 5)
+  {
+  	pmodfiles_t list;
+  	int cnt = 0;
+  	
+  	if(fs_is_writeable_dir(upath, NULL) == 0)
  		{
- 			char *out   = NULL;
- 			char *inptr = NULL;
- 			char *in    = NULL;
- 			char *tmp   = NULL;
-  		char *dirname = fs_dirname(upath);
+			fprintf(stderr, "Error: %s is not writeable directory\n", upath);
+		}
+		else
+		{
+  		list = files_lookup(upath, 0, 0, lookup_flags);
   		
-  		if(upath_dir)
+  		if(list)
   		{
-  			in = inptr = fs_path_get(upath, "VMM32.VXD", NULL);
-  		}
-  		else
-  		{
-  			in = upath;
-  		}
-  				
-  		if(in != NULL)
-  		{
-				char *out_vmm32_dir = fs_path_get(dirname, "VMM32", NULL); /* windows/system/vmm32 folder */
-				if(out_vmm32_dir != NULL)
-	  		{
-	  			if(!fs_is_dir(out_vmm32_dir))
-	  			{
-	  				if(fs_mkdir(out_vmm32_dir) != 0)
-	  				{
-	  					fprintf(stderr, "Error: VMM32 directory missing and cannot be created\n");
-	  				}
-	  			}
-	  					
-	  			tmp = fs_path_get(out_vmm32_dir, "VMM.@LE", NULL);
-	  			if(tmp)
-	  			{
-		  			out = fs_path_get(out_vmm32_dir, "VMM.VXD", NULL);
-		  			if(out)
-		  			{
-		  				if(fs_is_writeable_dir(out, NULL) == 0)
-		  				{
-		  					fprintf(stderr, "Error: %s is not writeable directory\n", out_vmm32_dir);
-		  				}
-		  				else
-		  				{
-		  					int t;
-		  					
-		  					patch_backup_file(out, options->no_backup);
-		  					if((t = action_extract_vxd(options, in, tmp)) == PATCH_OK)
-		  					{
-		  						if((t = action_patch(options, tmp, out)) == PATCH_OK)
-		  						{
-		  							fs_unlink(tmp);
-		  							patch_success++;
-		  						}
-		  						else
-		  						{
-		  							fs_unlink(tmp);
-		  							report_error(t);
-		  						}
-		  					}
-		  					else
-		  					{
-		  						report_error(t);
-		  					}
-		  				}
-		  						
-		  				fs_path_free(out);
-		  			}
-		  			fs_path_free(tmp);
-		  		}
-	  					
-	  			fs_path_free(out_vmm32_dir);
-	  			if(dirname != NULL)
-	  			{
-	  				fs_path_free(dirname);
-	  			}
-	  		} // out_vmm32_dir
-	  				
-	  		if(inptr != NULL)
-	  		{
-	  			fs_path_free(inptr);
-	  		}
-	  				
-	  	} // in != NULL
-  	}
-  	else /* out from user */
-  	{
-  		int t;
-  		patch_backup_file(options->output, options->no_backup);
-  		if((t = action_extract_vxd(options, upath, options->output)) == PATCH_OK)
-  		{
-  			if((t = action_patch(options, options->output, options->output)) == PATCH_OK)
+  			cnt = files_status(list);
+  			if(cnt > 0)
   			{
-  				patch_success++;
+  				int ask_retry = 0;
+  				do
+  				{
+  					ask_retry = 0;
+  					int ans = ask_user_patch(options);
+  					switch(ans)
+  					{
+  						case USER_YES:
+  							patch_success = files_commit(&list);
+  							break;
+  						case USER_NO:
+  							files_cleanup(&list);
+  							printf("Operation aborted by user\n");
+  							break;
+  						case USER_MORE:
+  							ask_retry = 1;
+  							break;
+  					
+  					}
+  				} while(ask_retry);
   			}
   			else
   			{
-  				report_error(t);
+  				files_cleanup(&list);
   			}
   		}
   		else
   		{
-  			report_error(t);
+  			report_error(PATCH_E_MEM);
   		}
   	}
   }
-  			
-  /* patch VMM32.VXD */
-  if(user_ans == 2 || user_ans == 3)
-  {
-  	if(options->output == NULL) /* default to VMM32/VMM.VXD */
- 		{
- 			if(fs_is_writeable_dir(upath, NULL) == 0)
- 			{
-		  	fprintf(stderr, "Error: %s is not writeable directory\n", upath);
-		  }
- 			else
- 			{
-	 			int t = 0;
-	 			char *out = NULL;
-	 			char *out_ptr = NULL;
-	 			
-	 			if(upath_dir)
-	 			{
-	 				out_ptr = out = fs_path_get2(upath, "VMM32" PATH_SEPARATOR "VMM.VXD", NULL);
-	 				
-	 				if(!fs_file_exists(out_ptr) || user_ans == 3) /* for extract'n'patch use VMM32.VXD instead fresly extracted file  */
-	 				{
-	 					fs_path_free(out);
-	 					out_ptr = out = NULL;
-	  				out_ptr = out = fs_path_get2(upath, "VMM32.VXD", NULL);
-	  			}
-	  		}
-	  		else
-	  		{
-	  			out = upath;
-	  		}
-	  				
-	  		patch_backup_file(out, options->no_backup);
-	  		
-	  		if((t = action_patch(options, out, out)) == PATCH_OK)
-	  		{
-	  			patch_success++;
-	  		}
-	  		else
-	  		{
-	  			report_error(t);
-	  		}
-	  				
-	  		if(out_ptr)
-	  		{
-	 		 		fs_path_free(out_ptr);
-	 			}
- 			} // fs_is_writeable_dir
- 		}
- 		else
- 		{
- 			int t;
- 			patch_backup_file(options->output, options->no_backup);
- 			
- 			if((t = action_patch(options, options->output, options->output)) == PATCH_OK)
- 			{
- 				patch_success++;
- 			}
- 			else
- 			{
- 				report_error(t);
- 			}
- 		}
- 	}
-  			
- 	/* scan CABs */
- 	if(user_ans == 4)
- 	{
- 		int t = PATCH_E_MEM;
- 		if(options->output == NULL)
- 		{
- 			if(fs_is_writeable_dir(upath, NULL) == 0)
- 			{
-		  	fprintf(stderr, "Error: %s is not writeable directory\n", upath);
-		  }
-		  else
-		  {
- 				char *out = fs_path_get2(upath, "VMM32.VXD", NULL);
-	 			if(out != NULL)
-	 			{
-	 				patch_backup_file(out, options->no_backup);
-	 				
-					if(upath_dir)
-					{
-						if((t = action_extract_cabs(options, upath, out)) != PATCH_OK)
-						{
-							report_error(t);
-						}
-					}
-					else
-					{
-						char *dirname = fs_dirname(upath);
-						if(dirname != NULL)
-						{
-							if((t = action_extract_cabs(options, upath, out)) != PATCH_OK)
-							{
-								report_error(t);
-							}
-							fs_path_free(dirname);
-						}
-					}
-					
-					if(t == PATCH_OK)
-		  		{
-			  		if((t = action_patch(options, out, out)) == PATCH_OK)
-			  		{
-			  			patch_success++;
-			  		}
-			  		else
-			  		{
-			  			report_error(t);
-			  		}
-		  		}
-		  		
-		  		fs_path_free(out);
-		 		}
-	 		}
- 		}
- 		else
- 		{
- 			patch_backup_file(options->output, options->no_backup);
- 			
- 			if((t = action_extract_cabs(options, upath, options->output)) != PATCH_OK)
- 			{
- 				report_error(t);
- 			}
- 			else
- 			{
-				if((t = action_patch(options, options->output, options->output)) == PATCH_OK)
-				{
-					patch_success++;
-				}
-		  	else
-		  	{
-		  		report_error(t);
-		  	}
- 			}
- 		}
-  } // CAB
-  			
- 	/* extract specific CAB */
- 	if(user_ans == 5)
- 	{
- 		if(options->output == NULL)
- 		{
-			if(upath_dir)
-	 		{
-	 			fprintf(stderr, "Error: path must lead to file\n");
-	 		}
-	 		else
-	 		{
-	 			char *upath_dirname = fs_dirname(upath);
-	 			if(upath_dirname != NULL)
-	 			{
-		 			if(fs_is_writeable_dir(upath_dirname, NULL) == 0)
-		 			{
-				  	fprintf(stderr, "Error: %s is not writeable location\n", upath_dirname);
-				  }
-				  else
-		 			{
-			 			char *out = fs_path_get2(upath, "VMM32.VXD", NULL);
-		 				if(out != NULL)
-		 				{
-		 					int t;
-		 					
-		 					patch_backup_file(out, options->no_backup);
-		 						
-							if((t = action_extract_cab(options, upath, out)) != PATCH_OK)
-							{
-								report_error(t);
-							}
-							else
-							{
-				  			if((t = action_patch(options, out, out)) != PATCH_OK)
-				  			{
-				  				report_error(t);
-				  			}
-				  			else
-				  			{
-				  				patch_success++;
-				  			}
-							}
-							fs_path_free(out);
-	 					} // out != NULL
-	 				} // fs_is_writeable_dir
-	 				fs_path_free(upath_dirname);
-	 			} // upath_dirname != NULL
-			} // !upath_dir
-	 	}
- 		else
- 		{
- 			int t;
- 			
- 			patch_backup_file(options->output, options->no_backup);
- 				
- 			if((t = action_extract_cabs(options, upath, options->output)) != PATCH_OK)
- 			{
- 				report_error(t);
- 			}
- 			else
- 			{
-	 			if((t = action_patch(options, options->output, options->output)) != PATCH_OK)
-	 			{
-	 				report_error(t);
-	 			}
-	 			else
-	 			{
-	 				patch_success++;
-	 			}
- 			}
- 		}
-	} // CABs
-  	
+  
 	if(patch_success > 0)
 	{
 		printf("Patch applied successfully!\n");

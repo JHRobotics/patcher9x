@@ -508,6 +508,7 @@ int cab_search_unpack(const char *dirname, const char *infilename, const char *o
   			
   			if(cab_unpack(cabfile, infilename, out) > 0)
   			{
+  				//printf("extracted: %s\n", infilename);
   				cnt++;
   			}
   			fs_path_free(cabfile);
@@ -539,12 +540,21 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 	dos_header_t dos, dos2;
 	pe_header_t  pe, pe2;
 	pe_w3_t     *w3;
-	pe_w4_t     *w4;
 	FILE        *fp, *fp2;
 	int          t;
 	int status = PATCH_OK;
+	int exist_temp = 0;
 	
-	fp = FOPEN_LOG(src, "rb");
+	if(fs_file_exists(tmpname))
+	{
+		fp = FOPEN_LOG(tmpname, "rb");
+		exist_temp = 1;
+	}
+	else
+	{
+		fp = FOPEN_LOG(src, "rb");
+	}
+	
 	if(fp)
 	{
 		t = pe_read(&dos, &pe, fp);
@@ -553,7 +563,23 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 			w3 = pe_w3_read(&dos, &pe, fp);
 			if(w3 != NULL)
 			{
-				pe_w3_extract(w3, infilename, out);
+				char *path_without_ext = fs_path_get(NULL, infilename, "");
+				int status_extract = 0;
+				
+				if(path_without_ext != NULL)
+				{
+					status_extract = pe_w3_extract(w3, path_without_ext, out);
+					fs_path_free(path_without_ext);
+				}
+				else
+				{
+					status_extract = pe_w3_extract(w3, infilename, out);
+				}
+				
+				if(status_extract == PE_OK)
+				{
+					status = PATCH_OK;
+				}
 				
 				pe_w3_free(w3);
 			}
@@ -564,40 +590,46 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 		}
 		else if(t == PE_W4)
 		{
-			w4 = pe_w4_read(&dos, &pe, fp);
-			if(w4 != NULL)
+			if(exist_temp)
 			{
-				//printf("here1\n");
-				if(pe_w4_to_w3(w4, tmpname) != PE_OK)
-				{
-					status = PATCH_E_CONVERT;
-				}
-				else
+				status = PATCH_E_CONVERT;
+			}
+			else
+			{	
+				if((status = wx_to_w3(src, tmpname)) == PATCH_OK)
 				{
 					fp2 = FOPEN_LOG(tmpname, "rb");
-					if(fp2)
-					{
-						t = pe_read(&dos2, &pe2, fp2);
-						if(t == PE_W3)
+					if(fp2 != NULL)
+					{						
+						w3 = pe_w3_read(&dos2, &pe2, fp2);
+						if(w3 != NULL)
 						{
-							w3 = pe_w3_read(&dos2, &pe2, fp2);
-							if(w3 != NULL)
+							char *path_without_ext = fs_path_get(NULL, infilename, "");
+							int status_extract = 0;
+							
+							if(path_without_ext != NULL)
 							{
-								pe_w3_extract(w3, infilename, out);
-								
-								pe_w3_free(w3);
+								status_extract = pe_w3_extract(w3, path_without_ext, out);
+								fs_path_free(path_without_ext);
 							}
 							else
 							{
-								status = PATCH_E_READ;
+								status_extract = pe_w3_extract(w3, infilename, out);
 							}
+							
+							if(status_extract == PE_OK)
+							{
+								status = PATCH_OK;
+							}
+							
+							pe_w3_free(w3);
 						}
 						else
 						{
 							status = PATCH_E_READ;
 						}
-						fclose(fp2);
 						
+						fclose(fp2);
 						fs_unlink(tmpname);
 					}
 					else
@@ -605,11 +637,6 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 						status = PATCH_E_READ;
 					}
 				}
-				pe_w4_free(w4);
-			}
-			else
-			{
-				status = PATCH_E_READ;
 			}
 		}
 		else
@@ -621,6 +648,52 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 	else
 	{
 		status = PATCH_E_READ;
+	}
+	
+	return status;
+}
+
+
+int wx_to_w3(const char *in, const char *out)
+{
+	FILE *fp;
+	dos_header_t dos;
+	pe_header_t  pe;
+	pe_w4_t     *w4;
+	int t;
+	int status = PATCH_E_CONVERT;
+	
+	fp = FOPEN_LOG(in, "rb");
+	if(fp)
+	{
+		t = pe_read(&dos, &pe, fp);
+		if(t == PE_W4)
+		{
+			w4 = pe_w4_read(&dos, &pe, fp);
+			if(w4 != NULL)
+			{
+				if(pe_w4_to_w3(w4, out) == PE_OK)
+				{
+					status = PATCH_OK;;
+				}
+				
+				pe_w4_free(w4);
+			}
+		}
+		else if(t == PE_W3)
+		{
+			FILE *fw = fopen(out, "wb");
+			if(fw)
+			{
+				fseek(fp, 0, SEEK_SET);
+				
+				fs_file_copy(fp, fw, 0);
+				status = PATCH_OK;
+				
+				fclose(fw);
+			}
+		}
+		fclose(fp);
 	}
 	
 	return status;

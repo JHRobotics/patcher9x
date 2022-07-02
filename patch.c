@@ -44,13 +44,6 @@
 #include "cpuspeed_ndis_patch_v2.h"
 #include "cpuspeed_ndis_patch_v3.h"
 
-typedef struct _pfiles_t
-{
-	const char *file;
-	const char *dir;
-	uint32_t flags;
-} pfiles_t;
-
 typedef struct _ppatch_t
 {
 	int id;
@@ -69,17 +62,6 @@ typedef struct _ppatch_t
 	_name##_orig_check,   sizeof(_name##_orig_check), \
 	_name##_modif,        sizeof(_name##_modif)
 
-pfiles_t pfiles[] = {
-	{"VMM32.VXD",    "",      PATCH_VX_PACK | PATCH_VMM_ALL | PATCH_CPU_SPEED_ALL },
-	{"VMM.VXD",      "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL },
-	{"NTKERN.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_CPU_SPEED_ALL },
-	{"IOS.VXD",      "VMM32", PATCH_VX_UNPACK | PATCH_CPU_SPEED_ALL },
-	{"ESDI_506.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
-	{"SCSIPORT.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
-	{"CS3KIT.EXE",   "",      PATCH_CPU_SPEED_ALL },
-	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL },
-	{NULL,           NULL,    0 }
-};
 
 ppatch_t ppathes[] = {
 	{PATCH_VMM98,             PPATCH_FILL(vmm_patch)},
@@ -550,6 +532,7 @@ int patch_backup_file(const char *path, int nobackup)
 				{
 					fs_file_copy(fr, fw, 0);
 					status = PATCH_OK;
+					fclose(fw);
 				}
 				else
 				{
