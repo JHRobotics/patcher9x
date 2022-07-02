@@ -751,7 +751,7 @@ char *fs_basename(const char *path)
 }
 
 /**
- * Check of path lead to diractory
+ * Check if path lead to diractory
  * 
  * @param path: path to check
  * @return: non zero if is path directory otherwise 0
@@ -774,6 +774,13 @@ int fs_is_dir(const char *path)
 	return 0;
 }
 
+/**
+ * Delete file
+ *
+ * @param path: file to delete
+ * @return: 0 on success
+ *
+ **/
 int fs_unlink(const char *path)
 {
 	return unlink(path);
@@ -847,17 +854,35 @@ int fs_is_writeable_dir(const char *path, const char *tmpname)
 /**
  * Rename file, this operation is NOT atomic!
  * (due to platform depended implementation of rename)
+ *  This function use copy if file cannot be renamed.
  * 
  * @param oldname: file to rename
- * @param 
+ * @param newname: destination
+ *
+ * @return: 0 on success
  *
  **/
 int fs_rename(const char *oldname, const char *newname)
 {
 	if(fs_file_exists(oldname))
 	{
+		int t;
 		fs_unlink(newname);
-		return rename(oldname, newname);
+		t = rename(oldname, newname);
+		if(t != 0)
+		{
+			if(fs_file_fullcopy(oldname, newname) >= 0)
+			{
+				if(fs_unlink(oldname) == 0)
+				{
+					return 0;
+				}
+			}
+		}
+		else
+		{
+			return 0;
+		}
 	}
 	
 	return -1;
