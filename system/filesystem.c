@@ -98,6 +98,13 @@ static void resource_free(fs_dir_t **dir)
 	}
 }
 
+/**
+ * Open directory for listing
+ *
+ * @param path: path to direcory
+ * @return: resource of type fs_dir_t, NULL on error
+ *
+ **/
 fs_dir_t *fs_dir_open(const char *path)
 {
 	fs_dir_int_t *res = resource_alloc();
@@ -146,6 +153,12 @@ fs_dir_t *fs_dir_open(const char *path)
 	return NULL;
 }
 
+/**
+ * Close directory
+ *
+ * @param dir: pointer to return of fs_dir_open, destination will be set to NULL
+ *
+ **/
 void fs_dir_close(fs_dir_t **dir)
 {
 	fs_dir_int_t *res = resource_load(*dir);
@@ -168,6 +181,18 @@ void fs_dir_close(fs_dir_t **dir)
 	}
 }
 
+/**
+ * Read files from directory
+ * @param dir: pointer to return of fs_dir_open
+ * @param filter: FS_FILTER_FILE or FS_FILTER_DIR for filtering result
+ *
+ * @return: file name readed from directory, NULL if no other files
+ *          are this directory.
+ *
+ * NOTE: result is saved in static buffer, so any other directory operation
+ *       could overwrite it. Use for example fs_path_dup to copy it.
+ *
+ **/
 const char *fs_dir_read(fs_dir_t *dir, int filter)
 {
 	fs_dir_int_t *res = resource_load(dir);
@@ -275,6 +300,20 @@ const char *fs_dir_read(fs_dir_t *dir, int filter)
 	return NULL;
 }
 
+/**
+ * Construct path
+ *
+ * @param dirname: directory name, could be NULL
+ * @param filename: name of file (with or without extension), cannot be NULL
+ * @param extname: extension name, could be NULL (extension is leaved as is in
+ *                 filename), could be empty string ("", extension will be
+ *                 deleted) or it can be any string (extension will be replaced)
+ *
+ * @return: new path, call fs_path_free to free it
+ *
+ * NOTE: this function does not read any information from filesystem.
+ *
+ **/
 char *fs_path_get(const char *dirname, const char *filename, const char *extname)
 {
 	char *extptr = NULL;
@@ -334,6 +373,19 @@ char *fs_path_get(const char *dirname, const char *filename, const char *extname
 	return NULL;
 }
 
+/**
+ * Replacing parts of path
+ *
+ * @param path: to filename or directory
+ * @param: filename: filename to replace (if NULL leave as is)
+ * @param extname: extension name to replace (if NULL leave as is)
+ *
+ * @return: new path, call fs_path_free to free it
+ *
+ * NOTE: this function READ information of target from filesystem to decide if
+ *       is file or directory (if isn't exists assume that is file).
+ *
+ **/
 char *fs_path_get2(const char *target, const char *filename, const char *extname)
 {
 	if(fs_is_dir(target))
@@ -342,34 +394,51 @@ char *fs_path_get2(const char *target, const char *filename, const char *extname
 	}
 	else
 	{
-		char *basename = NULL;
-		char *path     = NULL;
-		char *dirname  = fs_dirname(target);
-		
-		if(filename == NULL)
-		{
-			basename = fs_basename(target);
-			path = fs_path_get(dirname, basename, extname);
-		}
-		else
-		{
-			path = fs_path_get(dirname, filename, extname);
-		}
-	
-		if(basename)
-		{
-			fs_path_free(basename);
-		}
-		
-		if(dirname)
-		{
-			fs_path_free(dirname);
-		}
-		
-		return path;
+		return fs_path_get3(target, filename, extname);
 	}
 	
 	return NULL;
+}
+
+/**
+ * Replacing parts of path
+ *
+ * @param filepath: path to file
+ * @param filename: filename to replace (if NULL leave as is)
+ * @param extname: extension name to replace (if NULL leave as is)
+ *
+ * @return: new path, call fs_path_free to free it
+ *
+ * NOTE: this function does not read any information from filesystem.
+ *
+ **/
+char *fs_path_get3(const char *filepath, const char *filename, const char *extname)
+{
+	char *basename = NULL;
+	char *path     = NULL;
+	char *dirname  = fs_dirname(filepath);
+		
+	if(filename == NULL)
+	{
+		basename = fs_basename(filepath);
+		path = fs_path_get(dirname, basename, extname);
+	}
+	else
+	{
+		path = fs_path_get(dirname, filename, extname);
+	}
+	
+	if(basename)
+	{
+		fs_path_free(basename);
+	}
+		
+	if(dirname)
+	{
+		fs_path_free(dirname);
+	}
+		
+	return path;
 }
 
 void fs_path_free(char *path)
@@ -377,6 +446,38 @@ void fs_path_free(char *path)
 	free(path);
 }
 
+/**
+ * Duplicate (alloc + copy) path string
+ *
+ * @param path: string to duplicate
+ * @return: duplicated string, use fs_path_free to free this resource
+ *
+ **/
+char *fs_path_dup(const char *path)
+{
+	char *new_path = NULL;
+	size_t len;
+	
+	if(path != NULL)
+	{
+		len = strlen(path);
+		new_path = malloc(len);
+		memcpy(new_path, path, len+1);		
+	}
+	
+	return new_path;
+}
+
+/**
+ * Check if file extension match
+ *
+ * @param filename: filename 
+ * @param ext: extension name to check
+ *
+ * @return: 0 if extensions NOT match, extensions are compare without
+ *          case-sensitivity.
+ *
+ **/
 int fs_ext_match(const char *filename, const char *ext)
 {
 	char *ptr = strrchr(filename, '.');
@@ -414,6 +515,16 @@ int fs_ext_match(const char *filename, const char *ext)
 	return 0;
 }
 
+/**
+ * Copy source to destination
+ * 
+ * @param src: readable FILE resource
+ * @param dst: writable FILE resource
+ * @param size: size of copy, if 0 copy to EOF
+ *
+ * @return: number of copy bytes, negative on error
+ *
+ **/
 ssize_t fs_file_copy(FILE *src, FILE *dst, size_t size)
 {
 	uint8_t *buf = malloc(FS_COPY_BUF_SIZE);
@@ -452,6 +563,67 @@ ssize_t fs_file_copy(FILE *src, FILE *dst, size_t size)
 	return copy_size;
 }
 
+/**
+ * Copy source to destination
+ * 
+ * @param src: path to source file
+ * @param dst: path to destination file
+ *
+ * @return: number of copy bytes, negative on error
+ *
+ **/
+ssize_t fs_file_fullcopy(const char *src, const char *dst)
+{
+	ssize_t result = -1;
+	
+	FILE *fr = fopen(src, "rb");
+	if(fr)
+	{
+		FILE *fw = fopen(dst, "wb");
+		if(fw)
+		{
+			
+			result = fs_file_copy(fr, fw, 0);
+			fclose(fw);
+		}
+		
+		fclose(fr);
+	}
+	
+	return result;
+}
+
+/**
+ * Return file size
+ *
+ * @param path: path to file
+ * @return: positive number indicate file size, negative error
+ *
+ **/
+ssize_t fs_file_size(const char *path)
+{
+	ssize_t result = -1;
+	FILE *fr;
+	
+	fr = fopen(path, "rb");
+	if(fr)
+	{
+		fseek(fr, 0, SEEK_END);
+		result = ftell(fr);
+		fclose(fr);
+	}
+	
+	return result;
+}
+
+/**
+ * Check if file exists and is readable
+ *
+ * @param filename: path to file, must be file, function not works for
+ *                  directory
+ * @return: 0 if file NOT exists.
+ *
+ **/
 int fs_file_exists(const char *filename)
 {
 	int result = 0;
@@ -466,24 +638,29 @@ int fs_file_exists(const char *filename)
 }
 
 /**
- * @return: path if path is real directory, or path with striped element after last /
- *          or NULL if last element is first one
+ * Return directory name from path.
+ *
+ * @param path: path to file
+ *
+ * @return: path with striped element after last or NULL if last element
+ *          is first one
+ *
+ * NOTE: This is only simple string operation, function NOT checking if directory
+ *       exists on file system. 
+ *
  **/
 char *fs_dirname(const char *path)
 {
 	ssize_t len;
 	int break_next = 0;
-	
-	/* if path is real directory simply return "path" as it's */
-	if(fs_is_dir(path))
-	{
-		char *str = malloc(strlen(path)+1);
-		if(str != NULL)
-		{
-			strcpy(str, path);
-			return str;
-		}
-	}
+
+	/* REMOVED: in lots of cases this function isn't called on real FS paths,
+	 *            which could lead to confusing bahavior.
+	 * if(fs_is_dir(path)) // if path is real directory simply return path as it's
+	 * {	
+	 *   fs_path_dup(path);
+	 * }
+	 */
 	
 	for(len = strlen(path); len > 0; len--)
 	{
@@ -517,6 +694,17 @@ char *fs_dirname(const char *path)
 	return NULL;
 }
 
+/**
+ * Return file name from path.
+ *
+ * @param path: path to file
+ *
+ * @return: file name without path
+ *
+ * NOTE: This is only simple string operation, function NOT checking if directory
+ *       exists on file system. 
+ *
+ **/
 char *fs_basename(const char *path)
 {
 	ssize_t len;
@@ -563,8 +751,11 @@ char *fs_basename(const char *path)
 }
 
 /**
+ * Check of path lead to diractory
  * 
+ * @param path: path to check
  * @return: non zero if is path directory otherwise 0
+ *
  **/
 int fs_is_dir(const char *path)
 {
@@ -653,16 +844,38 @@ int fs_is_writeable_dir(const char *path, const char *tmpname)
 	return result;	
 }
 
+/**
+ * Rename file, this operation is NOT atomic!
+ * (due to platform depended implementation of rename)
+ * 
+ * @param oldname: file to rename
+ * @param 
+ *
+ **/
 int fs_rename(const char *oldname, const char *newname)
 {
-//	#ifdef _WIN32
-	fs_unlink(newname);
-	return rename(oldname, newname);
-//	#else
-//	return rename(oldname, newname);
-//	#endif
+	if(fs_file_exists(oldname))
+	{
+		fs_unlink(newname);
+		return rename(oldname, newname);
+	}
+	
+	return -1;
 }
 
+/**
+ * Create the directory
+ * 
+ * @param dirname: new directory path. Function is system implementation
+ *                 depended, but it in generally creates only last segment of
+ *                 directory tree. Example: if you want to create /tmp/foo/boo
+ *                 (and only /tmp exists), you should call:
+ *                    fs_mkdir("/tmp/foo");
+ *                    fs_mkdir("/tmp/foo/boo");
+ *
+ * @return: 0 on success
+ *
+ **/
 int fs_mkdir(const char *dirname)
 {
 #ifdef _WIN32

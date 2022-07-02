@@ -55,7 +55,8 @@ const char *fs_dir_read(fs_dir_t *dir, int filter);
 
 char       *fs_path_get(const char *dirname, const char *filename, const char *extname);
 char       *fs_path_get2(const char *target, const char *filename, const char *extname);
-char       *fs_path_dup(char *path);
+char       *fs_path_get3(const char *filepath, const char *filename, const char *extname);
+char       *fs_path_dup(const char *path);
 void        fs_path_free(char *path);
 
 int         fs_ext_match(const char *filename, const char *ext);
@@ -63,7 +64,10 @@ int         fs_ext_match(const char *filename, const char *ext);
 int         fs_dir_create(const char *path);
 int         fs_rename(const char *oldname, const char *newname);
 ssize_t     fs_file_copy(FILE *src, FILE *dst, size_t size);
+ssize_t     fs_file_fullcopy(const char *src, const char *dst);
 int         fs_file_exists(const char *filename);
+ssize_t     fs_file_size(const char *path);
+
 
 int         fs_mkdir(const char *dirname);
 
