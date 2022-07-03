@@ -653,6 +653,14 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 	return status;
 }
 
+/**
+ * Convert W4/W3 file to W3 file. If file is already in W3 format only copy it.
+ *
+ * @param in: input filename
+ * @param out: output filename
+ *
+ * @return: PATCH_OK on success
+ **/
 int wx_to_w3(const char *in, const char *out)
 {
 	FILE *fp;
@@ -698,6 +706,14 @@ int wx_to_w3(const char *in, const char *out)
 	return status;
 }
 
+/**
+ * Convert W4/W3 file to W4 file. If file is already in W4 format only copy it.
+ *
+ * @param in: input filename
+ * @param out: output filename
+ *
+ * @return: PATCH_OK on success
+ **/
 int wx_to_w4(const char *in, const char *out)
 {
 	FILE *fp;

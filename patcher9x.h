@@ -113,6 +113,24 @@
 #define PATCH_CPU_SPEED_NDIS_ALL (PATCH_CPU_SPEED_NDIS_V1|PATCH_CPU_SPEED_NDIS_V2|PATCH_CPU_SPEED_NDIS_V3)
 #define PATCH_VMM_ALL (PATCH_VMM98|PATCH_VMMME|PATCH_VMM98_V2)
 
+/* program modes */
+#define MODE_AUTO        1 /* automaticly determine action from path */
+#define MODE_INTERACTIVE 2 /* same as auto but ask user if sure */
+#define MODE_EXACT       3 /* use steps by command line */
+
+/* patch lookup flags */
+#define PATCH_LOOKUP_CABS      1 /* scan cab files */
+#define PATCH_LOOKUP_EXTRACTWX 2 /* extract files from VX archives */
+#define PATCH_LOOKUP_NO_VMM32  4 /* dont touch VMM32.VXD */
+#define PATCH_LOOKUP_ONE_CAB   8 /* extract files from one specified cab */
+
+/* paths and files */
+#define DEFAULT_PATH           "C:\\Windows\\System"
+#define DEFAULT_INPUT_VX       "VMM"
+#define DEFAULT_INPUT_CAB      "VMM32.VXD"
+#define DEFAULT_OUTPUT_LE      "VMM.VXD"
+#define DEFAULT_OUTPUT_VX      "VMM32.VXD"
+
 /*
  * Platform selection
  */
@@ -124,6 +142,31 @@
 #if defined(__MSDOS__)
 #define DOS_MODE
 #endif
+
+/*
+ * Structures
+ */
+typedef struct _options_t
+{
+	int mode;
+	const char *path;
+	int print_help;
+	int print_version;
+	int cputest;
+	int cab_extract;
+	int wx_extract;
+	int patch;
+	int force_w3;
+	int force_w4;
+	int no_backup;
+	uint32_t patches;
+	uint32_t unmask;
+	//int millennium;
+	const char *input;
+	const char *output;
+} options_t;
+
+typedef struct _pmodfiles_t *pmodfiles_t;
 
 /*
  * Functions
@@ -140,28 +183,30 @@ int wx_to_w4(const char *in, const char *out);
 int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applied);
 int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int flags);
 int patch_backup_file(const char *path, int nobackup);
-
 int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *out_applied, uint32_t *out_exists);
 
-
-#define PATCH_LOOKUP_CABS 1
-#define PATCH_LOOKUP_EXTRACTWX 2
-#define PATCH_LOOKUP_NO_VMM32  4
-#define PATCH_LOOKUP_ONE_CAB 8
-
-typedef struct _pmodfiles_t *pmodfiles_t;
 pmodfiles_t files_lookup(const char *path, uint32_t global_flags, uint32_t global_unmask, uint32_t lookup_flags);
 pmodfiles_t files_apply(const char *upath, uint32_t global_flags, uint32_t global_unmask);
 int files_status(pmodfiles_t list);
 void files_cleanup(pmodfiles_t *plist);
 int files_commit(pmodfiles_t *plist, int nobackup);
 
+int run_exact(options_t *options);
 
 void print_trace();
 FILE *fopen_log(const char *fn, const char *mode, const char *file, int line);
 #define FOPEN_LOG(_fn, _mode) fopen_log(_fn, _mode, __FILE__, __LINE__)
 
+void print_error(int code, const char *file, int line);
+#define report_error(_code) print_error(_code, __FILE__, __LINE__);
+
+
 void cputest();
 
+/*
+ * Globals
+ */
+
+extern const char *patcher9x_default_path;
 
 #endif /* __PATCHER9X_INCLUDED__ */

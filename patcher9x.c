@@ -22,66 +22,26 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR              *
  * OTHER DEALINGS IN THE SOFTWARE.                                            *
  *                                                                            *
-*******************************************************************************/
+ ******************************************************************************/
 #include "patcher9x.h"
+#include <stdarg.h>
 
-#define DEFAULT_PATH "C:\\Windows\\System"
-#define DEFAULT_INPUT_VX  "VMM"
-#define DEFAULT_INPUT_CAB "VMM32.VXD"
-#define DEFAULT_OUTPUT_LE "VMM.VXD"
-#define DEFAULT_OUTPUT_VX "VMM32.VXD"
-
-static const char help[] = "Patch for Windows 9x for run on newest CPUs - AMD ZEN 2+, Intel Tiger Lake+\n"
-	"Version: " PATCHER9X_VERSION_STR "\n\n"
-	"Usage:\n%s [path] [batch options]\n"
-	"path: path to installed windows directory or directory with windows instalation\n"
-	"options:\n"
-#ifndef DOS_MODE /* shorten help a bit to fit 80x25 screen */
-	"\t-h,/?: print this help\n"
-	"\t-v: print program version\n"
-#endif
-	"\t-auto,-y: use default actions (if path given) and don't bother user\n"
-	"\t-cab-extract: extract file from MS cab archive\n"
-	"\t-wx-extract: extract file from VMM32.VXD\n"
-	"\t-patch-tlb: apply TLB patch to file\n"
-	"\t-patch-cpuspeed: apply CPU SPEED patch to file\n"
-	"\t-patch-cpuspeed-ndis: apply CPU SPEED for NDIS.VXD patch to file\n"
-	"\t-force-w3: when patching VMM32.VXD, leave it as W3 file\n"
-	"\t-force-w4: when patching VMM32.VXD, always compress to W4 file\n"
-	"\t-no-backup: don't backup overwrited files\n"
-#ifndef DOS_MODE
-	"\t-millennium: ignored, Me patch is included in TLB set\n"
-#endif
-	"\t-i <file>: override input file name\n"
-	"\t-o <file>: override output file name\n"
-	"\n"
-	"Options can be chained:\n"
-	"example: %s D:\\WIN98 -cab-extract -wx-extract -patch-tlb -o C:\\windows\\system\\VMM32\\VMM.VXD\n"
-	"results patched VMM.VXD copied to system from instalation drive\n"
-#ifndef DOS_MODE
-	"\n"
-	"example: %s C:\\WINDOWS\\SYSTEM\\VMM32.VXD -wx-extract -i INT13 -o INT13.VXD\n"
-	"extract INT13.VXD from VMM32.VXD\n"
-	"\n"
-	"example: %s D:\\WIN98 -cab-extract -i IOS.VXD -o IOS.VXD\n"
-	"search CAB archives in D:\\WIN98 and extract from them IOS.VXD\n"
-	"\n"
-	"Defaults:\n"
-	"\t[path] = " DEFAULT_PATH "\n"
-	"\t<input> = " DEFAULT_INPUT_VX " (if [path] leads to VMM32.VXD)\n"
-	"\t<input> = " DEFAULT_INPUT_CAB " (if [path] leads to CAB archive)\n"
-	"\t<output> = " DEFAULT_OUTPUT_LE " (if output is extracted from VMM32.VXD)\n"
-	"\t<output> = " DEFAULT_OUTPUT_VX " (if output is patched VMM32.VXD)\n"
-	"\n"
-#endif
 #ifdef RUN_WITHOUT_ARGS
-	"\n"
-	"When running without options program operate in interactive mode (ask user)\n"
+# define HELP_EXTRA
 #endif
-;
+
+#ifdef DOS_MODE
+# define HELP_SHORT
+# include "help.h"
+# undef HELP_SHORT
+# define HELP_NAME help_long
+# include "help.h"
+#else
+# include "help.h"
+#endif
 
 static char userpath[MAX_PATH];
-static const char default_path[] = DEFAULT_PATH;
+const char *patcher9x_default_path = DEFAULT_PATH;
 
 static const char *question_dir_select[] = 
 {
@@ -97,94 +57,21 @@ static const char *question_file_selelect[] =
 	"handle as CAB file, extract files and patch them (VMM32 directly)",
 };
 
-#define MODE_AUTO        1 /* automaticly determine action from path */
-#define MODE_INTERACTIVE 2 /* same as auto but ask user if sure */
-#define MODE_EXACT       3 /* use steps by command line */
+#define PROGRAMS_MAX 16
 
-typedef struct _options_t
-{
-	int mode;
-	const char *path;
-	int print_help;
-	int print_version;
-	int cputest;
-	int cab_extract;
-	int wx_extract;
-	int patch;
-	int force_w3;
-	int force_w4;
-	int no_backup;
-	uint32_t patches;
-	uint32_t unmask;
-	//int millennium;
-	const char *input;
-	const char *output;
-} options_t;
-
-#define report_error(_code) print_error(_code, __FILE__, __LINE__);
-
-static void print_error(int code, const char *file, int line)
-{
-	const char *msg = "Unknown";
-	switch(code)
-	{
-		case PATCH_OK:
-			msg = "success";
-			break;
-		case PATCH_E_READ:
-			msg = "file read error";
-			break;
-		case PATCH_E_WRITE:
-			msg = "file write error";
-			break;
-		case PATCH_E_CHECK:
-			msg = "can not apply patch - original data sequence not found in the file";
-			break;
-		case PATCH_E_MEM:
-			msg = "out of memory";
-			break;
-		case PATCH_E_OVERWRITE:
-			msg = "can not overwrite existing file";
-			break;
-		case PATCH_E_WRONG_TYPE:
-			msg = "wrong/unknown format format";
-			break;
-		case PATCH_E_CONVERT:
-			msg = "Conversion error";
-			break;
-		case PATCH_E_NOTFOUND:
-			msg = "File not found";
-			break;
-		case PATCH_E_PATCHED:
-			msg = "File is already patched";
-			break;
-		case PATCH_E_NOTFOUNDINCAB:
-			msg = "Source file not found in CAB archive";
-			break;
-		case PATCH_E_NOTFOUNDINCABS:
-			msg = "Source file not found in *.CAB archives";
-			break;
-	}
-	
-	fprintf(stderr, "Error: %s\n(trace: %s on %d)\n", msg, file, line);
-	
-	switch(code)
-	{
-		case PATCH_E_READ:
-		case PATCH_E_WRITE:
-		case PATCH_E_OVERWRITE:
-		case PATCH_E_NOTFOUND:
-			print_trace();
-			break;
-	}
-}
-
-static void print_help(const char *progname)
+static void print_help(const char *progname, int longer)
 {
 #ifdef DOS_MODE
-	printf(help, progname, progname);
+	if(longer > 1)
+	{
+		printf(help_long, HELP_LONG_REP_ARG(progname));
+	}
+	else
+	{
+		printf(help, HELP_SHORT_REP_ARG(progname));
+	}
 #else
-	printf(help, progname, progname, progname, progname);
+	printf(help, HELP_LONG_REP_ARG(progname));
 #endif
 }
 
@@ -205,6 +92,12 @@ static int read_arg(options_t *options, int argc, char **argv)
 		{
 			options->print_help = 1;
 		}
+		#ifdef DOS_MODE
+		if(istrcmp(arg, "-hh") == 0)
+		{
+			options->print_help = 2;
+		}
+		#endif
 		else if(istrcmp(arg, "-v") == 0)
 		{
 			options->print_version = 1;
@@ -464,109 +357,6 @@ static int ask_user(options_t *options, const char *q, const char **ans, int ans
 	return (int)m;
 }
 
-static int action_extract_cabs(options_t *options, const char *path, const char *out)
-{
-	const char *in_cab_name = DEFAULT_INPUT_CAB;
-	if(options->input)
-	{
-		in_cab_name = options->input;
-	}
-	
-	if(cab_search_unpack(path, in_cab_name, out) > 0)
-	{
-		return PATCH_OK;
-	}
-	
-	return PATCH_E_NOTFOUNDINCABS;
-}
-
-static int action_extract_cab(options_t *options, const char *path, const char *out)
-{
-	const char *in_cab_name = DEFAULT_INPUT_CAB;
-	if(options->input)
-	{
-		in_cab_name = options->input;
-	}
-	
-	if(cab_unpack(path, in_cab_name, out) > 0)
-	{
-		return PATCH_OK;
-	}
-	
-	return PATCH_E_NOTFOUNDINCAB;
-}
-
-static int action_extract_vxd(options_t *options, const char *path, const char *out)
-{
-	char *tmpname = NULL;
-	const char *in_driver = DEFAULT_INPUT_VX;
-	if(options->input)
-	{
-		in_driver = options->input;
-	}
-	
-	tmpname = fs_path_get2(out, "VMM32.@W4", NULL);
-	if(tmpname != NULL)
-	{
-		int t = wx_unpack(path, in_driver, out, tmpname);
-		fs_path_free(tmpname);
-		return t;
-	}
-	
-	return PATCH_E_MEM;
-}
-
-static int action_patch(options_t *options, const char *path, const char *out)
-{
-	uint32_t flags = 0;
-	char *tmpname;
-	int t = PATCH_E_MEM;
-	
-	if(options->mode != MODE_EXACT)
-	{
-		flags = PATCH_VMM_ALL;
-	}
-	else
-	{
-		flags = options->patches;
-	}
-	
-	if(options->force_w3)
-	{
-		flags |= PATCH_FORCE_W3;
-	}
-	else if(options->force_w4)
-	{
-		flags |= PATCH_FORCE_W4;
-	}
-	
-	tmpname = fs_path_get2(out, "VMM32.@W4", NULL);
-	
-	if(tmpname != NULL)
-	{
-		if(strcmp(path, out) != 0)
-		{
-			t = patch_apply_wx(path, out, tmpname, flags);
-		}
-		else
-		{
-			char *tmpname2 = fs_path_get2(out, "VMM32.@WL", NULL);
-			if(tmpname2 != NULL)
-			{
-				if((t = patch_apply_wx(path, tmpname2, tmpname, flags)) == PATCH_OK)
-				{
-					fs_rename(tmpname2, out);
-				}
-				fs_path_free(tmpname2);
-			}
-		}
-		
-		fs_path_free(tmpname);
-	}
-	
-	return t;
-}
-
 /**
  * Wait for user to press Enter
  *
@@ -623,250 +413,13 @@ static int ask_user_patch(options_t *options)
 	return ans;
 }
 
-
-/**
- * Run and do exactly what is on command line
- *
- **/
-static int run_exact(options_t *options)
-{
-  char *out = (char*)options->output;
-  char *out2 = NULL;
-  char *out3 = NULL;
-  char *out_mem = NULL;
-  char *out2_mem = NULL;
-  char *out3_mem = NULL;
-  		
-  char *upath = (char*)options->path;
-  if(upath == NULL)
-  {
-  	upath = (char*)default_path;
-  }
-  		
-  if(options->cab_extract)
-  {
-  	int r;
-  	if(out == NULL)
-  	{
-  		out = "VMM32.@WX";
-  	}
-  	else
-  	{
-  		out_mem = out = fs_path_get2(out, NULL, "@WX");
-  	}
-  			
-  	if(fs_is_dir(upath))
-  	{
-  		r = action_extract_cabs(options, upath, out);
-  	}
-  	else
-  	{
-  		r = action_extract_cab(options, upath, out);
-  	}
-  			
-  	if(options->wx_extract)
-  	{
-  		out2_mem = out2 = fs_path_get2(out, NULL, "@WL");
-  		
-  		r = action_extract_vxd(options, out, out2);
-  				
-  		if(r == PATCH_OK)
-  		{
-				if(options->patch)
-				{
-					out3_mem = out3 = fs_path_get2(out, NULL, "@WP");
-					r = action_patch(options, out2, out3);
-	  					
-	  			if(r == PATCH_OK)
-	  			{
-						if(options->output)
-						{
-							fs_rename(out3, options->output);
-						}
-						else
-						{
-							fs_rename(out3, DEFAULT_OUTPUT_LE);
-						}
-						
-						fs_unlink(out2);
-						fs_unlink(out);
-	  			}
-	  			else
-			  	{
-			  		report_error(r);
-			  	}
-	  		}
-	  		else
-	  		{
-		  		if(options->output)
-		  		{
-		  			fs_rename(out2, options->output);
-		  		}
-		  		else
-		  		{
-		  			fs_rename(out2, DEFAULT_OUTPUT_LE);
-		  		}
-		  		fs_unlink(out);
-	  		}
-	  	}
-	  	else
-	  	{
-	  		report_error(r);
-	  	}
-  	}
-  	else if(options->patch)
-  	{
-	  	out2_mem = out2 = fs_path_get2(out, NULL, "@WP");
-	  	r = action_patch(options, out, out2);
-	  				
-	  	if(r == PATCH_OK)
-	  	{
-		 		if(options->output)
-		 		{
-		 			fs_rename(out2, options->output);
-		 		}
-		 		else
-		 		{
-		 			fs_rename(out2, DEFAULT_OUTPUT_LE);
-		 		}
-		 		
-		 		fs_unlink(out);
-	  	}
-	  	else
-		 	{
-		 		report_error(r);
-		 	}
-  	}
-  	else
-  	{
-  		if(options->output)
-  		{
-  			fs_rename(out, options->output);
-  		}
-  		else
-  		{
-  			fs_rename(out, DEFAULT_OUTPUT_VX);
-  		}
- 		}
-  			
-  } // cab_extract
-  else if(options->wx_extract)
-  {
-  	int r;
-  	if(out == NULL)
-  	{
-  		out = DEFAULT_OUTPUT_LE;
-  	}
-  	else
-  	{
-  		out = fs_path_get2(out, NULL, "@WP");
-  	}
-  			
-  	r = action_extract_vxd(options, upath, out);
-  				
-  	if(r == PATCH_OK)
-  	{
-	  	if(options->patch)
-	  	{
-	  		out2 = fs_path_get2(out, NULL, "@WP");
-	  		r = action_patch(options, out, out2);
-	  		
-	  		if(r == PATCH_OK)
-	  		{
-					if(options->output)
-					{
-						fs_rename(out2, options->output);
-					}
-					else
-					{
-						fs_rename(out2, DEFAULT_OUTPUT_LE);
-					}
-					
-					fs_unlink(out);
-	  		}
-	  		else
-				{
-					report_error(r);
-				}
-	  	}
-	  	else
-	  	{
-		  	if(options->output)
-		  	{
-		  		fs_rename(out, options->output);
-		  	}
-		  	else
-		  	{
-		  		if(options->input)
-		  		{
-		  			char *out_vxd = fs_path_get(NULL, options->input, "vxd");
-		  			if(out_vxd)
-		  			{
-		  				fs_rename(out, out_vxd);
-		  				
-		  				fs_path_free(out_vxd);
-		  			}
-		  		}
-		  		else
-		  		{
-		  			fs_rename(out, DEFAULT_OUTPUT_LE);
-		  		}
-		  	}
-	  	}
-	  }
-	  else
-	  {
-	  	report_error(r);
-	  }
-  } // VX extact
-  else if(options->patch)
-  {
-  	int r;
-  	if(out == NULL)
-  	{
-  		out = DEFAULT_OUTPUT_LE;
-  	}
-  	else
-  	{
-  		out_mem = out = fs_path_get2(out, NULL, "@WP");
-  	}
-  	
-		r = action_patch(options, upath, out);
-		//printf("action_patch: %d\n", r);
-	  
-	  if(r == PATCH_OK)
-	  {
-		 	if(options->output)
-		 	{
-		 		fs_rename(out, options->output);
-		 	}
-		 	else
-		 	{
-		 		fs_rename(out, upath);
-		 	}
-	  }
-	  else
-		{
-			report_error(r);
-	  }
-	} // patch
-	
-	/* alloc cleanup */
-	if(out_mem  != NULL) fs_path_free(out_mem);
-	if(out2_mem != NULL) fs_path_free(out2_mem);
-	if(out3_mem != NULL) fs_path_free(out3_mem);
-	
-	return EXIT_SUCCESS;
-}
-
-
 /**
  * Run and interactive with user
  *
  **/
 static int run_interactive(options_t *options)
 {
-  char *upath = ask_user_path(options, "Enter path to WINDOWS\\SYSTEM, or Windows instalation\n", default_path);
+  char *upath = ask_user_path(options, "Enter path to WINDOWS\\SYSTEM, or Windows instalation\n", patcher9x_default_path);
   int upath_dir = 0;
   int user_ans  = 0;
   int patch_success = 0;
@@ -1139,7 +692,7 @@ int main(int argc, char **argv)
   	}
   	else if(options.print_help)
   	{
-  		print_help(argv[0]);
+  		print_help(argv[0], options.print_help);
   		return EXIT_SUCCESS;
   	} 
   	else if(options.mode == MODE_EXACT)

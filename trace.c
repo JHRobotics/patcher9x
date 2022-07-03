@@ -1,3 +1,28 @@
+/******************************************************************************
+ * Copyright (c) 2022 Jaroslav Hensl                                          *
+ *                                                                            *
+ * Permission is hereby granted, free of charge, to any person                *
+ * obtaining a copy of this software and associated documentation             *
+ * files (the "Software"), to deal in the Software without                    *
+ * restriction, including without limitation the rights to use,               *
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell          *
+ * copies of the Software, and to permit persons to whom the                  *
+ * Software is furnished to do so, subject to the following                   *
+ * conditions:                                                                *
+ *                                                                            *
+ * The above copyright notice and this permission notice shall be             *
+ * included in all copies or substantial portions of the Software.            *
+ *                                                                            *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,            *
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES            *
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                   *
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT                *
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,               *
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING               *
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR              *
+ * OTHER DEALINGS IN THE SOFTWARE.                                            *
+ *                                                                            *
+ ******************************************************************************/
 #include "patcher9x.h"
 
 #define PATCHER_TRACE_DEEP 16
@@ -68,3 +93,60 @@ void print_trace()
 		}
 	}
 }
+
+void print_error(int code, const char *file, int line)
+{
+	const char *msg = "Unknown";
+	switch(code)
+	{
+		case PATCH_OK:
+			msg = "success";
+			break;
+		case PATCH_E_READ:
+			msg = "file read error";
+			break;
+		case PATCH_E_WRITE:
+			msg = "file write error";
+			break;
+		case PATCH_E_CHECK:
+			msg = "can not apply patch - original data sequence not found in the file";
+			break;
+		case PATCH_E_MEM:
+			msg = "out of memory";
+			break;
+		case PATCH_E_OVERWRITE:
+			msg = "can not overwrite existing file";
+			break;
+		case PATCH_E_WRONG_TYPE:
+			msg = "wrong/unknown format format";
+			break;
+		case PATCH_E_CONVERT:
+			msg = "Conversion error";
+			break;
+		case PATCH_E_NOTFOUND:
+			msg = "File not found";
+			break;
+		case PATCH_E_PATCHED:
+			msg = "File is already patched";
+			break;
+		case PATCH_E_NOTFOUNDINCAB:
+			msg = "Source file not found in CAB archive";
+			break;
+		case PATCH_E_NOTFOUNDINCABS:
+			msg = "Source file not found in *.CAB archives";
+			break;
+	}
+	
+	fprintf(stderr, "Error: %s\n(trace: %s on %d)\n", msg, file, line);
+	
+	switch(code)
+	{
+		case PATCH_E_READ:
+		case PATCH_E_WRITE:
+		case PATCH_E_OVERWRITE:
+		case PATCH_E_NOTFOUND:
+			print_trace();
+			break;
+	}
+}
+
