@@ -1,4 +1,5 @@
 #include "patcher9x.h"
+#include <extstring.h>
 
 typedef struct _pfiles_t
 {
@@ -26,6 +27,7 @@ typedef struct _pmodfile_t
 {
 	char *tname;
 	char *fname;
+	pfiles_t *pfile;
 	uint32_t applied;
 	uint32_t exists;
 	uint32_t flags;
@@ -67,7 +69,7 @@ static pmodfiles_t pmodfiles_init()
 	return list;
 }
 
-static void pmodfiles_add(pmodfiles_t list, char *fname, char *tname, uint32_t flags, uint32_t applied, uint32_t exists)
+static void pmodfiles_add(pmodfiles_t list, char *fname, char *tname, uint32_t flags, uint32_t applied, uint32_t exists, pfiles_t *pfile)
 {
 	pmodfile_t *item = (pmodfile_t*)malloc(sizeof(pmodfile_t));
 	if(item != NULL)
@@ -78,6 +80,8 @@ static void pmodfiles_add(pmodfiles_t list, char *fname, char *tname, uint32_t f
 		
 		item->exists  = exists;
 		item->applied = applied;
+		
+		item->pfile = pfile;
 		
 		item->next  = NULL;
 		
@@ -103,6 +107,7 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 	pmodfiles_t list;
 	char *path = (char*)upath;
 	char *path_mem = NULL;
+	int ename_created = 0;
 	
 	list = pmodfiles_init();
 	if(!list)
@@ -160,6 +165,8 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 					continue;
 				}
 				
+				ename_created = 1;
+				
 				fp = fopen(ename, "rb");
 			}
 			else
@@ -172,7 +179,7 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 				patch_selected(fp, tname, FLAGS(), &applied, &exists);
 				fclose(fp);
 				
-				pmodfiles_add(list, fname, tname, L_T_CREATED, applied, exists);
+				pmodfiles_add(list, fname, tname, L_T_CREATED, applied, exists, pfile);
 				list_item_added = 1;
 			}
 		}
@@ -187,7 +194,7 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 					patch_selected(fp, tname, FLAGS(), &applied, &exists);
 					fclose(fp);
 					
-					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists);
+					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
 					list_item_added = 1;
 				}
 			}
@@ -202,7 +209,7 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 					patch_selected(fp, tname, FLAGS(), &applied, &exists);
 					fclose(fp);
 					
-					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists);
+					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
 					list_item_added = 1;
 				}
 			}
@@ -218,7 +225,7 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 					patch_selected(fp, tname, FLAGS(), &applied, &exists);
 					fclose(fp);
 					
-					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists);
+					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
 					list_item_added = 1;
 				}
 			}
@@ -233,9 +240,113 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 		if(dir_mem != NULL) fs_path_free(dir_mem);
 	} // for
 	
+	if(ename_created)
+	{
+		fs_unlink(ename);
+	}
+	
 	if(ename != NULL) fs_path_free(ename);
 	if(vname != NULL) fs_path_free(vname);
 	if(path_mem != NULL) fs_path_free(path_mem);
+	
+	return list;
+}
+
+pmodfiles_t files_apply(const char *filepath, uint32_t global_flags, uint32_t global_unmask)
+{
+	pfiles_t *pfile;
+	pmodfiles_t list;
+	char *path = NULL;
+	char *base = NULL;
+	int cnt = 0;
+	
+	list = pmodfiles_init();
+	if(list == NULL)
+	{
+		return NULL;
+	}
+	
+	path = fs_dirname(filepath);
+	if(path == NULL)
+	{
+		files_cleanup(&list);
+		return NULL;
+	}
+	
+	base = fs_basename(filepath);
+	if(base == NULL)
+	{
+		files_cleanup(&list);
+		fs_path_free(path);
+		return NULL;
+	}
+	
+	for(pfile = pfiles; pfile->file != NULL; pfile++)
+	{
+		if(istrncmp(base, pfile->file, MAX_PATH) == 0)
+		{
+			FILE *fp;
+			char *tname = NULL;
+			char *ename = NULL;
+			
+			cnt++;
+			
+			uint32_t exists;
+			uint32_t applied;
+			
+			tname = fs_path_get3(filepath, NULL, "p9x");
+			if(tname != NULL)
+			{
+				ename = fs_path_get3(filepath, NULL, "w3");
+				if(ename != NULL)
+				{
+					int ename_created = 0;
+					
+					if((pfile->flags & PATCH_VX_PACK) != 0)
+					{
+						if(wx_to_w3(filepath, ename) != PATCH_OK)
+						{
+							continue;
+						}
+						
+						ename_created = 1;
+							
+						fp = fopen(ename, "rb");
+					}
+					else
+					{
+						fp = fopen(filepath, "rb");
+					}
+						
+					if(fp)
+					{
+						patch_selected(fp, tname, FLAGS(), &applied, &exists);
+						fclose(fp);
+							
+						pmodfiles_add(list, fs_path_dup(filepath), tname, L_T_CREATED, applied, exists, pfile);
+						
+						if(ename_created)
+						{
+							fs_unlink(ename);
+						}
+					}
+					else
+					{
+						fs_path_free(tname);
+					}
+					fs_path_free(ename);
+				} // if(ename)
+			} // if(tname)
+		} // istrcmp
+	} // for
+		
+	if(cnt == 0)
+	{
+		fprintf(stderr, "Error: don't know how handle with file named '%s'! (To apply patch on any file, run program with any -patch-* command line parameter)\n", base);
+	}
+	
+	fs_path_free(path);
+	fs_path_free(base);
 	
 	return list;
 }
@@ -290,7 +401,7 @@ int files_status(pmodfiles_t list)
 	return files_count;
 }
 
-int files_commit(pmodfiles_t *plist)
+int files_commit(pmodfiles_t *plist, int nobackup)
 {
 	pmodfile_t *pmod, *pmod_clean;
 	pmodfiles_t list = *plist;
@@ -298,13 +409,43 @@ int files_commit(pmodfiles_t *plist)
 	
 	for(pmod = list->first; pmod != NULL; )
 	{
+		int copy_done = 0;
+		
 		if(pmod->applied != 0)
 		{
-			patch_backup_file(pmod->fname, 0);
-			if(fs_file_exists(pmod->tname))
+			if(pmod->pfile != NULL && (pmod->pfile->flags & PATCH_VX_PACK) != 0)
 			{
-				fs_rename(pmod->tname, pmod->fname);
-				cnt++;
+				ssize_t fs_new = fs_file_size(pmod->tname);
+				ssize_t fs_old = fs_file_size(pmod->fname);
+				
+				if((pmod->pfile->flags & PATCH_FORCE_W3) != 0)
+				{
+					copy_done = 0; /* W3 is already W3 */
+				}
+				else if(
+					(fs_new >= 0 && fs_old >= 0 && fs_new > fs_old)
+					||
+					((pmod->pfile->flags & PATCH_FORCE_W4) != 0)
+				)
+				{
+					patch_backup_file(pmod->fname, nobackup);
+					printf("Compressing file, please wait...\n");
+					if(wx_to_w4(pmod->tname, pmod->fname) == PATCH_OK)
+					{
+						copy_done = 1;
+						cnt++;
+					}
+				}
+			}
+			
+			if(copy_done == 0)
+			{
+				patch_backup_file(pmod->fname, nobackup);
+				if(fs_file_exists(pmod->tname))
+				{
+					fs_rename(pmod->tname, pmod->fname);
+					cnt++;
+				}
 			}
 		}
 		else

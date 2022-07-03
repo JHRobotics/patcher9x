@@ -135,6 +135,7 @@ int cab_search_unpack(const char *dirname, const char *infilename, const char *o
 
 int wx_unpack(const char *src, const char *infilename, const char *out, const char *tmpname);
 int wx_to_w3(const char *in, const char *out);
+int wx_to_w4(const char *in, const char *out);
 
 int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applied);
 int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int flags);
@@ -150,9 +151,10 @@ int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *o
 
 typedef struct _pmodfiles_t *pmodfiles_t;
 pmodfiles_t files_lookup(const char *path, uint32_t global_flags, uint32_t global_unmask, uint32_t lookup_flags);
+pmodfiles_t files_apply(const char *upath, uint32_t global_flags, uint32_t global_unmask);
 int files_status(pmodfiles_t list);
 void files_cleanup(pmodfiles_t *plist);
-int files_commit(pmodfiles_t *plist);
+int files_commit(pmodfiles_t *plist, int nobackup);
 
 
 void print_trace();

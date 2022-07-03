@@ -89,7 +89,12 @@ static const char *question_dir_select[] =
 	"patch files, VMM32.VXD will be patched directly",
 	"do 1 and 2 simultaneously"	,
 	"scan *.CAB archives, extract files and patch them (VMM32 directly)",
-	"scan specific CAB file, extract files and patch them (VMM32 directly)",
+};
+
+static const char *question_file_selelect[] = 
+{
+	"patch file directly",
+	"handle as CAB file, extract files and patch them (VMM32 directly)",
 };
 
 #define MODE_AUTO        1 /* automaticly determine action from path */
@@ -110,6 +115,7 @@ typedef struct _options_t
 	int force_w4;
 	int no_backup;
 	uint32_t patches;
+	uint32_t unmask;
 	//int millennium;
 	const char *input;
 	const char *output;
@@ -237,11 +243,37 @@ static int read_arg(options_t *options, int argc, char **argv)
 		}
 		else if(istrcmp(arg, "-force-w3") == 0)
 		{
+			options->patches |= PATCH_FORCE_W3;
 			options->force_w3 = 1;
 		}
 		else if(istrcmp(arg, "-force-w4") == 0)
 		{
+			options->patches |= PATCH_FORCE_W4;
 			options->force_w4 = 1;
+		}
+		else if(istrcmp(arg, "-force-tlb") == 0)
+		{
+			options->patches |= PATCH_VMM_ALL;
+		}
+		else if(istrcmp(arg, "-force-cpuspeed") == 0)
+		{
+			options->patches |= PATCH_CPU_SPEED_ALL;
+		}
+		else if(istrcmp(arg, "-force-cpuspeed-ndis") == 0)
+		{
+			options->patches |= PATCH_CPU_SPEED_NDIS_ALL;
+		}
+		else if(istrcmp(arg, "-no-tlb") == 0)
+		{
+			options->unmask |= PATCH_VMM_ALL;
+		}
+		else if(istrcmp(arg, "-no-cpuspeed") == 0)
+		{
+			options->unmask |= PATCH_CPU_SPEED_ALL;
+		}
+		else if(istrcmp(arg, "-no-cpuspeed-ndis") == 0)
+		{
+			options->unmask |= PATCH_CPU_SPEED_NDIS_ALL;
 		}
 		else if(istrcmp(arg, "-no-backup") == 0)
 		{
@@ -840,6 +872,9 @@ static int run_interactive(options_t *options)
   int patch_success = 0;
   uint32_t lookup_flags = 0;
   
+ 	pmodfiles_t list;
+ 	int cnt = 0;
+  
   /*
    * Detection where the path entered by user leads
    */
@@ -928,7 +963,7 @@ static int run_interactive(options_t *options)
   		fprintf(stderr, "Warning: Path looks like Windows directory, please choose \"Windows\\system\" directory!\n");
   	}
   	
-  	user_ans = ask_user(options, "Select patch mode", question_dir_select, 5, default_ans);
+  	user_ans = ask_user(options, "Select patch mode", question_dir_select, 4, default_ans);
   }
   else if(fs_file_exists(upath)) /* source is file */
   {
@@ -946,17 +981,17 @@ static int run_interactive(options_t *options)
   		case PE_W3:
   		case PE_W4:
   		case PE_LE:
-  			default_ans = 2;
+  			default_ans = 1;
   			break;
   		case PE_NO_IS_MSCAB:
-  			default_ans = 5;
+  			default_ans = 2;
   			break;
   		default:
   			fprintf(stderr, "Warning: can't determine file type! %d\n", type);
   			break;
   	}
-  			
-  	user_ans = ask_user(options, "Select patch mode", question_dir_select, 5, default_ans);
+  	
+  	user_ans = ask_user(options, "Select patch mode", question_file_selelect, 2, default_ans);
   }
   else
   {
@@ -968,30 +1003,25 @@ static int run_interactive(options_t *options)
  		return EXIT_SUCCESS;
  	}
   
- 	/* extract VMM.VXD */
-  if(user_ans == 1)
+  /* if dir on individual CAB*/
+  if(upath_dir != 0)
   {
-  	lookup_flags |= PATCH_LOOKUP_EXTRACTWX;
-  	lookup_flags |= PATCH_LOOKUP_NO_VMM32;
-  }
-  else if(user_ans == 3)
-  {
-  	lookup_flags |= PATCH_LOOKUP_EXTRACTWX;
-  }
-  else if(user_ans == 4)
-  {
-  	lookup_flags |= PATCH_LOOKUP_CABS;
-  }
-  else if(user_ans == 5)
-  {
-  	lookup_flags |= PATCH_LOOKUP_ONE_CAB;
-  }
-  
-  /* Scan dir */
-  if(upath_dir != 0 || user_ans == 5)
-  {
-  	pmodfiles_t list;
-  	int cnt = 0;
+	  if(user_ans == 1) /* extract from VMM32.VXD */
+	  {
+	  	lookup_flags |= PATCH_LOOKUP_EXTRACTWX;
+	  	lookup_flags |= PATCH_LOOKUP_NO_VMM32;
+	  }
+	  /*
+	  else if(user_ans == 2){} // patch VMM32.VXD
+	  */
+	  else if(user_ans == 3) /* extract from VMM32.VXD and patch VMX.VMD */
+	  {
+	  	lookup_flags |= PATCH_LOOKUP_EXTRACTWX;
+	  }
+	  else if(user_ans == 4) /* extract from CABs */
+	  {
+	  	lookup_flags |= PATCH_LOOKUP_CABS;
+	  }
   	
   	if(fs_is_writeable_dir(upath, NULL) == 0)
  		{
@@ -999,43 +1029,63 @@ static int run_interactive(options_t *options)
 		}
 		else
 		{
-  		list = files_lookup(upath, 0, 0, lookup_flags);
-  		
-  		if(list)
-  		{
-  			cnt = files_status(list);
-  			if(cnt > 0)
-  			{
-  				int ask_retry = 0;
-  				do
-  				{
-  					ask_retry = 0;
-  					int ans = ask_user_patch(options);
-  					switch(ans)
-  					{
-  						case USER_YES:
-  							patch_success = files_commit(&list);
-  							break;
-  						case USER_NO:
-  							files_cleanup(&list);
-  							printf("Operation aborted by user\n");
-  							break;
-  						case USER_MORE:
-  							ask_retry = 1;
-  							break;
-  					
-  					}
-  				} while(ask_retry);
-  			}
-  			else
-  			{
-  				files_cleanup(&list);
-  			}
-  		}
-  		else
+  		list = files_lookup(upath, options->patches, options->unmask, lookup_flags);
+  		if(list == NULL)
   		{
   			report_error(PATCH_E_MEM);
   		}
+  	}
+  }
+  else // upath_dir == 0
+  {
+  	if(user_ans == 1) /* patch file */
+  	{
+  		list = files_apply(upath, options->patches, options->unmask);
+  		if(list == NULL)
+  		{
+  			report_error(PATCH_E_MEM);
+  		}
+  	}
+  	else if(user_ans == 2) /* extrac specific CAB */
+	  {
+  		list = files_lookup(upath, options->patches, options->unmask, PATCH_LOOKUP_ONE_CAB);
+  		if(list == NULL)
+  		{
+  			report_error(PATCH_E_MEM);
+  		}
+	  }
+  }
+  
+	if(list != NULL)
+	{
+		cnt = files_status(list);
+		if(cnt > 0)
+		{
+	 		int ask_retry = 0;
+  		do
+  		{
+  			ask_retry = 0;
+  			int ans = ask_user_patch(options);
+  			switch(ans)
+  			{
+  				case USER_YES:
+  					patch_success = files_commit(&list, options->no_backup);
+  					break;
+  				case USER_NO:
+  					files_cleanup(&list);
+  					printf("Operation aborted by user\n");
+ 						return EXIT_SUCCESS;
+  					break;
+  				case USER_MORE:
+  					ask_retry = 1;
+  					break;
+  			
+  			}
+  		} while(ask_retry);
+  	}
+  	else
+  	{
+  		files_cleanup(&list);
   	}
   }
   

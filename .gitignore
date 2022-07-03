@@ -22,5 +22,6 @@ __pycache__
 /doc/tmp/
 *.o
 *.bak
+*.tmp
 *.gen
 *.exe

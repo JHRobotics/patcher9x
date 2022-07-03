@@ -653,7 +653,6 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 	return status;
 }
 
-
 int wx_to_w3(const char *in, const char *out)
 {
 	FILE *fp;
@@ -681,6 +680,51 @@ int wx_to_w3(const char *in, const char *out)
 			}
 		}
 		else if(t == PE_W3)
+		{
+			FILE *fw = fopen(out, "wb");
+			if(fw)
+			{
+				fseek(fp, 0, SEEK_SET);
+				
+				fs_file_copy(fp, fw, 0);
+				status = PATCH_OK;
+				
+				fclose(fw);
+			}
+		}
+		fclose(fp);
+	}
+	
+	return status;
+}
+
+int wx_to_w4(const char *in, const char *out)
+{
+	FILE *fp;
+	dos_header_t dos;
+	pe_header_t  pe;
+	pe_w3_t     *w3;
+	int t;
+	int status = PATCH_E_CONVERT;
+	
+	fp = FOPEN_LOG(in, "rb");
+	if(fp)
+	{
+		t = pe_read(&dos, &pe, fp);
+		if(t == PE_W3)
+		{
+			w3 = pe_w3_read(&dos, &pe, fp);
+			if(w3 != NULL)
+			{
+				if(pe_w3_to_w4(w3, out) == PE_OK)
+				{
+					status = PATCH_OK;;
+				}
+				
+				pe_w3_free(w3);
+			}
+		}
+		else if(t == PE_W4)
 		{
 			FILE *fw = fopen(out, "wb");
 			if(fw)
