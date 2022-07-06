@@ -172,6 +172,7 @@ typedef struct _pmodfiles_t *pmodfiles_t;
  * Functions
  */
  
+/* unpack.c */
 int cab_search_unpack(const char *dirname, const char *infilename, const char *out);
 int cab_unpack(const char *srccab, const char *infilename, const char *out);
 int cab_search_unpack(const char *dirname, const char *infilename, const char *out);
@@ -180,19 +181,25 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 int wx_to_w3(const char *in, const char *out);
 int wx_to_w4(const char *in, const char *out);
 
+/* patch.c */
 int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applied);
 int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int flags);
 int patch_backup_file(const char *path, int nobackup);
 int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *out_applied, uint32_t *out_exists);
+void patch_print(uint32_t patches);
 
+/* files.c */
 pmodfiles_t files_lookup(const char *path, uint32_t global_flags, uint32_t global_unmask, uint32_t lookup_flags);
 pmodfiles_t files_apply(const char *upath, uint32_t global_flags, uint32_t global_unmask);
 int files_status(pmodfiles_t list);
 void files_cleanup(pmodfiles_t *plist);
 int files_commit(pmodfiles_t *plist, int nobackup);
+void files_print(pmodfiles_t list);
 
+/* exact.c */
 int run_exact(options_t *options);
 
+/* trace.c */
 void print_trace();
 FILE *fopen_log(const char *fn, const char *mode, const char *file, int line);
 #define FOPEN_LOG(_fn, _mode) fopen_log(_fn, _mode, __FILE__, __LINE__)
@@ -200,7 +207,7 @@ FILE *fopen_log(const char *fn, const char *mode, const char *file, int line);
 void print_error(int code, const char *file, int line);
 #define report_error(_code) print_error(_code, __FILE__, __LINE__);
 
-
+/* cputest.c */
 void cputest();
 
 /*

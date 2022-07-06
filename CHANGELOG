@@ -1,3 +1,11 @@
+0.7.XX
+- CPU Speed Limit bug is now supported and fixed
+- Using -millennium argument is no longer needed, Me patch is included in TLB set
+- Updated for Windows 98 Q242161 and 98 SE Q288430 is supported too
+- Default action is now directly patch files instead of extract VXD and patch file
+  (is much better way for installing additional updates)
+- new patch confirmation screen
+
 0.6.27
 - Windows Millennium Edition tested and works (use with -millennium argument)
 - Better handling readonly files/media

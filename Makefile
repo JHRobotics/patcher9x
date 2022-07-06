@@ -172,13 +172,13 @@ vmm/fasmdiff_me.h.tmp: vmm/originalme.bin vmm/dumpme.bin makediff$(HOST_SUFIX)
 	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_me vmm/dumpme.bin vmm/originalme.bin 0x1D8 0x3F20 > vmm/fasmdiff_me.h.tmp
 
 # cpu speed V1
-cpuspeed/speed_v1.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v1.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Dversion_1 cpuspeed/speed_v1.asm -o cpuspeed/speed_v1.asm.gen
 
-cpuspeed/speed_v1_orig.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v1_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_1 cpuspeed/speed_v1.asm -o cpuspeed/speed_v1_orig.asm.gen
 
-cpuspeed/speed_v1_reloc.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v1_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_1 cpuspeed/speed_v1.asm -o cpuspeed/speed_v1_reloc.asm.gen
 
 cpuspeed/speed_v1_diff.h.tmp: cpuspeed/speed_v1_dump.bin cpuspeed/speed_v1_orig.bin makediff$(HOST_SUFIX)
@@ -189,13 +189,13 @@ cpuspeed_patch_v1.h.tmp: cpuspeed/speed_v1.bin cpuspeed/speed_v1_orig.bin cpuspe
 
 
 # cpu speed V2
-cpuspeed/speed_v2.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v2.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Dversion_2 cpuspeed/speed_v1.asm -o cpuspeed/speed_v2.asm.gen
 
-cpuspeed/speed_v2_orig.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v2_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_2 cpuspeed/speed_v1.asm -o cpuspeed/speed_v2_orig.asm.gen
 
-cpuspeed/speed_v2_reloc.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v2_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_2 cpuspeed/speed_v1.asm -o cpuspeed/speed_v2_reloc.asm.gen
 
 cpuspeed/speed_v2_diff.h.tmp: cpuspeed/speed_v2_dump.bin cpuspeed/speed_v2_orig.bin makediff$(HOST_SUFIX)
@@ -205,13 +205,13 @@ cpuspeed_patch_v2.h.tmp: cpuspeed/speed_v2.bin cpuspeed/speed_v2_orig.bin cpuspe
 	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v2 cpuspeed_patch_v2 53 0 53 > cpuspeed_patch_v2.h.tmp
 
 # cpu speed V4
-cpuspeed/speed_v4.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v4.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Dversion_4 cpuspeed/speed_v1.asm -o cpuspeed/speed_v4.asm.gen
 
-cpuspeed/speed_v4_orig.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v4_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_4 cpuspeed/speed_v1.asm -o cpuspeed/speed_v4_orig.asm.gen
 
-cpuspeed/speed_v4_reloc.asm.gen: cpuspeed/speed_v1.asm
+cpuspeed/speed_v4_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_4 cpuspeed/speed_v1.asm -o cpuspeed/speed_v4_reloc.asm.gen
 
 cpuspeed/speed_v4_diff.h.tmp: cpuspeed/speed_v4_dump.bin cpuspeed/speed_v4_orig.bin makediff$(HOST_SUFIX)
@@ -221,13 +221,13 @@ cpuspeed_patch_v4.h.tmp: cpuspeed/speed_v4.bin cpuspeed/speed_v4_orig.bin cpuspe
 	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v4 cpuspeed_patch_v4 53 0 53 > cpuspeed_patch_v4.h.tmp
 
 # cpu speed V3
-cpuspeed/speed_v3.asm.gen: cpuspeed/speed_v3.asm
+cpuspeed/speed_v3.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v3.asm
 	$(CPP) -nostdinc -E -P -Dversion_3 cpuspeed/speed_v3.asm -o cpuspeed/speed_v3.asm.gen
 
-cpuspeed/speed_v3_orig.asm.gen: cpuspeed/speed_v3.asm
+cpuspeed/speed_v3_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v3.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_3 cpuspeed/speed_v3.asm -o cpuspeed/speed_v3_orig.asm.gen
 
-cpuspeed/speed_v3_reloc.asm.gen: cpuspeed/speed_v3.asm
+cpuspeed/speed_v3_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v3.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_3 cpuspeed/speed_v3.asm -o cpuspeed/speed_v3_reloc.asm.gen
 
 cpuspeed/speed_v3_diff.h.tmp: cpuspeed/speed_v3_dump.bin cpuspeed/speed_v3_orig.bin makediff$(HOST_SUFIX)
@@ -237,13 +237,13 @@ cpuspeed_patch_v3.h.tmp: cpuspeed/speed_v3.bin cpuspeed/speed_v3_orig.bin cpuspe
 	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v3 cpuspeed_patch_v3 44 0 44 > cpuspeed_patch_v3.h.tmp
 
 # cpu speed V5
-cpuspeed/speed_v5.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v5.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Dversion_5 cpuspeed/speed_v5.asm -o cpuspeed/speed_v5.asm.gen
 
-cpuspeed/speed_v5_orig.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v5_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_5 cpuspeed/speed_v5.asm -o cpuspeed/speed_v5_orig.asm.gen
 
-cpuspeed/speed_v5_reloc.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v5_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_5 cpuspeed/speed_v5.asm -o cpuspeed/speed_v5_reloc.asm.gen
 
 cpuspeed/speed_v5_diff.h.tmp: cpuspeed/speed_v5_dump.bin cpuspeed/speed_v5_orig.bin makediff$(HOST_SUFIX)
@@ -253,13 +253,13 @@ cpuspeed_patch_v5.h.tmp: cpuspeed/speed_v5.bin cpuspeed/speed_v5_orig.bin cpuspe
 	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v5 cpuspeed_patch_v5 69 0 69 > cpuspeed_patch_v5.h.tmp
 
 # cpu speed V6
-cpuspeed/speed_v6.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v6.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Dversion_6 cpuspeed/speed_v5.asm -o cpuspeed/speed_v6.asm.gen
 
-cpuspeed/speed_v6_orig.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v6_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_6 cpuspeed/speed_v5.asm -o cpuspeed/speed_v6_orig.asm.gen
 
-cpuspeed/speed_v6_reloc.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v6_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_6 cpuspeed/speed_v5.asm -o cpuspeed/speed_v6_reloc.asm.gen
 
 cpuspeed/speed_v6_diff.h.tmp: cpuspeed/speed_v6_dump.bin cpuspeed/speed_v6_orig.bin makediff$(HOST_SUFIX)
@@ -269,13 +269,13 @@ cpuspeed_patch_v6.h.tmp: cpuspeed/speed_v6.bin cpuspeed/speed_v6_orig.bin cpuspe
 	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v6 cpuspeed_patch_v6 69 0 69 > cpuspeed_patch_v6.h.tmp
 
 # cpu speed V7
-cpuspeed/speed_v7.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v7.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Dversion_7 cpuspeed/speed_v5.asm -o cpuspeed/speed_v7.asm.gen
 
-cpuspeed/speed_v7_orig.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v7_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_7 cpuspeed/speed_v5.asm -o cpuspeed/speed_v7_orig.asm.gen
 
-cpuspeed/speed_v7_reloc.asm.gen: cpuspeed/speed_v5.asm
+cpuspeed/speed_v7_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_7 cpuspeed/speed_v5.asm -o cpuspeed/speed_v7_reloc.asm.gen
 
 cpuspeed/speed_v7_diff.h.tmp: cpuspeed/speed_v7_dump.bin cpuspeed/speed_v7_orig.bin makediff$(HOST_SUFIX)
@@ -285,13 +285,13 @@ cpuspeed_patch_v7.h.tmp: cpuspeed/speed_v7.bin cpuspeed/speed_v7_orig.bin cpuspe
 	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v7 cpuspeed_patch_v7 69 0 69 > cpuspeed_patch_v7.h.tmp
 
 # cpu speed V8
-cpuspeed/speed_v8.asm.gen: cpuspeed/speed_v8.asm
+cpuspeed/speed_v8.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v8.asm
 	$(CPP) -nostdinc -E -P -Dversion_8 cpuspeed/speed_v8.asm -o cpuspeed/speed_v8.asm.gen
 
-cpuspeed/speed_v8_orig.asm.gen: cpuspeed/speed_v8.asm
+cpuspeed/speed_v8_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v8.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_8 cpuspeed/speed_v8.asm -o cpuspeed/speed_v8_orig.asm.gen
 
-cpuspeed/speed_v8_reloc.asm.gen: cpuspeed/speed_v8.asm
+cpuspeed/speed_v8_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v8.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_8 cpuspeed/speed_v8.asm -o cpuspeed/speed_v8_reloc.asm.gen
 
 cpuspeed/speed_v8_diff.h.tmp: cpuspeed/speed_v8_dump.bin cpuspeed/speed_v8_orig.bin makediff$(HOST_SUFIX)
@@ -302,13 +302,13 @@ cpuspeed_patch_v8.h.tmp: cpuspeed/speed_v8.bin cpuspeed/speed_v8_orig.bin cpuspe
 
 
 # cpu speed NDIS.VXD V1
-cpuspeed/speedndis_v1.asm.gen: cpuspeed/speedndis_v1.asm
+cpuspeed/speedndis_v1.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 	$(CPP) -nostdinc -E -P -Dversion_1 cpuspeed/speedndis_v1.asm -o cpuspeed/speedndis_v1.asm.gen
 
-cpuspeed/speedndis_v1_orig.asm.gen: cpuspeed/speedndis_v1.asm
+cpuspeed/speedndis_v1_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_1 cpuspeed/speedndis_v1.asm -o cpuspeed/speedndis_v1_orig.asm.gen
 
-cpuspeed/speedndis_v1_reloc.asm.gen: cpuspeed/speedndis_v1.asm
+cpuspeed/speedndis_v1_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_1 cpuspeed/speedndis_v1.asm -o cpuspeed/speedndis_v1_reloc.asm.gen
 
 cpuspeed/speedndis_v1_diff.h.tmp: cpuspeed/speedndis_v1_dump.bin cpuspeed/speedndis_v1_orig.bin makediff$(HOST_SUFIX)
@@ -318,13 +318,13 @@ cpuspeed_ndis_patch_v1.h.tmp: cpuspeed/speedndis_v1.bin cpuspeed/speedndis_v1_or
 	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v1 cpuspeed_ndis_patch_v1 112 0 112 > cpuspeed_ndis_patch_v1.h.tmp
 
 # cpu speed NDIS.VXD V3
-cpuspeed/speedndis_v3.asm.gen: cpuspeed/speedndis_v1.asm
+cpuspeed/speedndis_v3.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 	$(CPP) -nostdinc -E -P -Dversion_3 cpuspeed/speedndis_v1.asm -o cpuspeed/speedndis_v3.asm.gen
 
-cpuspeed/speedndis_v3_orig.asm.gen: cpuspeed/speedndis_v1.asm
+cpuspeed/speedndis_v3_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_3 cpuspeed/speedndis_v1.asm -o cpuspeed/speedndis_v3_orig.asm.gen
 
-cpuspeed/speedndis_v3_reloc.asm.gen: cpuspeed/speedndis_v1.asm
+cpuspeed/speedndis_v3_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_3 cpuspeed/speedndis_v1.asm -o cpuspeed/speedndis_v3_reloc.asm.gen
 
 cpuspeed/speedndis_v3_diff.h.tmp: cpuspeed/speedndis_v3_dump.bin cpuspeed/speedndis_v3_orig.bin makediff$(HOST_SUFIX)
@@ -334,13 +334,13 @@ cpuspeed_ndis_patch_v3.h.tmp: cpuspeed/speedndis_v3.bin cpuspeed/speedndis_v3_or
 	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v3 cpuspeed_ndis_patch_v3 112 0 112 > cpuspeed_ndis_patch_v3.h.tmp
 
 # cpu speed NDIS.VXD V2
-cpuspeed/speedndis_v2.asm.gen: cpuspeed/speedndis_v2.asm
+cpuspeed/speedndis_v2.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v2.asm
 	$(CPP) -nostdinc -E -P -Dversion_2 cpuspeed/speedndis_v2.asm -o cpuspeed/speedndis_v2.asm.gen
 
-cpuspeed/speedndis_v2_orig.asm.gen: cpuspeed/speedndis_v2.asm
+cpuspeed/speedndis_v2_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v2.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_2 cpuspeed/speedndis_v2.asm -o cpuspeed/speedndis_v2_orig.asm.gen
 
-cpuspeed/speedndis_v2_reloc.asm.gen: cpuspeed/speedndis_v2.asm
+cpuspeed/speedndis_v2_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v2.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_2 cpuspeed/speedndis_v2.asm -o cpuspeed/speedndis_v2_reloc.asm.gen
 
 cpuspeed/speedndis_v2_diff.h.tmp: cpuspeed/speedndis_v2_dump.bin cpuspeed/speedndis_v2_orig.bin makediff$(HOST_SUFIX)

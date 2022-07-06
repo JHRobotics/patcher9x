@@ -62,11 +62,16 @@ static const char HELP_NAME[] = "Patch for Windows 9x for run on newest CPUs - A
 	"\t-patch-tlb: apply TLB patch to file\n"
 	"\t-patch-cpuspeed: apply CPU SPEED patch to file\n"
 	"\t-patch-cpuspeed-ndis: apply CPU SPEED for NDIS.VXD patch to file\n"
-	"\t-no-backup: don't backup overwrited files\n"
+	"\t-no-backup: don't backup files before modify\n"
 #ifndef HELP_SHORT
 	"\t-force-w3: when patching VMM32.VXD, leave it as W3 file\n"
 	"\t-force-w4: when patching VMM32.VXD, always compress to W4 file\n"
-	
+	"\t-force-tlb: always try to apply TLB patch set\n"
+	"\t-force-cpupatch: always try to apply CPU SPEED patch set\n"
+	"\t-force-cpupatch-ndis: always try to apply CPU SPEED patch for NDIS.VXD\n"
+	"\t-no-tlb: do not apply TLB patches\n"
+	"\t-no-cpupatch: do not apply CPU SPEED patches\n"
+	"\t-no-cpupatch-ndis: do not apply CPU SPEED patches for NDIS.VXD\n"
 	"\t-millennium: ignored, Me patch is included in TLB set\n"
 #endif
 	"\t-i <file>: override input file name\n"

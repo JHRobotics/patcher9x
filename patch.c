@@ -47,6 +47,7 @@
 typedef struct _ppatch_t
 {
 	int id;
+	const char    *name;
 	const uint8_t *patch_data;
 	size_t         patch_size;
 	const uint8_t *orig_data;
@@ -64,20 +65,21 @@ typedef struct _ppatch_t
 
 
 ppatch_t ppathes[] = {
-	{PATCH_VMM98,             PPATCH_FILL(vmm_patch)},
-	{PATCH_VMM98_V2,          PPATCH_FILL(vmm_patch_v2)},
-	{PATCH_VMMME,             PPATCH_FILL(vmm_patch_me1)}, /* only first part, for this case is there special function */
-	{PATCH_CPU_SPEED_V1,      PPATCH_FILL(cpuspeed_patch_v1)},
-	{PATCH_CPU_SPEED_V2,      PPATCH_FILL(cpuspeed_patch_v2)},
-	{PATCH_CPU_SPEED_V3,      PPATCH_FILL(cpuspeed_patch_v3)},
-	{PATCH_CPU_SPEED_V4,      PPATCH_FILL(cpuspeed_patch_v4)},
-	{PATCH_CPU_SPEED_V5,      PPATCH_FILL(cpuspeed_patch_v5)},
-	{PATCH_CPU_SPEED_V6,      PPATCH_FILL(cpuspeed_patch_v6)},
-	{PATCH_CPU_SPEED_V7,      PPATCH_FILL(cpuspeed_patch_v7)},
-	{PATCH_CPU_SPEED_V8,      PPATCH_FILL(cpuspeed_patch_v8)},
-	{PATCH_CPU_SPEED_NDIS_V1, PPATCH_FILL(cpuspeed_ndis_patch_v1)},
-	{PATCH_CPU_SPEED_NDIS_V2, PPATCH_FILL(cpuspeed_ndis_patch_v2)},
-	{PATCH_CPU_SPEED_NDIS_V3, PPATCH_FILL(cpuspeed_ndis_patch_v3)},	
+	{PATCH_VMM98,             "W98 TLB patch #1",                                PPATCH_FILL(vmm_patch)},
+	{PATCH_VMM98_V2,          "W98 TLB patch #2 (Q242161, Q288430)",             PPATCH_FILL(vmm_patch_v2)},
+	{PATCH_VMMME,             "WMe TLB patch",                                   PPATCH_FILL(vmm_patch_me1)},
+	/* ^ only first part, for this case is there special function */
+	{PATCH_CPU_SPEED_V1,      "CPU Speed #1 (1 000 000 LOOPs)",                 PPATCH_FILL(cpuspeed_patch_v1)},
+	{PATCH_CPU_SPEED_V2,      "CPU Speed #2 (2 000 000 LOOPs)",                 PPATCH_FILL(cpuspeed_patch_v2)},
+	{PATCH_CPU_SPEED_V3,      "CPU Speed #3 (10 000 000 LOOPs, FIX95)",         PPATCH_FILL(cpuspeed_patch_v3)},
+	{PATCH_CPU_SPEED_V4,      "CPU Speed #4 (10 000 000 LOOPs, rloew's patch)", PPATCH_FILL(cpuspeed_patch_v4)},
+	{PATCH_CPU_SPEED_V5,      "CPU Speed #5 (1 000 000 LOOPs)",                 PPATCH_FILL(cpuspeed_patch_v5)},
+	{PATCH_CPU_SPEED_V6,      "CPU Speed #6 (2 000 000 LOOPs)",                 PPATCH_FILL(cpuspeed_patch_v6)},
+	{PATCH_CPU_SPEED_V7,      "CPU Speed #7 (10 000 000 LOOPs, FIX95)",         PPATCH_FILL(cpuspeed_patch_v7)},
+	{PATCH_CPU_SPEED_V8,      "CPU Speed #8 (10 000 000 LOOPs, rloew's patch)", PPATCH_FILL(cpuspeed_patch_v8)},
+	{PATCH_CPU_SPEED_NDIS_V1, "CPU Speed NDIS.VXD #1 (1 048 576 LOOPs, W95+W98FE)",        PPATCH_FILL(cpuspeed_ndis_patch_v1)},
+	{PATCH_CPU_SPEED_NDIS_V2, "CPU Speed NDIS.VXD #2 (1 048 576 LOOPs, W98SE)",            PPATCH_FILL(cpuspeed_ndis_patch_v2)},
+	{PATCH_CPU_SPEED_NDIS_V3, "CPU Speed NDIS.VXD #3 (10 485 760, LOOPs, rloew's patch)",  PPATCH_FILL(cpuspeed_ndis_patch_v3)},	
 };
 
 /* special case for ME patch */
@@ -559,5 +561,24 @@ int patch_backup_file(const char *path, int nobackup)
 	}
 	
 	return status;
+}
+
+void patch_print(uint32_t patches)
+{
+	ppatch_t *patch;
+	int cnt = 0;
+	
+	for(patch = ppathes; patch->patch_data != NULL; patch++)
+	{
+		if((patch->id & patches) != 0)
+		{
+			if(cnt++ > 0)
+			{
+				printf(", ");
+			}
+			
+			printf("%s", patch->name);			
+		}
+	}
 }
 

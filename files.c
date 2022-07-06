@@ -42,6 +42,7 @@ static pfiles_t pfiles[] = {
 	{"ESDI_506.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
 	{"SCSIPORT.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
 	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL },
+//	{"CS3KIT.EXE",   "",      PATCH_CPU_SPEED_ALL },
 	{NULL,           NULL,    0 }
 };
 
@@ -410,7 +411,7 @@ int files_status(pmodfiles_t list)
 	
 	printf("------------------------------------------------------------\n");
 	printf("  N - new patches to apply\n");
-	printf("  C - file created\n");
+	printf("  C - file created (extracted)\n");
 	printf("  E - some already patches\n");
 	printf("------------------------------------------------------------\n");
 	
@@ -523,4 +524,33 @@ void files_cleanup(pmodfiles_t *plist)
 	
 	free(list);
 	*plist = NULL;
+}
+
+void files_print(pmodfiles_t list)
+{
+	pmodfile_t *pmod;
+	
+	printf("------------------------------------------------------------\n");
+	for(pmod = list->first; pmod != NULL; pmod = pmod->next)
+	{
+		if(pmod->exists != 0 || pmod->applied != 0)
+		{
+			printf("FILE: %s\n", pmod->fname);
+			if(pmod->exists != 0)
+			{
+				printf("Exists patches: ");
+				patch_print(pmod->exists);
+				printf("\n");
+			}
+			
+			if(pmod->applied != 0)
+			{
+				printf("New patches: ");
+				patch_print(pmod->applied);
+				printf("\n");
+			}
+			
+			printf("------------------------------------------------------------\n");
+		}
+	}
 }

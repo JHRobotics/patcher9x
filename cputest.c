@@ -216,6 +216,14 @@ static void print_cpu()
 #define MIN_TIME(ts, t1) if(t1 < ts){ts = t1;}
 #define TEST_COUNT 3
 
+#define RESULTS2(_t, _a, _b) \
+	if(clock2ms(_t) < _a){ \
+		printf("CPU is too fast!\n"); \
+	}else if(clock2ms(_t) < _b){ \
+		printf("CPU speed is on the edge!\n"); \
+	}else{ printf("OK\n"); }
+
+
 void cputest()
 {
 	tick_t t,
@@ -270,51 +278,19 @@ void cputest()
 	printf("### compatibility:\n");
 	
 	printf("Windows 95: ");
-	if(clock2ms(t1) < 2.1)
-	{
-		printf("CPU is too fast!\n");
-	}
-	else
-	{
-		printf("OK\n");
-	}
+	RESULTS2(t1, 1.1, 2.1);
 	
 	printf("Windows 95 + FIX95CPU: ");
-	if(clock2ms(t3) < 2.1)
-	{
-		printf("CPU is still too fast!\n");
-	}
-	else
-	{
-		printf("OK\n");
-	}
+	RESULTS2(t3, 1.1, 2.1);
 	
 	printf("Windows 98 (pre 1411): ");
-	if(clock2ms(t1) < 2.1)
-	{
-		printf("CPU is too fast!\n");
-	}
-	else
-	{
-		printf("OK\n");
-	}
+	RESULTS2(t1, 1.1, 2.1);
 	
 	printf("Windows 98 FE: ");
-	if(clock2ms(t2) < 1.1)
-	{
-		printf("CPU is too fast!\n");
-	}
-	else if(clock2ms(t2) < 2.1)
-	{
-		printf("CPU speed is on bleeding edge\n");
-	}
-	else
-	{
-		printf("FE: OK\n");
-	}
+	RESULTS2(t2, 1.05, 2.1);
 	
 	printf("Windows 98 SE: ");
-	if(clock2ms(t2) < 1.1)
+	if(clock2ms(t2) < 1.05)
 	{
 		printf("potencial problem with NDIS.VXD\n");
 	}
@@ -327,21 +303,21 @@ void cputest()
 	
 	printf("### conclusion:\n");
 	
-	if(clock2ms(t3) > 1000.0)
+	if(clock2ms(t5) > 1000.0)
 	{
-		printf("Status: CPU patch will have serious speed loss for CPU, please run patch process with -no-cpuspeed-fix parameter, sorry.\n");
+		printf("Status: CPU patch will have serious speed loss for CPU, please run patch process with -no-cpuspeed and -no-cpuspeed-ndis parameter, sorry.\n");
 	}
-	else if(clock2ms(t1) < 2.5 && clock2ms(t3) > 2.5)
+	else if(clock2ms(t1) < 2.1 && clock2ms(t4) >= 2.1)
 	{
 		printf("Status: patch is recomended, but FIX95CPU works with your CPU too\n");
 	}
 	else if(clock2ms(t4) < 2.5)
 	{
-		printf("patch is highly recomended!\n");
+		printf("Status: patch is highly recomended!\n");
 	}
 	else
 	{
-		printf("patch isn't required, but if it be applied, it'll work.\n");
+		printf("Status: patch isn't required, but if it be applied, it'll work.\n");
 	}
 	
 	#if defined(DOS_MODE)

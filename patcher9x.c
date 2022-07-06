@@ -308,7 +308,12 @@ static int ask_user(options_t *options, const char *q, const char **ans, int ans
 		return ans_default;
 	}
 	
-	printf("0: cancel execution\n");
+	printf("0: cancel execution");
+	if(ans_default == 0)
+	{
+		printf(" [default]");
+	}
+	printf("\n");
 	
 	for(i = 0; i < ans_count; i++)
 	{
@@ -463,6 +468,16 @@ static int run_interactive(options_t *options)
   	}
   	
   	test_file = fs_path_get(upath, "WIN95_02.CAB", NULL); /* Windows 95 install */
+  	if(test_file)
+  	{
+  		if(fs_file_exists(test_file))
+  		{
+  			dir_is_install = 1;
+  		}
+  		fs_path_free(test_file);
+  	}
+  	
+  	test_file = fs_path_get(upath, "WIN9X30.CAB", NULL); /* "Memphis" install */
   	if(test_file)
   	{
   		if(fs_file_exists(test_file))
@@ -630,9 +645,9 @@ static int run_interactive(options_t *options)
  						return EXIT_SUCCESS;
   					break;
   				case USER_MORE:
+  					files_print(list);
   					ask_retry = 1;
   					break;
-  			
   			}
   		} while(ask_retry);
   	}
