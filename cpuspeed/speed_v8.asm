@@ -19,7 +19,7 @@ getcpuspeed:                                         ;00002786
 #if defined(originalcode)
     mov     ecx,0x00989680                           ;0000278D B980969800
 #else
-    mov     ecx,0x04C4B400                           ;0000278D
+    mov     ecx,NEW_SPEED                            ;0000278D
 #endif
     VMMcall_Get_System_Time                          ;00002792 CD203F000100
     mov     [ebp-4],eax                              ;00002798 8945FC
@@ -39,9 +39,9 @@ loop_repeat:                                         ;0000279B
       inc eax                                        ; 40
     skip_inc:
     push eax                                         ; 50
-    push 0x40                                        ; 6A40
-    pop  eax                                         ; 59
-    mov  eax,0x04DE9FBE                              ; B8BE9FDE04 (eax * ecx = 5 228 720 000)
+    push NEW_SPEED_MULB2                             ; 6A40
+    pop  ecx                                         ; 59
+    mov  eax,NEW_SPEED_MULB1                          ; B8BE9FDE04 (eax * ecx = 5 228 720 000)
                                                      ; ----- 12 bytes -----
     nop                                              ; 90 (padding)
 #endif

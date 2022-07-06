@@ -71,10 +71,10 @@
 ;
 ; A little addition: 10 000 000 (0098 9680h) is small nowadays (2022). I believe
 ; that some of nowadays CPUs (most from AMD, Intel has in LOOP instruction bit
-; slower) could run through this code under 1 ms and if not, about 3 ms and
+; slower) could run through this code under 1 ms and if not, about 2 ms and
 ; bellow on this loop could trigger this bug too (because precision of
 ; timer). So, I increased it 8 times. Side effect of this is that machines with
-; old slow CPU boot much slower with this patch.
+; old slow CPU boot bit slower with this patch.
 ;
 ; On other hands, you probably want to apply my set of patches because you have
 ; new ultra-fast CPU...
@@ -97,12 +97,12 @@
 ; |   V4    | speed_v1.asm     | 10 000 000 LOOPs (applied rloew''s manul patch)
 ; |   V5    | speed_v5.asm     |  1 000 000 LOOPs (Windows 95, SCSIPORT.PDR + ESDI_506.PDR)
 ; |   V6    | speed_v5.asm     |  2 000 000 LOOPs (V5 variant mention in post)
-; |   V7    | speed_v5.asm     | 10 000 000 LOOPs (applied rloew''s manul patch)
+; |   V7    | speed_v5.asm     | 10 000 000 LOOPs (applied rloew''s manual patch)
 ; |   V8    | speed_v8.asm     | 10 000 000 LOOPs (MS updates / FIX95 patch)
 ; +---------+------------------+------------------------------------------------
 ; | NDIS V1 | speedndis_v1.asm |  1 048 576 LOOPs (Windows 95, 98 FE, NDIS.VXD)
 ; | NDIS V2*| speedndis_v2.asm |  1 048 576 LOOPs (Windows 98 SE, NDIS.VXD)
-; | NDIS V3 | speedndis_v1.asm | 10 485 760 LOOPS (applied rloew''s manul patch)
+; | NDIS V3 | speedndis_v1.asm | 10 485 760 LOOPS (applied rloew''s manual patch)
 ; +---------+------------------+------------------------------------------------
 ;
 ; * In windows 98 SE is loop short but is here condition about zero division.
@@ -120,3 +120,39 @@
 #endif
 
 #define VMMcall_Get_System_Time db 0xCD,0x20,0x3F,0x00,0x01,0x00
+
+#if !defined(patchforslowcpu)
+; My first attempt (x8, x10), but due another bug, this values looks too large
+; a boot was slow. So, I created another set of values, but at last problem
+; wasn't in this values. And I think, it's best choise for most CPUs
+
+; D = 0x7FA78 * 0x2710 = 0x137A7EF80 (5 228 720 000)
+; D / SPEED = 65,359
+# define NEW_SPEED         0x04C4B400
+# define NEW_SPEED_MUL     0x0007FA78
+
+; D = 0x4DE9FBE * 0x40 = 0x137A7EF80 (5 228 720 000)
+# define NEW_SPEED_MULB1   0x4DE9FBE
+# define NEW_SPEED_MULB2   0x40
+
+; NEW_SPEED_NDIS * NEW_SPEED_NDIS_MUL = 0x3E80 0000 (1 048 576 000)
+# define NEW_SPEED_NDIS     0x6400000
+# define NEW_SPEED_NDIS_MUL 0x0A
+#else
+; My second set (x2) as compromise with divide by zero protection. 
+; You can try use it if you have some performace problem.
+
+; D = 0x1FE9E * 0x2710 = 0x4DE9FBE0 (1 307 180 000)
+; D / SPEED = 65,359
+# define NEW_SPEED         0x01312D00
+# define NEW_SPEED_MUL     0x0001FE9E
+
+; D = 0x26F4FDF * 0x20 = 0x4DE9FBE0 (1 307 180 000)
+# define NEW_SPEED_MULB1   0x26F4FDF
+# define NEW_SPEED_MULB2   0x20
+
+; NEW_SPEED_NDIS * NEW_SPEED_NDIS_MUL = 0x3E80 0000 (1 048 576 000)
+# define NEW_SPEED_NDIS     0x1400000
+# define NEW_SPEED_NDIS_MUL 0x32
+
+#endif

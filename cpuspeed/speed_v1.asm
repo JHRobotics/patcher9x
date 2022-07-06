@@ -20,7 +20,7 @@ org 0x00000000
 #elif defined(originalcode)
   mov ecx,0x000f4240                                 ;00000000  B940420F00
 #else
-  mov ecx,0x04C4B400                                 ;00000000
+  mov ecx,NEW_SPEED                                  ;00000000
 #endif
 
 VMMcall_Get_System_Time                              ;00000005  CD203F000100
@@ -48,7 +48,7 @@ push eax                                             ;00000017  50
 #elif defined(originalcode)
   mov eax,0x000f4240                                 ;00000018  B840420F00
 #else
-  mov eax,0x0007FA78
+  mov eax,NEW_SPEED_MUL
 #endif
 
 sub edx,edx                                          ;0000001D  2BD2

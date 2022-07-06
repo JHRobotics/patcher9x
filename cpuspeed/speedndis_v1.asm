@@ -25,10 +25,8 @@ loc_00021400:
 mov     [DATA_ADR(0x0)],ecx                       ; 890D00000000
 
 in      al,21h                                    ; E421
-#if defined(originalcode)
-  jmp     loc_00021415                            ; EB00
+jmp     loc_00021415                              ; EB00
   loc_00021415:
-#endif
 
 push    eax                                       ; 50
 mov     al,0FEh                                   ; B0FE
@@ -45,11 +43,11 @@ mov     edx,eax                                   ; 8BD0
 #elif defined(originalcode)
   mov     ecx,0x100000                            ; B900001000
 #else
-  mov     ecx,0x6400000
+  mov     ecx,NEW_SPEED_NDIS
 #endif
 
 #if defined(originalcode)
-  nop                                             ; 90
+  nop                                             ; 90 (1 saved byte)
 #endif
 
 loop_repeat:
@@ -69,7 +67,10 @@ sub     eax,edx                                   ; 2BC2
 #elif defined(originalcode)
   mov     ecx,0x03E8                              ; B9E8030000
 #else
-  mov     ecx,0x0A
+;  mov     ecx,NEW_SPEED_NDIS_MUL
+  push NEW_SPEED_NDIS_MUL                         ; 6A32
+  pop ecx                                         ; 59
+                                                  ; (2 saved byte)
 #endif
 
 mul     ecx                                       ; F7E1

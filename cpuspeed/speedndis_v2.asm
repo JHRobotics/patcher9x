@@ -43,7 +43,7 @@ mov     edx,eax                                   ; 8BD0
 #if defined(originalcode)
   mov     ecx,100000h                             ; B900001000
 #else
-  mov     ecx,0x6400000
+  mov     ecx,NEW_SPEED_NDIS
 #endif
 
 cs mov eax,eax                                    ; 2E8BC0
@@ -64,7 +64,7 @@ loc_00022E1E:
 #if defined(originalcode)
   mov     ecx,3E8h                                ; B9E8030000
 #else
-  mov     ecx,0x0A
+  mov     ecx,NEW_SPEED_NDIS_MUL
 #endif
 mul     ecx                                       ; F7E1
 mov     [DATA_ADR(0)],eax                         ; A330140000

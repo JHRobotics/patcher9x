@@ -14,7 +14,7 @@ org 0x00000000
 #if defined(originalcode)
   mov ecx,0x989680                                   ;00000000  B980969800
 #else
-  mov ecx,0x4C4B400
+  mov ecx,NEW_SPEED 
 #endif
 
 VMMcall_Get_System_Time                              ;00000005  CD203F000100
@@ -38,9 +38,9 @@ sub eax,esi                                          ;00000015  2BC6
     inc eax                                          ; 40
   skip_inc:
   push eax                                           ; 50
-  push 0x40                                          ; 6A40
-  pop  eax                                           ; 59
-  mov  eax,0x04DE9FBE                                ; B9 FD 4F 6F 02 (eax * ecx = 5228720000)
+  push NEW_SPEED_MULB2                               ; 6A40
+  pop  ecx                                           ; 59
+  mov  eax,NEW_SPEED_MULB1                           ; B9 FD 4F 6F 02 (eax * ecx = 5228720000)
                                                      ; ----- 12 bytes -----
   nop                                                ; 90 (padding)
 #endif

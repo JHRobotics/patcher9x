@@ -25,7 +25,7 @@ getcpuspeed:                                       ;00004A0C
 #elif defined(originalcode)
   mov ecx,0x000f4240                               ;00004A13  B940420F00
 #else
-  mov ecx,0x04C4B400                               ;00004A13
+  mov ecx,NEW_SPEED                                ;00004A13
 #endif
    
    
@@ -52,7 +52,7 @@ loop_repeat:                                       ;00004A21
 #elif defined(originalcode)
   mov eax,0x000f4240                               ;00004A2D  B840420F00
 #else
-  mov eax,0x0007FA78
+  mov eax,NEW_SPEED_MUL
 #endif
   
   sub     edx,edx                                  ;00004A32 2BD2
