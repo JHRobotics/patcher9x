@@ -1,4 +1,4 @@
-0.7.XX
+0.7.45
 - CPU Speed Limit bug is now supported and fixed
 - Using -millennium argument is no longer needed, Me patch is included in TLB set
 - Updated for Windows 98 Q242161 and 98 SE Q288430 is supported too

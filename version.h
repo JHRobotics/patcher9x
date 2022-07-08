@@ -7,7 +7,7 @@
 #define PATCHER9X_MINOR 7
 
 #ifndef PATCHER9X_PATCH
-#define PATCHER9X_PATCH 40
+#define PATCHER9X_PATCH 45
 #endif
 
 #define PATCHER9X_TAG "BETA3"
