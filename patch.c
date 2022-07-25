@@ -30,6 +30,9 @@
 #include "vmm_patch_me1.h"
 #include "vmm_patch_me2.h"
 
+#include "vmm_patch_old.h"
+#include "vmm_patch_old_v2.h"
+
 #include "cpuspeed_patch_v1.h"
 #include "cpuspeed_patch_v2.h"
 #include "cpuspeed_patch_v3.h"
@@ -80,6 +83,9 @@ ppatch_t ppathes[] = {
 	{PATCH_CPU_SPEED_NDIS_V1, "CPU Speed NDIS.VXD #1 (1 048 576 LOOPs, W95+W98FE)",        PPATCH_FILL(cpuspeed_ndis_patch_v1)},
 	{PATCH_CPU_SPEED_NDIS_V2, "CPU Speed NDIS.VXD #2 (1 048 576 LOOPs, W98SE)",            PPATCH_FILL(cpuspeed_ndis_patch_v2)},
 	{PATCH_CPU_SPEED_NDIS_V3, "CPU Speed NDIS.VXD #3 (10 485 760, LOOPs, rloew's patch)",  PPATCH_FILL(cpuspeed_ndis_patch_v3)},	
+	{PATCH_VMM98_OLD,         "W98 TLB patch #1 UPGRADE",                                  PPATCH_FILL(vmm_patch_old)},
+	{PATCH_VMM98_OLD_V2,      "W98 TLB patch #2 UPGRADE",                                  PPATCH_FILL(vmm_patch_old_v2)},
+	{0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0}
 };
 
 /* special case for ME patch */

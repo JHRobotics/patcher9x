@@ -48,6 +48,9 @@
 #include "../cpuspeed/speedndis_v2_diff.h"
 #include "../cpuspeed/speedndis_v3_diff.h"
 
+#include "fasmdiff_old.h"
+#include "fasmdiff_old_v2.h"
+
 #define PREFIX_MAX 255
 
 const char *h_header = \
@@ -80,6 +83,9 @@ preset_t presets[] = {
 	{"98",   "vmm/dump.bin",    "vmm/original.bin",    "vmm/patched.bin",    "vmm/reloc.bin",    vmm_fasmdiff,    sizeof(vmm_fasmdiff)},
 	{"98v2", "vmm/dump_v2.bin", "vmm/original_v2.bin", "vmm/patched_v2.bin", "vmm/reloc_v2.bin", vmm_fasmdiff_v2, sizeof(vmm_fasmdiff_v2)},
 	{"me",   "vmm/dumpme.bin",  "vmm/originalme.bin",  "vmm/patchedme.bin",  "vmm/relocme.bin",  vmm_fasmdiff_me, sizeof(vmm_fasmdiff_me)},
+	
+	{"98_old",    "vmm/dump_old.bin",       "vmm/original_old.bin",      "vmm/patched.bin",       "vmm/reloc_old.bin",     vmm_fasmdiff_old,    sizeof(vmm_fasmdiff_old)},
+	{"98_old_v2", "vmm/dump_old_v2.bin",    "vmm/original_old_v2.bin",   "vmm/patched_v2.bin",    "vmm/reloc_old_v2.bin",  vmm_fasmdiff_old_v2, sizeof(vmm_fasmdiff_old_v2)},
 
 	PRESENT("cpuspeed", speed_v1),
 	PRESENT("cpuspeed", speed_v2),
