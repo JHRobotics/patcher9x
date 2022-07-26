@@ -326,6 +326,11 @@ L17:
   push 0xc                              ; 6a0c
   pop ecx                               ; 59           ; +2
   sub edx,edx                           ;
+
+  ; arguments for procedure PageCommit (using 0 in edx = save 1 byte)
+  push 0x8                              ; 6A08
+  push edx                              ;              ; +1
+
   div ecx                               ;
   shl eax,cl                            ;
   mov ecx,[esp+0x14]                    ; 8B4C2414
@@ -344,10 +349,6 @@ L17:
     jmp load_ecx_edi_back               ;              ; -2 
   skip_injected:
   call 0xc0003ef0                       ; E8600BFFFF
-  push 0x8                              ; 6A08
-  push edx                              ;              ; +1
-  ; ^ sure EDX is 0? If byte found, change back to push 0x0
-
 #else
   mov ecx,0xc                           ; B90C000000
   sub edx,edx                           ; 2BD2
