@@ -110,7 +110,13 @@
 #define PATCH_VMM98_OLD 0x00010000
 
 /* TLB patch for windows 98 (oldversion) (for updated VMM.VXD) */
-#define PATCH_VMM98_OLD_V2 0x00040000
+#define PATCH_VMM98_OLD_V2 0x00020000
+
+/* TLB patch for windows 98 (older but more universal) */
+#define PATCH_VMM98_SIMPLE 0x00040000
+
+/* TLB patch for windows 98 (older but more universal - for updated VMM.VXD) */
+#define PATCH_VMM98_SIMPLE_V2 0x00080000
 
 
 /* sumary defs */
@@ -119,7 +125,7 @@
 
 #define PATCH_CPU_SPEED_NDIS_ALL (PATCH_CPU_SPEED_NDIS_V1|PATCH_CPU_SPEED_NDIS_V2|PATCH_CPU_SPEED_NDIS_V3)
 
-#define PATCH_VMM_ALL (PATCH_VMM98|PATCH_VMMME|PATCH_VMM98_V2|PATCH_VMM98_OLD|PATCH_VMM98_OLD_V2)
+#define PATCH_VMM_ALL (PATCH_VMM98|PATCH_VMMME|PATCH_VMM98_V2|PATCH_VMM98_OLD|PATCH_VMM98_OLD_V2|PATCH_VMM98_SIMPLE|PATCH_VMM98_SIMPLE_V2)
 
 /* program modes */
 #define MODE_AUTO        1 /* automaticly determine action from path */

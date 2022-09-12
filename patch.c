@@ -33,6 +33,9 @@
 #include "vmm_patch_old.h"
 #include "vmm_patch_old_v2.h"
 
+#include "vmm_patch_simple.h"
+#include "vmm_patch_simple_v2.h"
+
 #include "cpuspeed_patch_v1.h"
 #include "cpuspeed_patch_v2.h"
 #include "cpuspeed_patch_v3.h"
@@ -68,23 +71,25 @@ typedef struct _ppatch_t
 
 
 ppatch_t ppathes[] = {
-	{PATCH_VMM98,             "W98 TLB patch #1",                                PPATCH_FILL(vmm_patch)},
-	{PATCH_VMM98_V2,          "W98 TLB patch #2 (Q242161, Q288430)",             PPATCH_FILL(vmm_patch_v2)},
-	{PATCH_VMMME,             "WMe TLB patch",                                   PPATCH_FILL(vmm_patch_me1)},
+	{PATCH_VMM98,             "W98 TLB patch #1 (for SE, updated)",                        PPATCH_FILL(vmm_patch)},
+	{PATCH_VMM98_V2,          "W98 TLB patch #2 (for SE, Q242161, Q288430)",               PPATCH_FILL(vmm_patch_v2)},
+	{PATCH_VMMME,             "WinMe  TLB patch",                                          PPATCH_FILL(vmm_patch_me1)},
 	/* ^ only first part, for this case is there special function */
-	{PATCH_CPU_SPEED_V1,      "CPU Speed #1 (1 000 000 LOOPs)",                 PPATCH_FILL(cpuspeed_patch_v1)},
-	{PATCH_CPU_SPEED_V2,      "CPU Speed #2 (2 000 000 LOOPs)",                 PPATCH_FILL(cpuspeed_patch_v2)},
-	{PATCH_CPU_SPEED_V3,      "CPU Speed #3 (10 000 000 LOOPs, FIX95)",         PPATCH_FILL(cpuspeed_patch_v3)},
-	{PATCH_CPU_SPEED_V4,      "CPU Speed #4 (10 000 000 LOOPs, rloew's patch)", PPATCH_FILL(cpuspeed_patch_v4)},
-	{PATCH_CPU_SPEED_V5,      "CPU Speed #5 (1 000 000 LOOPs)",                 PPATCH_FILL(cpuspeed_patch_v5)},
-	{PATCH_CPU_SPEED_V6,      "CPU Speed #6 (2 000 000 LOOPs)",                 PPATCH_FILL(cpuspeed_patch_v6)},
-	{PATCH_CPU_SPEED_V7,      "CPU Speed #7 (10 000 000 LOOPs, FIX95)",         PPATCH_FILL(cpuspeed_patch_v7)},
-	{PATCH_CPU_SPEED_V8,      "CPU Speed #8 (10 000 000 LOOPs, rloew's patch)", PPATCH_FILL(cpuspeed_patch_v8)},
+	{PATCH_CPU_SPEED_V1,      "CPU Speed #1 (1 000 000 LOOPs)",                            PPATCH_FILL(cpuspeed_patch_v1)},
+	{PATCH_CPU_SPEED_V2,      "CPU Speed #2 (2 000 000 LOOPs)",                            PPATCH_FILL(cpuspeed_patch_v2)},
+	{PATCH_CPU_SPEED_V3,      "CPU Speed #3 (10 000 000 LOOPs, FIX95)",                    PPATCH_FILL(cpuspeed_patch_v3)},
+	{PATCH_CPU_SPEED_V4,      "CPU Speed #4 (10 000 000 LOOPs, rloew's patch)",            PPATCH_FILL(cpuspeed_patch_v4)},
+	{PATCH_CPU_SPEED_V5,      "CPU Speed #5 (1 000 000 LOOPs)",                            PPATCH_FILL(cpuspeed_patch_v5)},
+	{PATCH_CPU_SPEED_V6,      "CPU Speed #6 (2 000 000 LOOPs)",                            PPATCH_FILL(cpuspeed_patch_v6)},
+	{PATCH_CPU_SPEED_V7,      "CPU Speed #7 (10 000 000 LOOPs, FIX95)",                    PPATCH_FILL(cpuspeed_patch_v7)},
+	{PATCH_CPU_SPEED_V8,      "CPU Speed #8 (10 000 000 LOOPs, rloew's patch)",            PPATCH_FILL(cpuspeed_patch_v8)},
 	{PATCH_CPU_SPEED_NDIS_V1, "CPU Speed NDIS.VXD #1 (1 048 576 LOOPs, W95+W98FE)",        PPATCH_FILL(cpuspeed_ndis_patch_v1)},
 	{PATCH_CPU_SPEED_NDIS_V2, "CPU Speed NDIS.VXD #2 (1 048 576 LOOPs, W98SE)",            PPATCH_FILL(cpuspeed_ndis_patch_v2)},
 	{PATCH_CPU_SPEED_NDIS_V3, "CPU Speed NDIS.VXD #3 (10 485 760, LOOPs, rloew's patch)",  PPATCH_FILL(cpuspeed_ndis_patch_v3)},	
 	{PATCH_VMM98_OLD,         "W98 TLB patch #1 UPGRADE",                                  PPATCH_FILL(vmm_patch_old)},
 	{PATCH_VMM98_OLD_V2,      "W98 TLB patch #2 UPGRADE",                                  PPATCH_FILL(vmm_patch_old_v2)},
+	{PATCH_VMM98_SIMPLE,      "W98 TLB patch #1 (simple version)",                         PPATCH_FILL(vmm_patch_simple)},
+	{PATCH_VMM98_SIMPLE_V2,   "W98 TLB patch #2 (simple version, Q242161, Q288430)",       PPATCH_FILL(vmm_patch_simple_v2)},
 	{0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0}
 };
 
@@ -92,7 +97,7 @@ ppatch_t ppathes[] = {
 static int patch_select_me(FILE *fp, const char *dstfile, int *file_copied, uint32_t *applied, uint32_t *exists);
 
 /**
- * Apply seleced set of patches
+ * Apply selected set of patches
  *
  * @param fp: pointer to original file, source must support binary read and seeking
  * @param dstfile: file name of destination, destination will be overwriten
@@ -124,6 +129,15 @@ int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *o
 			ssize_t pos;
 			bitstream_t bs_check, bs_patch;
 			bs_mem(&bs_check, (uint8_t*)patch->check_data, patch->check_size);
+			
+			/* if already applied updated patch ignore simple version */
+			if((applied & (PATCH_VMM98 | PATCH_VMM98_V2)) != 0)
+			{
+				if(patch->id == PATCH_VMM98_SIMPLE || patch->id == PATCH_VMM98_SIMPLE_V2)
+				{
+					continue;
+				}
+			}
 			
 			fseek(fp, 0, SEEK_SET);
 			

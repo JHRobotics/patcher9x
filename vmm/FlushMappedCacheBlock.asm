@@ -49,6 +49,16 @@ org 0xC0013070
   dptr equ 0+
 #endif
 
+#ifdef vmmbugfix1
+  #define dfunc(_ptr) _ptr
+#else
+  #if defined(relocate) && !defined(nofuncrelocate)
+    #define dfunc(_ptr) not _ptr
+  #else
+    #define dfunc(_ptr) _ptr
+  #endif
+#endif
+
 func0:
 push esi                                ; 56
 push edi                                ; 57
@@ -151,16 +161,16 @@ mov eax,[dptr 0x15ed0]                  ; A1D05E0100
 mov [dptr 0x1507c],eax                  ; A37C500100
 L11:
 push ebp                                ; 55
-call 0xc0005e7a                         ; E80E2DFFFF
+call dfunc(0xc0005e7a)                  ; E80E2DFFFF
 push ebx                                ; 53
-call 0xc0008a28                         ; E8B658FFFF
+call dfunc(0xc0008a28)                  ; E8B658FFFF
 mov eax,[dptr 0x14f54]                  ; A1544F0100
 inc eax                                 ; 40
 mov [dptr 0x14f54],eax                  ; A3544F0100
 L10:
 mov word [ebp+0x8],0xf188               ; 66C7450888F1
 push dword [dword (dptr+0x15078)]       ; FF3578500100
-call 0xc0004210                         ; E88210FFFF
+call dfunc(0xc0004210)                  ; E88210FFFF
 mov esi,[esp+0x1c]                      ; 8B74241C
 mov edi,eax                             ; 8BF8
 add esi,0xc                             ; 83C60C
@@ -176,15 +186,15 @@ mov eax,[esp+0x14]                      ; 8B442414
 mov word [ebp+0xa],0x1                  ; 66C7450A0100
 mov [ebp+0x4],edx                       ; 895504
 and byte [eax+0x3],0xe7                 ; 806003E7
-call 0xc0008a19                         ; E85758FFFF
+call dfunc(0xc0008a19)                  ; E85758FFFF
 mov eax,[dptr 0x14f54]                  ; A1544F0100
 push ebx                                ; 53
 dec eax                                 ; 48
 mov [dptr 0x14f54],eax                  ; A3544F0100
-call 0xc0008a46                         ; E87358FFFF
+call dfunc(0xc0008a46)                  ; E87358FFFF
 push 0x0                                ; 6A00
 push dword [esp+0x20]                   ; FF742420
-call 0xc00143dd                         ; E8FF110000
+call dfunc(0xc00143dd)                  ; E8FF110000
 pop ebp                                 ; 5D
 pop edi                                 ; 5F
 pop esi                                 ; 5E
@@ -210,7 +220,7 @@ cmp ebx,edi                             ; 3BDF
 jna L12                                 ; 7611
 L13:
 push 0x0                                ; 6A00
-call 0xc0005f31                         ; E8182DFFFF
+call dfunc(0xc0005f31)                  ; E8182DFFFF
 mov ebx,[dword (dptr 0x14f54)]          ; 8B1D544F0100
 cmp ebx,edi                             ; 3BDF
 ja L13                                  ; 77EF
@@ -247,14 +257,14 @@ L16:
   jz near L14                           ; 0F84A6010000
   mov ebx,[ebp+0x4]                     ; 8B5D04
   push ebx                              ; 53
-  call 0xc0003e7c                       ; E8100CFFFF
+  call dfunc(0xc0003e7c)                ; E8100CFFFF
   cmp eax,0x1                           ; 83F801
   sbb edi,edi                           ; 1BFF
   neg edi                               ; F7DF
   or edi,edi                            ; 0BFF
   jz L15                                ; 7415
   push ebx                              ; 53
-  call 0xc0003e9d                       ; E8200CFFFF
+  call dfunc(0xc0003e9d)                ; E8200CFFFF
   mov eax,[dptr 0x14f70]                ; A1704F0100
   inc eax                               ; 40
   or edi,edi                            ; 0BFF
@@ -280,7 +290,7 @@ L15:
   mov [esp+0x18],eax                    ; 89442418
   jz near L17                           ; 0F8486000000
   push dword [esp+0x10]                 ; FF742410
-  call 0xc0008a28                       ; E85457FFFF
+  call dfunc(0xc0008a28)                ; E85457FFFF
   mov eax,[dptr 0x14f54]                ; A1544F0100
   inc eax                               ; 40
   mov [dptr 0x14f54],eax                ; A3544F0100
@@ -288,7 +298,7 @@ L15:
   and eax, 0x7f                         ; 83E07F
   push dword [eax*4+(dptr 0x16080)]     ; FF348580600100
   push ebx                              ; 53
-  call 0xc00071be                       ; E8CC3EFFFF
+  call dfunc(0xc00071be)                ; E8CC3EFFFF
   mov ecx,[esp+0x18]                    ; 8B4C2418
   push ebp                              ; 55
   mov esi,[ecx+0x4]                     ; 8B7104
@@ -307,9 +317,9 @@ L18:
   and byte [ebx+0x3],0xe7               ; 806303E7
   mov [ebx+0x6],esi                     ; 897306
   push ebx                              ; 53
-  call 0xc0003e9d                       ; E8650BFFFF
+  call dfunc(0xc0003e9d)                ; E8650BFFFF
   push dword [esp+0x10]                 ; FF742410
-  call 0xc0008a19                       ; E8D856FFFF
+  call dfunc(0xc0008a19)                ; E8D856FFFF
   mov eax,[dptr 0x14f54]                ; A1544F0100
   dec eax                               ; 48
   mov [dptr 0x14f54],eax                ; A3544F0100
@@ -319,7 +329,7 @@ L17:
   push eax                              ; 50
   push 0x1                              ; 6A01
   push edi                              ; 57
-  call 0xc00040e0                       ; E8820DFFFF
+  call dfunc(0xc00040e0)                ; E8820DFFFF
   sub eax,[dword (dptr 0x15f5c)]        ; 2B055C5F0100
 
 #ifdef vmmbugfix1
@@ -348,7 +358,7 @@ L17:
     mov edi,[eax+0x10]                  ; 8B7810       ; -3
     jmp load_ecx_edi_back               ;              ; -2 
   skip_injected:
-  call 0xc0003ef0                       ; E8600BFFFF
+  call dfunc(0xc0003ef0)                ; E8600BFFFF
 #else
   mov ecx,0xc                           ; B90C000000
   sub edx,edx                           ; 2BD2
@@ -382,7 +392,7 @@ L17:
     skip_injected:
     ; code length = 12 bytes (+1 byte padded with NOP)
   #endif
-  call 0xc0003ef0                       ; E8600BFFFF
+  call dfunc(0xc0003ef0)                ; E8600BFFFF
   push 0x8                              ; 6A08
   push 0x0                              ; 6A00
 
@@ -391,7 +401,7 @@ L17:
 push 0x3                                ; 6A03
 push 0x1                                ; 6A01
 push edi                                ; 57
-call 0xbffe1420                         ; E882E0FCFF (_PageCommit)
+call dfunc(0xbffe1420)                  ; E882E0FCFF (_PageCommit)
 add esp, 0x14                           ; 83C414
 #if defined(version_2)
   dec dword [dword (dptr 0x126f8)]      ; FF0DF8260100
@@ -440,17 +450,17 @@ mov [ecx],edx                           ; 8911
 mov esi,[dword (dptr 0x16178)]          ; 8B3578610100
 rep movsd                               ; F3A5
 push dword [esp+0x10]                   ; FF742410
-call 0xc0008a19                         ; E83256FFFF
+call dfunc(0xc0008a19)                  ; E83256FFFF
 mov eax,[dptr 0x14f54]                  ; A1544F0100
 push dword [esp+0x10]                   ; FF742410
 dec eax                                 ; 48
 mov [dptr 0x14f54],eax                  ; A3544F0100
-call 0xc0008a46                         ; E84B56FFFF
+call dfunc(0xc0008a46)                  ; E84B56FFFF
 push ebx                                ; 53
-call 0xc0003e9d                         ; E89C0AFFFF
+call dfunc(0xc0003e9d)                  ; E89C0AFFFF
 push 0x0                                ; 6A00
 push ebp                                ; 55
-call 0xc00143dd                         ; E8D40F0000
+call dfunc(0xc00143dd)                  ; E8D40F0000
 L14:
 mov eax,[dptr 0x14f64]                  ; A1644F0100
 pop ebp                                 ; 5D
@@ -466,16 +476,16 @@ func3:
   push ebx                              ; 53
   push esi                              ; 56
   mov ecx,0x2                           ; B902000000
-  call 0xc000bac1                       ; E89986FFFF
+  call dfunc(0xc000bac1)                ; E89986FFFF
   mov bl,al                             ; 8AD8
   push 0x0                              ; 6A00
   push 0x0                              ; 6A00
   push 0x0                              ; 6A00
   push 0x1e                             ; 6A1E
-  call 0xc0014824                       ; E8ED130000
+  call dfunc(0xc0014824)                ; E8ED130000
   mov esi,eax                           ; 8BF0
   mov ecx,ebx                           ; 8BCB
-  call 0xc000bae6                       ; E8A686FFFF
+  call dfunc(0xc000bae6)                ; E8A686FFFF
   mov eax,[esp+0xc]                     ; 8B44240C
   mov [esi+0x4],eax                     ; 894604
   mov ecx,eax                           ; 8BC8

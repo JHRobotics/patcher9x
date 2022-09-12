@@ -86,6 +86,9 @@ preset_t presets[] = {
 	
 	{"98_old",    "vmm/dump_old.bin",       "vmm/original_old.bin",      "vmm/patched.bin",       "vmm/reloc_old.bin",     vmm_fasmdiff_old,    sizeof(vmm_fasmdiff_old)},
 	{"98_old_v2", "vmm/dump_old_v2.bin",    "vmm/original_old_v2.bin",   "vmm/patched_v2.bin",    "vmm/reloc_old_v2.bin",  vmm_fasmdiff_old_v2, sizeof(vmm_fasmdiff_old_v2)},
+	
+	{"98_simple",    "vmm/dump.bin",    "vmm/original_simple.bin",    "vmm/patched_simple.bin",    "vmm/reloc_simple.bin",    vmm_fasmdiff,    sizeof(vmm_fasmdiff)},
+	{"98_simple_v2", "vmm/dump_v2.bin", "vmm/original_simple_v2.bin", "vmm/patched_simple_v2.bin", "vmm/reloc_simple_v2.bin", vmm_fasmdiff_v2, sizeof(vmm_fasmdiff_v2)},
 
 	PRESENT("cpuspeed", speed_v1),
 	PRESENT("cpuspeed", speed_v2),
