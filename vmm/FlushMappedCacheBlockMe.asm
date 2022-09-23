@@ -147,17 +147,27 @@ and edx,0xfff                                        ;00000187  81E2FF0F0000
 xor edx,eax                                          ;0000018D  33D0
 mov eax,[ebp+0x8]                                    ;0000018F  8B4508
 mov [ecx],edx                                        ;00000192  8911
+
 #ifdef originalcode
   mov ecx,0x400                                      ;00000194  B900040000
+  mov edi,[eax+0x10]                                 ;00000199  8B7810
+  push eax                                           ;0000019C  50
+  rep movsd                                          ;0000019D  F3A5
+                                                     ;          ----------------
+                                                     ;          9 bytes
 #elif defined(vmmbugfix2)
-  jmp FlushTLB
-  FlushTLB_back:
+  ; version 2 - do flush soon as possible
+  mov ecx,cr3                                        ;          0f20d9
+  mov cr3,ecx                                        ;          0f22d9
+  jmp FMCB_copy_block                                ;          E8XXXXXXXX
+  FMCB_back:
 #else
   call FlushTLB
+  mov edi,[eax+0x10]                                 ;00000199  8B7810
+  push eax                                           ;0000019C  50
+  rep movsd                                          ;0000019D  F3A5
 #endif
-mov edi,[eax+0x10]                                   ;00000199  8B7810
-push eax                                             ;0000019C  50
-rep movsd                                            ;0000019D  F3A5
+
 call CODE_ADR(0x3881)                                ;0000019F  E8DD360000
 push dword [ebp+0x8]                                 ;000001A4  FF7508
 dec dword [dword DATA_ADR(0x0)]                      ;000001A7  FF0D00000000
@@ -227,12 +237,13 @@ push edx                                             ;00003F91  52
 call CODE_ADR(0x44d4)                                ;00003F92  E83D050000
 mov dword [esi+0x4d8],0xffffffff                     ;00003F97  C786D8040000FFFFFFFF
 pop edi                                              ;00003FA1  5F
-#ifdef originalcode
-	pop esi                                            ;00003FA2  5E
-	ret 0x4                                            ;00003FA3  C20400
 
-	nop                                                ;00003FA6  90
-	nop                                                ;00003FA7  90
+#ifdef originalcode
+  pop esi                                            ;00003FA2  5E
+  ret 0x4                                            ;00003FA3  C20400
+  nop                                                ;00003FA6  90
+  nop                                                ;00003FA7  90
+
 
   nop                                                ;00003FA8  90
   nop                                                ;00003FA9  90
@@ -247,21 +258,25 @@ pop edi                                              ;00003FA1  5F
   nop                                                ;00003FB2  90
   nop                                                ;00003FB3  90
 #elif defined(vmmbugfix2)
-  jmp short ret_duplicate                            ; +2
-  FlushTLB:
-  mov ecx,cr3                                        ; 0f20d9
-  mov cr3,ecx                                        ; 0f22d9
-  mov ecx,0x400                                      ; B900040000
-  jmp FlushTLB_back
+  jmp ret_duplicate
+  FMCB_copy_block:
+    mov ecx,0x400                                    ; B900040000
+    mov edi,[eax+0x10]                               ; 8B7810
+    push eax                                         ; 50
+    rep movsd                                        ; F3A5
+    jmp FMCB_back                                    ; E9XXXXXXXX
+                                                     ; -----------
+                                                     ; 16 bytes
 #else
-	pop esi                                           ;00003FA2  5E
-	ret 0x4                                       ;00003FA3  C20400
-	; space 14 bytes, need 12, 2 bytes NOP padding
-  nop
-  nop
+  pop esi                                            ;00003FA2  5E
+  ret 0x4                                            ;00003FA3  C20400
+  nop                                                ;00003FA6  90
+  nop                                                ;00003FA7  90
   FlushTLB:
-  mov ecx,cr3                                  ; 0f20d9
-  mov cr3,ecx                                  ; 0f22d9
-  mov ecx,0x400                                ; B900040000
-  ret
+    mov ecx,cr3                                      ; 0f20d9
+    mov cr3,ecx                                      ; 0f22d9
+    mov ecx,0x400                                    ; B900040000
+    ret                                              ; CB
+                                                     ; -----------
+                                                     ; 12 bytes
 #endif
