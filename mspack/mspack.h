@@ -165,6 +165,10 @@ extern "C" {
 #include <sys/types.h>
 #include <stdlib.h>
 
+#ifdef NOCRT
+#include "nocrt.h"
+#endif
+
 /**
  * System self-test function, to ensure both library and calling program
  * can use one another.

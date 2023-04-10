@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2022 Jaroslav Hensl                                          *
+ * Copyright (c) 2023 Jaroslav Hensl                                          *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person                *
  * obtaining a copy of this software and associated documentation             *
@@ -22,29 +22,53 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR              *
  * OTHER DEALINGS IN THE SOFTWARE.                                            *
  *                                                                            *
-*******************************************************************************/
-#ifndef __BPATCHER_H__INCLUDED__
-#define __BPATCHER_H__INCLUDED__
+ ******************************************************************************/
 
-#include <bitstream.h>
+/*
+ * Typedef and function names in separate file for README.txt ganeration
+ */
 
-#ifdef NOCRT_FILE
-#include "nocrt.h"
+
+#ifdef HELP_PROGNAME
+	#define FUNC_NAME(_n) NULL
+	struct _options_t;
+	typedef struct _option_t options_t;
+#else
+	#define FUNC_NAME(_n) _n
 #endif
 
-#define BPATCHER_FILE_BUF 8192
+typedef int (*batch_f)(options_t *options, int argc, char **argv);
 
-ssize_t search_sieve(const uint8_t *haystack, size_t haystack_size,
-                     const uint8_t *needle, size_t needle_size, bitstream_t *sieve);
+typedef struct _batch_action_t
+{
+	batch_f func;
+	const char *name;
+	const char *desc;
+} batch_action_t;
 
-void patch_sieve(uint8_t *dst, const uint8_t *newdata, size_t data_size,
-                 bitstream_t *sieve);
+batch_action_t actions[] = {
+	{FUNC_NAME(batch_cab_list),              "--cab-list", "archive.cab"},
+	{FUNC_NAME(batch_cab_extract),           "--cab-extract", "archive.cab file1 [file2 [...]]"},
+	{FUNC_NAME(batch_cabs_extract),          "--cabs-extract", "dir-to-search file1 [file2 [...]]"},
+	{FUNC_NAME(batch_vxd_list),              "--vxd-list", "archive.vxd"},
+	{FUNC_NAME(batch_vxd_extract),           "--vxd-extract", "archive.vxd file1 [file2 [...]]"},
+	{FUNC_NAME(batch_vxd_convert),           "--vxd-convert", "archive.vxd"},
+	{FUNC_NAME(batch_vxd_extract_all),       "--vxd-extract-all", "archive.vxd [destination-dir]"},
+	{FUNC_NAME(batch_patch_all),             "--patch-all", "file.vxd [file2.vxd [...]]"},
+	{FUNC_NAME(batch_patch_tlb),             "--patch-tlb", "file.vxd [file2.vxd [...]]"},
+	{FUNC_NAME(batch_patch_cpuspeed),        "--patch-cpuspeed", "file.vxd [file2.vxd [...]]"},
+	{FUNC_NAME(batch_patch_cpuspeed_ndis),   "--patch-cpuspeed-ndis", "file.vxd [file2.vxd [...]]"},
+	{NULL, NULL, NULL}
+};
 
-void diff_sieve(const uint8_t *data_a, const uint8_t *data_b, size_t data_size,
-                bitstream_t *sieve);
+void batch_help()
+{
+	batch_action_t *action = &(actions[0]);
 
-ssize_t search_sieve_file(FILE *haystack_fp,
-                          const uint8_t *needle, size_t needle_size,
-                          bitstream_t *sieve);
+  printf("\nBatch mode functions:\n");
+	for(; action->name != NULL; action++)
+	{
+		printf("\t%-25s %s\n", action->name, action->desc);
+	}
+}
 
-#endif /* __BPATCHER_H__INCLUDED__ */

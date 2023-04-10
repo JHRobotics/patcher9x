@@ -32,6 +32,10 @@
 #include <stdlib.h>
 #include <cextra.h>
 
+#ifdef NOCRT_FILE
+#include "nocrt.h"
+#endif
+
 /* stream types */
 #define BITSTREAM_MEM  0
 #define BITSTREAM_FILE 1

@@ -1,3 +1,14 @@
+0.8.50
+- Support for Windows 95 4.0.950
+- "exact mode" removed, replace is batch mode, with simpler actions but offers
+  more powerful combinations
+- Boot floppy now contain CD driver and utilities for create system disk and
+  copy files (fdisk, format, xcopy)
+- improved TLB patches for 98 and Me (are more complicated, but should be but
+  more stable)
+- more portable Win32/64 build (removed dependency on MSCRT.DLL) and default
+  path is now current work directory if program is running on NT
+
 0.7.45
 - CPU Speed Limit bug is now supported and fixed
 - Using -millennium argument is no longer needed, Me patch is included in TLB set

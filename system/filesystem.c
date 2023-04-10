@@ -27,7 +27,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "filesystem.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -38,6 +37,9 @@
 #include <unistd.h>
 #include <dirent.h>
 #endif
+
+#include "filesystem.h"
+#include "nocrt.h"
 
 #define INT_MAGIC 0xF011EECC
 

@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "doublespace.h"
+#include "nocrt.h"
 
 #define FS_SEGMENT_SIZE 512
 
@@ -67,8 +68,10 @@ static void ds_out_pos(size_t count, size_t pos, bitstream_t *out)
 	size_t pos2 = 0;
 	size_t zeroes = 0;
 	
+#ifdef DEBUG
 	assert(count >= 2);
 	assert(pos   < 4415);
+#endif
 	
 	if(pos < 64)
 	{
@@ -95,7 +98,9 @@ static void ds_out_pos(size_t count, size_t pos, bitstream_t *out)
 	
 	//printf("count: %u num: %d zeroes: %u\n", count, num, zeroes);
 	
+#ifdef DEBUG
 	assert(num >= 0);
+#endif
 	
 	buf2 |= num << (zeroes + pos2 + 1);
 	
@@ -103,7 +108,9 @@ static void ds_out_pos(size_t count, size_t pos, bitstream_t *out)
 	
 	//printf("  buf: %08X\n", buf2);
 	
+#ifdef DEBUG
 	assert(pos2 <= 32);
+#endif
 	
 	bs_write_bit_le(out, buf2, pos2);
 }

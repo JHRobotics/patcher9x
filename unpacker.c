@@ -73,6 +73,19 @@ typedef struct _cab_list_t
 	cab_list_item_t *last;
 } cab_list_t;
 
+/* list of already scanned files */
+struct scanned_files_item
+{
+	char *filename;
+	struct scanned_files_item *next;
+};
+
+struct scanned_files_list
+{
+	struct scanned_files_item *first;
+	struct scanned_files_item *last;
+};
+
 /* allocate and add item to the end of list */
 static cab_list_item_t *cab_list_add(cab_list_t *list)
 {
@@ -120,7 +133,70 @@ static void cab_list_clear(cab_list_t *list)
 static void cab_list_init(cab_list_t *list)
 {
 	list->first = NULL;
-	list->last = NULL;
+	list->last  = NULL;
+}
+
+/* init file scan list */
+static void scanned_files_list_init(scanned_files_list_t *list)
+{
+	list->first = NULL;
+	list->last  = NULL;
+}
+
+static void scanned_files_list_add(scanned_files_list_t *list, const char *fn)
+{
+	size_t len = strlen(fn);
+	struct scanned_files_item *item = malloc(sizeof(struct scanned_files_item) + len + 1);
+	if(item != NULL)
+	{
+		item->filename = (char *)(item+1);
+		strcpy(item->filename, fn);
+		item->next = NULL;
+		
+		if(list->last == NULL)
+		{
+			list->first = item;
+			list->last  = item;
+		}
+		else
+		{
+			list->last->next = item;
+			list->last = item;
+		}
+	}
+}
+
+static int scanned_files_lookup(scanned_files_list_t *list, const char *fn)
+{
+	struct scanned_files_item *item = list->first;
+	
+	while(item != NULL)
+	{
+		if(istrcmp(item->filename, fn) == 0)
+		{
+			return 1;
+		}
+		
+		item = item->next;
+	}
+	
+	return 0;
+}
+
+static void scanned_files_clean(scanned_files_list_t *list)
+{
+	struct scanned_files_item *item = list->first;
+	
+	while(item != NULL)
+	{
+		struct scanned_files_item *del_item = item;
+		item = item->next;
+		
+		free(del_item);
+	}
+	
+	list->first = NULL;
+	list->last  = NULL;
 }
 
 /**
@@ -292,7 +368,7 @@ static void cab_analyze(const char *srccab, char **prevcab, char **nextcab)
  *
  * @return: number of extracet files (should be 0 or 1)
  **/
-int cab_unpack(const char *srccab, const char *infilename, const char *out)
+int cab_unpack(const char *srccab, const char *infilename, const char *out, scanned_files_list_t *sclist)
 {
 	int cnt = 0;
 	char *search;
@@ -317,6 +393,9 @@ int cab_unpack(const char *srccab, const char *infilename, const char *out)
 	cab_list_init(&prevlist);
 	cab_list_init(&nextlist);
 	
+	/* add file to list */
+	if(sclist != NULL) scanned_files_list_add(sclist, fs_basename(srccab));
+	
 	/* search for archive previous parts */
 	search = (char*)srccab;
 	do
@@ -331,6 +410,8 @@ int cab_unpack(const char *srccab, const char *infilename, const char *out)
 			{
 				item->filename = prev;
 				item->cab = cabd->open(cabd, item->filename);
+				
+				if(sclist != NULL) scanned_files_list_add(sclist, item->filename);
 				// printf("PREV: %s\n", item->filename);
 			}
 		}
@@ -351,6 +432,8 @@ int cab_unpack(const char *srccab, const char *infilename, const char *out)
 			{
 				item->filename = next;
 				item->cab = cabd->open(cabd, item->filename);
+				
+				if(sclist != NULL) scanned_files_list_add(sclist, item->filename);
 				// printf("NEXT: %s\n", item->filename);
 			}
 		}
@@ -405,7 +488,7 @@ int cab_unpack(const char *srccab, const char *infilename, const char *out)
 			{
 				/* nice message for user */
 				char *cab_first = NULL;
-				char *cab_last = NULL;
+				char *cab_last  = NULL;
 				
 				if(item_first_cab == NULL && item_last_cab == NULL)
 				{
@@ -468,8 +551,8 @@ int cab_unpack(const char *srccab, const char *infilename, const char *out)
 				{
 					printf("FAILURE (%d)\n", t);
 				}
-			}
-    }
+			} // infilename
+    } // for files
     
     cabd->close(cabd, cab);    
   } // cab
@@ -498,20 +581,27 @@ int cab_search_unpack(const char *dirname, const char *infilename, const char *o
 	fs_dir_t *dir = fs_dir_open(dirname);
 	int cnt = 0;
 	const char *fn;
+	
+	scanned_files_list_t sclist;
+	scanned_files_list_init(&sclist);
+	
   if(dir)
   {
   	while((fn = fs_dir_read(dir, FS_FILTER_FILE)) != NULL)
   	{
   		if(fs_ext_match(fn, "cab") != 0)
-  		{			
+  		{
   			char *cabfile = fs_path_get(dirname, fn, NULL);
   			
-  			if(cab_unpack(cabfile, infilename, out) > 0)
+  			if(!scanned_files_lookup(&sclist, fn))
   			{
-  				//printf("extracted: %s\n", infilename);
-  				cnt++;
+  				if(cab_unpack(cabfile, infilename, out, &sclist) > 0)
+  				{
+	  				//printf("extracted: %s\n", infilename);
+  					cnt++;
+  				}
+  				fs_path_free(cabfile);
   			}
-  			fs_path_free(cabfile);
   		}
   		
   		if(cnt > 0)
@@ -521,6 +611,8 @@ int cab_search_unpack(const char *dirname, const char *infilename, const char *o
   	}
   	fs_dir_close(&dir);
   }
+  
+  scanned_files_clean(&sclist);
   
   return cnt;
 }
@@ -587,9 +679,13 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 			{
 				status = PATCH_E_READ;
 			}
+			
+			fclose(fp);
 		}
 		else if(t == PE_W4)
 		{
+			fclose(fp);
+			
 			if(exist_temp)
 			{
 				status = PATCH_E_CONVERT;
@@ -600,33 +696,37 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 				{
 					fp2 = FOPEN_LOG(tmpname, "rb");
 					if(fp2 != NULL)
-					{						
-						w3 = pe_w3_read(&dos2, &pe2, fp2);
-						if(w3 != NULL)
+					{
+						if(pe_read(&dos2, &pe2, fp2) == PE_W3)
 						{
-							char *path_without_ext = fs_path_get(NULL, infilename, "");
-							int status_extract = 0;
-							
-							if(path_without_ext != NULL)
+							w3 = pe_w3_read(&dos2, &pe2, fp2);
+							if(w3 != NULL)
 							{
-								status_extract = pe_w3_extract(w3, path_without_ext, out);
-								fs_path_free(path_without_ext);
+								char *path_without_ext = fs_path_get(NULL, infilename, "");
+								int status_extract = 0;
+								
+								if(path_without_ext != NULL)
+								{
+									status_extract = pe_w3_extract(w3, path_without_ext, out);
+									fs_path_free(path_without_ext);
+								}
+								else
+								{
+									status_extract = pe_w3_extract(w3, infilename, out);
+								}
+								
+								if(status_extract == PE_OK)
+								{
+									status = PATCH_OK;
+								}
+								
+								pe_w3_free(w3);
 							}
 							else
 							{
-								status_extract = pe_w3_extract(w3, infilename, out);
+								//printf("pe_w3_read FAIL\n");
+								status = PATCH_E_READ;
 							}
-							
-							if(status_extract == PE_OK)
-							{
-								status = PATCH_OK;
-							}
-							
-							pe_w3_free(w3);
-						}
-						else
-						{
-							status = PATCH_E_READ;
 						}
 						
 						fclose(fp2);
@@ -636,15 +736,15 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 					{
 						status = PATCH_E_READ;
 					}
-				}
+				} // wx_to_w3
 			}
 		}
 		else
 		{
+			fclose(fp);
 			status = PATCH_E_WRONG_TYPE;
 		}
-		fclose(fp);
-	}
+	} // fopen
 	else
 	{
 		status = PATCH_E_READ;
@@ -758,3 +858,191 @@ int wx_to_w4(const char *in, const char *out)
 	
 	return status;
 }
+
+/* context listing - CABS */
+struct cab_filelist
+{
+  struct mscab_decompressor *cabd;
+  struct mscabd_cabinet *cab;
+  struct mscabd_file *file;
+};
+
+/**
+ * Open cab for file listing
+ *
+ **/
+cab_filelist_t *cab_filelist_open(const char *file)
+{
+	cab_filelist_t *list = malloc(sizeof(cab_filelist_t));
+	list->cabd = NULL;
+	list->cab  = NULL;
+	list->file = NULL;
+	  
+  if((list->cabd = mspack_create_cab_decompressor(NULL)) == NULL)
+	{
+		free(list);
+		return NULL;
+	}
+	
+	list->cab = list->cabd->open(list->cabd, file);
+	if(list->cab == NULL)
+	{
+		mspack_destroy_cab_decompressor(list->cabd);
+		free(list);
+		return NULL;
+	}
+	
+	list->file = list->cab->files;
+  
+  return list;
+}
+
+/**
+ * Return file name and move pointer to another file
+ *
+ **/
+const char *cab_filelist_get(cab_filelist_t *list)
+{
+	if(list->file != NULL)
+	{
+		const char *s = list->file->filename;
+		list->file = list->file->next;
+		
+		return s;
+	}
+	return NULL;
+}
+
+/**
+ * Close CAB
+ *
+ **/
+void cab_filelist_close(cab_filelist_t *list)
+{
+	if(list->cab)
+	{
+  	list->cabd->close(list->cabd, list->cab);
+  }
+  
+  if(list->cabd)
+  {
+  	mspack_destroy_cab_decompressor(list->cabd);
+  }
+  
+  free(list);
+}
+
+/* context listting - VXD */
+struct vxd_filelist
+{
+	pe_w3_t *w3;
+	size_t act;
+	const char *tmp;
+};
+
+/**
+ * Open VXD (W3/W4) for file listting, if W4 convert to W3 using tmp
+ *
+ **/
+vxd_filelist_t *vxd_filelist_open(const char *file, const char *tmp)
+{
+	dos_header_t dos;
+	pe_header_t pe;
+	int type;
+	FILE *fr;
+	
+	vxd_filelist_t *list = malloc(sizeof(vxd_filelist_t));
+	if(list == NULL)
+	{
+		return NULL;
+	}
+	
+	list->w3 = NULL;
+	list->act = 0;
+	list->tmp = NULL;
+	
+	fr = fopen(file, "rb");
+	if(!fr)
+	{
+		free(list);
+		return NULL;
+	}
+	
+	type = pe_read(&dos, &pe, fr);
+	if(type == PE_W3)
+	{
+		list->w3 = pe_w3_read(&dos, &pe, fr);
+		fclose(fr);
+	}
+	else if(type == PE_W4)
+	{
+		fclose(fr);
+		if(wx_to_w3(file, tmp) == PATCH_OK)
+		{
+			fr = fopen(tmp, "rb");
+			if(fr)
+			{
+				type = pe_read(&dos, &pe, fr);
+				if(type == PE_W3)
+				{
+					list->w3 = pe_w3_read(&dos, &pe, fr);
+					list->tmp = tmp;
+				}
+				fclose(fr);
+			}
+		}
+	}
+	else
+	{
+		fclose(fr);
+	}
+	
+	if(list->w3 == NULL)
+	{
+		free(list);
+		return NULL;
+	}
+	
+	return list;
+}
+
+/**
+ * Return file name and move pointer to another file
+ *
+ **/
+const char *vxd_filelist_get(vxd_filelist_t *list)
+{
+	static char cname[PE_W3_FILE_NAME_SIZE+1];
+	
+	if(list->act < list->w3->files_cnt)
+	{
+		uint8_t *ptr = list->w3->files[list->act].name;
+		memcpy(cname, ptr, PE_W3_FILE_NAME_SIZE);
+		cname[PE_W3_FILE_NAME_SIZE] = '\0';
+		
+		list->act++;
+		return cname;
+	}
+	
+	return NULL;
+}
+
+/**
+ * Close the file and delete temp if was used
+ *
+ **/
+void vxd_filelist_close(vxd_filelist_t *list)
+{
+	if(list->w3 != NULL)
+	{
+		pe_w3_free(list->w3);
+	}
+	
+	if(list->tmp)
+	{
+		fs_unlink(list->tmp);
+	}
+	
+	free(list);
+}
+

@@ -26,6 +26,10 @@
 #ifndef __FILESYSTEM_H__INCLUDED__
 #define __FILESYSTEM_H__INCLUDED__
 
+#ifdef NOCRT_FILE
+#include "nocrt.h"
+#endif
+
 #define FS_FILTER_FILE 1
 #define FS_FILTER_DIR  2
 

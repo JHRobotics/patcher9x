@@ -29,6 +29,7 @@
 #include <filesystem.h>
 #include "pew.h"
 #include "doublespace.h"
+#include "nocrt.h"
 
 /* header of LE file  */
 static const uint8_t dos_program_le[] = 
@@ -172,10 +173,10 @@ pe_w3_t *pe_w3_read(dos_header_t *dos, pe_header_t *pe, FILE *fp)
 		/* read files list */
 	  fseek(fp, w3->pe_pos + sizeof(pe_header_t), SEEK_SET);
 		fread(&(w3->files[0]), sizeof(pe_w3_file_t), pe->w3.vxd_count, fp);
+
+		fseek(fp, 0, SEEK_END);
+		w3->file_size = ftell(fp);
 	}
-	
-	fseek(fp, 0, SEEK_END);
-	w3->file_size = ftell(fp);
 	
 	return w3;
 }

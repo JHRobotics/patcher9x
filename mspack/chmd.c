@@ -832,7 +832,9 @@ static int search_chunk(struct mschmd_header *chm,
 # include <wctype.h>
 # define TOLOWER(x) towlower(x)
 #else
-# include <ctype.h>
+# ifndef NOCRT
+#  include <ctype.h>
+# endif
 # define TOLOWER(x) tolower(x)
 #endif
 

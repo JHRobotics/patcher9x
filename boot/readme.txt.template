@@ -1,0 +1,13 @@
+Bootable floppy with patch for Windows 95/98/Me
+for run on newest CPUs - AMD ZEN 2+, Intel Tiger Lake+
+
+Version: %VERSION%
+
+For start patching (interactive mode) type:
+  patch9x
+
+For view help type:
+  patch9x -h
+
+For info about other tools on this disk type:
+  info

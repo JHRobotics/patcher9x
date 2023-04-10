@@ -33,6 +33,7 @@
 #include <filesystem.h>
 #include <extstring.h>
 #include <pew.h>
+#include "nocrt.h"
 
 #include "version.h"
 
@@ -131,6 +132,7 @@
 #define MODE_AUTO        1 /* automaticly determine action from path */
 #define MODE_INTERACTIVE 2 /* same as auto but ask user if sure */
 #define MODE_EXACT       3 /* use steps by command line */
+#define MODE_BATCH       4 /* use one step on command line */
 
 /* patch lookup flags */
 #define PATCH_LOOKUP_CABS      1 /* scan cab files */
@@ -149,7 +151,7 @@
  * Platform selection
  */
 
-#if defined(__MSDOS__) || (defined(_WIN32) && !defined(_WIN64))
+#if defined(__MSDOS__) || defined(_WIN32)
 #define RUN_WITHOUT_ARGS
 #endif
 
@@ -182,18 +184,32 @@ typedef struct _options_t
 
 typedef struct _pmodfiles_t *pmodfiles_t;
 
+struct scanned_files_list;
+typedef struct scanned_files_list scanned_files_list_t;
+
 /*
  * Functions
  */
  
 /* unpack.c */
 int cab_search_unpack(const char *dirname, const char *infilename, const char *out);
-int cab_unpack(const char *srccab, const char *infilename, const char *out);
-int cab_search_unpack(const char *dirname, const char *infilename, const char *out);
+int cab_unpack(const char *srccab, const char *infilename, const char *out, scanned_files_list_t *list);
 
 int wx_unpack(const char *src, const char *infilename, const char *out, const char *tmpname);
 int wx_to_w3(const char *in, const char *out);
 int wx_to_w4(const char *in, const char *out);
+
+struct cab_filelist;
+typedef struct cab_filelist cab_filelist_t;
+cab_filelist_t *cab_filelist_open(const char *file);
+const char *cab_filelist_get(cab_filelist_t *list);
+void cab_filelist_close(cab_filelist_t *list);
+
+struct vxd_filelist;
+typedef struct vxd_filelist vxd_filelist_t;
+vxd_filelist_t *vxd_filelist_open(const char *file, const char *tmp);
+const char *vxd_filelist_get(vxd_filelist_t *list);
+void vxd_filelist_close(vxd_filelist_t *list);
 
 /* patch.c */
 int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applied);
@@ -213,6 +229,11 @@ void files_print(pmodfiles_t list);
 /* exact.c */
 int run_exact(options_t *options);
 
+/* batch.c */
+int batch_arg(const char *arg);
+int batch_run(options_t *options, int id, int argc, char **argv);
+void batch_help();
+
 /* trace.c */
 void print_trace();
 FILE *fopen_log(const char *fn, const char *mode, const char *file, int line);
@@ -224,10 +245,13 @@ void print_error(int code, const char *file, int line);
 /* cputest.c */
 void cputest();
 
+/* pwin32.c */
+void set_default_path(char *default_path);
+
 /*
  * Globals
  */
 
-extern const char *patcher9x_default_path;
+extern char patcher9x_default_path[MAX_PATH];
 
 #endif /* __PATCHER9X_INCLUDED__ */

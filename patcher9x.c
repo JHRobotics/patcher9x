@@ -41,7 +41,7 @@
 #endif
 
 static char userpath[MAX_PATH];
-const char *patcher9x_default_path = DEFAULT_PATH;
+char patcher9x_default_path[MAX_PATH] = DEFAULT_PATH;
 
 static const char *question_dir_select[] = 
 {
@@ -65,6 +65,7 @@ static void print_help(const char *progname, int longer)
 	if(longer > 1)
 	{
 		printf(help_long, HELP_LONG_REP_ARG(progname));
+		batch_help();
 	}
 	else
 	{
@@ -72,6 +73,7 @@ static void print_help(const char *progname, int longer)
 	}
 #else
 	printf(help, HELP_LONG_REP_ARG(progname));
+	batch_help();
 #endif
 }
 
@@ -79,11 +81,15 @@ static void print_help(const char *progname, int longer)
  * Parse argc/argv
  *
  **/
-static int read_arg(options_t *options, int argc, char **argv)
+static int read_arg(options_t *options, int argc, char **argv, int *batch_id, int *batch_argc, char **batch_argv)
 {
 	int i;
 	memset(options, 0, sizeof(options_t));
 	options->mode = MODE_INTERACTIVE;
+	int unk_args = 0;
+	int unk_arg  = 0;
+	
+	*batch_argc = 0;
 	
 	for(i = 1; i < argc; i++)
 	{
@@ -93,7 +99,7 @@ static int read_arg(options_t *options, int argc, char **argv)
 			options->print_help = 1;
 		}
 		#ifdef DOS_MODE
-		if(istrcmp(arg, "-hh") == 0)
+		else if(istrcmp(arg, "-hh") == 0)
 		{
 			options->print_help = 2;
 		}
@@ -105,34 +111,6 @@ static int read_arg(options_t *options, int argc, char **argv)
 		else if(istrcmp(arg, "-cputest") == 0)
 		{
 			options->cputest = 1;
-		}
-		else if(istrcmp(arg, "-cab-extract") == 0)
-		{
-			options->cab_extract = 1;
-			options->mode = MODE_EXACT;
-		}
-		else if(istrcmp(arg, "-wx-extract") == 0)
-		{
-			options->wx_extract = 1;
-			options->mode = MODE_EXACT;
-		}
-		else if(istrcmp(arg, "-patch-tlb") == 0)
-		{
-			options->patch = 1;
-			options->patches |= PATCH_VMM_ALL;
-			options->mode = MODE_EXACT;
-		}
-		else if(istrcmp(arg, "-patch-cpuspeed") == 0)
-		{
-			options->patch = 1;
-			options->patches |= PATCH_CPU_SPEED_ALL;
-			options->mode = MODE_EXACT;
-		}
-		else if(istrcmp(arg, "-patch-cpuspeed-ndis") == 0)
-		{
-			options->patch = 1;
-			options->patches |= PATCH_CPU_SPEED_NDIS_ALL;
-			options->mode = MODE_EXACT;
 		}
 		else if(istrcmp(arg, "-force-w3") == 0)
 		{
@@ -188,30 +166,15 @@ static int read_arg(options_t *options, int argc, char **argv)
 				options->mode = MODE_AUTO;
 			}
 		}
-		else if(istrcmp(arg, "-i") == 0)
+		else if(batch_arg(arg) >= 0)
 		{
-			if(i+1 < argc)
+			options->mode = MODE_BATCH;
+			if(*batch_id >= 0)
 			{
-				options->input = argv[++i];
-				options->mode = MODE_EXACT;
+				fprintf(stderr, "Possible to use only ONE batch function in ONE run\n");
+				return -2;
 			}
-			else
-			{
-				fprintf(stderr, "Missing argument: expected file name\n");
-				return -1;
-			}
-		}
-		else if(istrcmp(arg, "-o") == 0)
-		{
-			if(i+1 < argc)
-			{
-				options->output = argv[++i];
-			}
-			else
-			{
-				fprintf(stderr, "Missing argument: expected file name\n");
-				return -1;
-			}
+			*batch_id = batch_arg(arg);
 		}
 		else
 		{
@@ -221,10 +184,21 @@ static int read_arg(options_t *options, int argc, char **argv)
 			}
 			else
 			{
-				fprintf(stderr, "Unknown argument: %s\n", arg);
-				return -1;
+				if(unk_args++ == 0)
+				{
+					unk_arg = i;
+				}
 			}
+			
+			batch_argv[*batch_argc] = (char*)arg;
+			(*batch_argc)++;
 		}
+	}
+	
+	if(options->mode != MODE_BATCH && unk_args > 0)
+	{
+		fprintf(stderr, "Unknown argument: %s\n", argv[unk_arg]);
+		return -1;
 	}
 	
 	if(options->force_w3 && options->force_w4)
@@ -275,7 +249,10 @@ static char *ask_user_path(options_t *options, const char *q, const char *defaul
 			{
 				if(i < MAX_PATH)
 				{
-					input_buffer[i++] = c;
+					if(c != '\r')
+					{
+						input_buffer[i++] = c;
+					}
 				}
 			}
 		} while(c != '\n' && c != EOF);
@@ -337,7 +314,10 @@ static int ask_user(options_t *options, const char *q, const char **ans, int ans
 			{
 				if(i < USER_IN_MAX)
 				{
-					input_buffer[i++] = c;
+					if(c != '\r')
+					{
+						input_buffer[i++] = c;
+					}
 				}
 			}
 		} while(c != '\n' && c != EOF);
@@ -398,6 +378,8 @@ static int ask_user_patch(options_t *options)
 	do
 	{
 		c = fgetc(stdin);
+		if(c == '\r') continue;
+		
 		switch(c)
 		{
 			case 'y':
@@ -594,6 +576,7 @@ static int run_interactive(options_t *options)
   	if(fs_is_writeable_dir(upath, NULL) == 0)
  		{
 			fprintf(stderr, "Error: %s is not writeable directory\n", upath);
+			goto run_interactive_fail;
 		}
 		else
 		{
@@ -657,6 +640,7 @@ static int run_interactive(options_t *options)
   	}
   }
   
+run_interactive_fail:
 	if(patch_success > 0)
 	{
 		printf("Patch applied successfully!\n");
@@ -683,7 +667,12 @@ static int run_interactive(options_t *options)
 int main(int argc, char **argv)
 {
   int test;
+  int batch_id = -1;
+  int batch_argc = 0;
+  char **batch_argv = NULL;
   options_t options;
+  
+  set_default_path(patcher9x_default_path);
   
   /* self test by mspack */
   MSPACK_SYS_SELFTEST(test);
@@ -693,7 +682,9 @@ int main(int argc, char **argv)
   	return EXIT_FAILURE;
   }
   
-  if(read_arg(&options, argc, argv) == 0)
+  batch_argv = calloc(sizeof(char*), argc);
+  
+  if(read_arg(&options, argc, argv, &batch_id, &batch_argc, batch_argv) == 0)
   {
   	if(options.cputest)
   	{
@@ -710,9 +701,13 @@ int main(int argc, char **argv)
   		print_help(argv[0], options.print_help);
   		return EXIT_SUCCESS;
   	} 
-  	else if(options.mode == MODE_EXACT)
+  	/*else if(options.mode == MODE_EXACT)
   	{
   		return run_exact(&options);
+  	}*/
+  	else if(options.mode == MODE_BATCH)
+  	{
+  		return batch_run(&options, batch_id, batch_argc, batch_argv);
   	}
   	else /* run interactive */
   	{

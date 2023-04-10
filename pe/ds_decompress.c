@@ -25,6 +25,7 @@
 *******************************************************************************/
 #include <stdio.h>
 #include "doublespace.h"
+#include "nocrt.h"
 
 /**
  * Read block "count"

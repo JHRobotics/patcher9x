@@ -25,6 +25,7 @@
 *******************************************************************************/
 #include <string.h>
 #include "bpatcher.h"
+#include "nocrt.h"
 
 /**
  * Search for 'needle' in 'haystack' using binary sieve on 'needle'.

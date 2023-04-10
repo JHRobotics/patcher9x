@@ -120,7 +120,7 @@ INLINE tick_t looptest(uint32_t repeats)
 
 	tick(c1);
 	
-	asm volatile (
+	__asm volatile (
 		"movl %0, %%ecx;"
 		"loop_repeat:"
 		"loop loop_repeat;"
@@ -146,7 +146,7 @@ static void print_cpu()
 	/* cpuid detection:
 	 *  https://wiki.osdev.org/CPUID
 	 */
-	asm volatile (
+	__asm volatile (
 		"pushfl;"                           // Save EFLAGS
 		"pushfl;"                           // Store EFLAGS
 		"xorl $0x200000,(%%esp);"           // Invert the ID bit in stored EFLAGS
@@ -170,7 +170,7 @@ static void print_cpu()
 	}
 	
 	/* cpuid - read brand identification */
-	asm volatile (
+	__asm volatile (
 		"movl $1,%%eax;"
 		"cpuid;"
 		"cmp $0x80000004,%%eax;"

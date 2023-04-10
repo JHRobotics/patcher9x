@@ -108,9 +108,11 @@ struct mspack_system *mspack_default_system = NULL;
 
 /* implementation of mspack_default_system for standard C library */
 
+#ifndef NOCRT
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#endif
 #include <stdarg.h>
 
 struct mspack_file_p {

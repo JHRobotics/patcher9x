@@ -41,6 +41,8 @@ static pfiles_t pfiles[] = {
 	{"IOS.VXD",      "VMM32", PATCH_VX_UNPACK | PATCH_CPU_SPEED_ALL },
 	{"ESDI_506.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
 	{"SCSIPORT.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
+	{"ESDI_506.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL }, /* WIN95 */
+	{"SCSIPORT.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL }, /* WIN95 */
 	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL },
 //	{"CS3KIT.EXE",   "",      PATCH_CPU_SPEED_ALL },
 	{NULL,           NULL,    0 }
@@ -243,7 +245,7 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 		else if((lookup_flags & PATCH_LOOKUP_ONE_CAB) != 0)
 		{
 			//printf("CAB unpack: %s -> %s\n", upath, fname);
-			if(cab_unpack(upath, pfile->file, fname) > 0)
+			if(cab_unpack(upath, pfile->file, fname, NULL) > 0)
 			{
 				FILE *fp = fopen(fname, "rb");
 				if(fp)

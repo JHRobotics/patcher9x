@@ -1,0 +1,2 @@
+# Treat all needed for boot freedos as binary (don't do CRNL<-->NL conversion)
+boot/* binary

@@ -1,0 +1,16 @@
+Tools on this disk
+============================================================
+PATCH9X        Patch for Windows 9x for run on newest CPUs
+CDROM          Load FreeDOS CD/DVD driver and mount drives
+FDISK          Interactive disk partition tool
+FORMAT         Create/recreate file system on selected drive
+XCOPY          Copy files and folders
+DELTREE        Delete files and folders
+EDIT           Text editor
+
+Drivers
+============================================================
+UDVD2.SYS      FreeDOS IDE CD/DVD from driver
+SHSUCDX.COM    Provides access to CD-ROM drives
+HIMEMX.EXE     Extended memory host for using XMS
+JEMM386.EXE    Expanded memory manager

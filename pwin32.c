@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2022 Jaroslav Hensl                                          *
+ * Copyright (c) 2023 Jaroslav Hensl                                          *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person                *
  * obtaining a copy of this software and associated documentation             *
@@ -22,29 +22,74 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR              *
  * OTHER DEALINGS IN THE SOFTWARE.                                            *
  *                                                                            *
-*******************************************************************************/
-#ifndef __BPATCHER_H__INCLUDED__
-#define __BPATCHER_H__INCLUDED__
-
-#include <bitstream.h>
-
-#ifdef NOCRT_FILE
-#include "nocrt.h"
+ ******************************************************************************/
+#ifdef _WIN32
+#include <windows.h>
 #endif
 
-#define BPATCHER_FILE_BUF 8192
+#include "patcher9x.h"
 
-ssize_t search_sieve(const uint8_t *haystack, size_t haystack_size,
-                     const uint8_t *needle, size_t needle_size, bitstream_t *sieve);
+#ifdef _WIN32
+/*
+*  NT function tip from: https://stackoverflow.com/a/57130 
+ * but here is modification, 9x kernel has these function defined, but call them
+ * fail with ERROR_CALL_NOT_IMPLEMENTED.
+ */
+typedef BOOL (WINAPI * GetThreadPriorityBoostF)(HANDLE hThread, PBOOL pDisablePriorityBoost);
+static BOOL version_is_nt()
+{
+	HANDLE h = GetModuleHandleA("kernel32.dll");
+	if(h)
+	{
+		GetThreadPriorityBoostF GetThreadPriorityBoostH = (GetThreadPriorityBoostF)GetProcAddress(h, "GetThreadPriorityBoost");
+		if(GetThreadPriorityBoostH != NULL)
+		{
+			BOOL junk;
+			if(GetThreadPriorityBoostH(GetCurrentThread(), &junk))
+			{
+				return TRUE;	
+			}
+			
+			if(GetLastError() != ERROR_CALL_NOT_IMPLEMENTED)
+			{
+				return TRUE;
+			}
+		}
+	}
+	
+	return FALSE;
+}
 
-void patch_sieve(uint8_t *dst, const uint8_t *newdata, size_t data_size,
-                 bitstream_t *sieve);
+void set_default_path(char *default_path)
+{
+	if(version_is_nt())
+	{
+		GetModuleFileNameA(NULL, default_path, MAX_PATH);
+		default_path[MAX_PATH-1] = '\0';
+		
+		/* cutoff file name */
+		char *p1 = strrchr(default_path, '\\');
+		char *p2 = strrchr(default_path, '/');
+		
+		if(p1 > p2)
+		{
+			*p1 = '\0';
+		}
+		else if(p2 != NULL)
+		{
+			*p2 = '\0';
+		}
+	}
+}
 
-void diff_sieve(const uint8_t *data_a, const uint8_t *data_b, size_t data_size,
-                bitstream_t *sieve);
+#else
 
-ssize_t search_sieve_file(FILE *haystack_fp,
-                          const uint8_t *needle, size_t needle_size,
-                          bitstream_t *sieve);
+void set_default_path(char *default_path)
+{
+	(void)default_path;
+}
 
-#endif /* __BPATCHER_H__INCLUDED__ */
+#endif
+
+
+

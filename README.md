@@ -61,7 +61,41 @@ Patch will be run in interactive mode and the default strategy (*patch files, VM
 
 ![Successfuly working Windows 98 - AMD](/doc/amd-5-3500u.png)
 
-### Patching installation media
+## Operation modes
+
+### Interactive mode
+This is default mode, the program asking questions and user answear. You can just double click on EXE (or type `patch9x` to DOS command prompt) and program guide to you in patching process. For Linux build, the help is prinded if no arguments are given (default behaviour for UNIX programs) so you need specify *path*.
+
+### Automatic mode
+Same as interactive but don't ask anything. Can be enabled with `-auto` switch and *path* to CAB files or 9x WINDOWS/SYSTEM directory needs to be specified.
+
+### Batch mode
+In this mode program operate with single steps. Examples:
+
+Extract `VMM32.VXD` from instalation media
+```
+patcher9x --cabs-extract D:\WIN98 VMM32.VXD
+```
+
+Extract VMM.VXD from VMM32.VXD
+```
+patcher9x --vxd-extract VMM32.VXD VMM.VXD
+```
+
+Patch individual File
+```
+patcher9x --patch-tlb VMM.VXD
+```
+
+Patch VXD archive
+```
+patcher9x --patch-all VMM32.VXD
+```
+
+## Boot floppy
+Boot floppy now contain CD driver and few utilities to prepare system disk. If you wish run Windows Installer from boot floppy, add `/NM` switch to `setup.exe` (because of different memory manager, the setup cannot determine real RAM size). Utilities are listed in [boot/info.txt](boot/info.txt).
+
+## Patching installation media
 Copy the content of *win9x* folder (or *win95* - for Windows 95 or *win98* - for Windows 98)
 from a CD / extract it from an ISO image. Then run: 
 ```
@@ -78,9 +112,15 @@ If the patch is successful, you can copy the modified files back to the image. T
 
 The Windows installer primarily takes files from the installation folder and if it can't find them, it'll scan the CAB archives instead.
 
-For Windows 95, it is better to patch the installation media, or you will need to install the patch twice - after the first reboot and again after the installation of the net.
+For Windows 95, it is better to patch the installation media, or you will need to install the patch twice - after the first reboot and again after the installation of the network.
 
 **Please note, that file `VMM32.VXD` from installation IS NOT THE SAME as the file in `Windows/system` folder. Don't interchange them! See the _Patching process_ section to know more about the VMM files.**
+
+## More informations
+
+Check **patcher9x** thread at Vogons: https://www.vogons.org/viewtopic.php?f=24&t=88284
+
+Check GPU driver for Windows 9x: https://github.com/JHRobotics/softgpu
 
 ## Build from source
 
@@ -111,6 +151,8 @@ There is a special profile for DOS cross-compilation -- if you have DJGPP compil
 make RELEASE=1 PROFILE=djgpp
 make strip
 ```
+
+MinGW compiled programs are linked with `msvcrt.dll` by default. To eliminate this depency (`msvcrt.dll` is missing all Windows 9x versions where isn't IE 4 or better), this project can use my [NOCRT](https://github.com/JHRobotics/nocrt) library. Use `make PROFILE=nocrt` or `make PROFILE=nocrt64` to compile program for Windows with depency only to `kernel32.dll`.
 
 **Executable file name for most real operation systems is called `patcher9x`. For DOS, it is called `patch9x.exe`  because file names are limited to 8+3 characters.**
 
@@ -149,4 +191,4 @@ If you want to know more about the code, see file [speed.inc](cpuspeed/speed.inc
 
 ## Development
 
-In future I would like include ~~patch "CPU speed limit" (95, 98 FE)~~ and patch 48-bit LBA (95, 98, ME). 
+In future I would like include ~~patch "CPU speed limit" (95, 98 FE)~~ and patch 48-bit LBA (95, 98, ME). Memory limit patch I want include too.

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2022 Jaroslav Hensl                                          *
+ * Copyright (c) 2022-2023 Jaroslav Hensl                                     *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person                *
  * obtaining a copy of this software and associated documentation             *
@@ -22,29 +22,37 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR              *
  * OTHER DEALINGS IN THE SOFTWARE.                                            *
  *                                                                            *
-*******************************************************************************/
-#ifndef __BPATCHER_H__INCLUDED__
-#define __BPATCHER_H__INCLUDED__
+ ******************************************************************************/
+#include "winuser.h"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST patcher9x.xml
+IDI_ICON1 ICON DISCARDABLE "patcher9x.ico"
 
-#include <bitstream.h>
+#include "version.h"
 
-#ifdef NOCRT_FILE
-#include "nocrt.h"
-#endif
+1 VERSIONINFO
+FILEVERSION PATCHER9X_VERSION_NUM
+PRODUCTVERSION PATCHER9X_VERSION_NUM
+FILEOS 0x40004
+FILETYPE 0x2
+{
+BLOCK "StringFileInfo"
+{
+	BLOCK "040904b0"
+	{
+		VALUE "CompanyName", "JHRobotics"
+		VALUE "FileDescription", "Patch for Windows 9x to fix CPU issues"
+		VALUE "FileVersion", PATCHER9X_VERSION_STR
+		VALUE "InternalName", "patcher9x.exe"
+		VALUE "LegalCopyright", "(C) 2022-2023 JHRobotics"
+		VALUE "OriginalFilename", "patcher9x.exe"
+		VALUE "PrivateBuild", PATCHER9X_VERSION_STR
+		VALUE "ProductName", "Patch for Windows 9x to fix CPU issues"
+		VALUE "ProductVersion", PATCHER9X_VERSION_STR
+	}
+}
 
-#define BPATCHER_FILE_BUF 8192
-
-ssize_t search_sieve(const uint8_t *haystack, size_t haystack_size,
-                     const uint8_t *needle, size_t needle_size, bitstream_t *sieve);
-
-void patch_sieve(uint8_t *dst, const uint8_t *newdata, size_t data_size,
-                 bitstream_t *sieve);
-
-void diff_sieve(const uint8_t *data_a, const uint8_t *data_b, size_t data_size,
-                bitstream_t *sieve);
-
-ssize_t search_sieve_file(FILE *haystack_fp,
-                          const uint8_t *needle, size_t needle_size,
-                          bitstream_t *sieve);
-
-#endif /* __BPATCHER_H__INCLUDED__ */
+BLOCK "VarFileInfo"
+{
+	VALUE "Translation", 0x0409, 0x04B0  
+}
+}

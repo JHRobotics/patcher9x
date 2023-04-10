@@ -43,7 +43,9 @@ extern "C" {
 #endif
 
 #if DEBUG
-# include <stdio.h>
+# ifndef NOCRT
+#  include <stdio.h>
+# endif
 # define D(x) do { printf("%s:%d (%s) ",__FILE__, __LINE__, __func__); \
                    printf x ; fputc('\n', stdout); fflush(stdout);} while (0);
 #else
