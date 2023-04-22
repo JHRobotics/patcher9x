@@ -122,8 +122,8 @@ INLINE tick_t looptest(uint32_t repeats)
 	
 	__asm volatile (
 		"movl %0, %%ecx;"
-		"loop_repeat:"
-		"loop loop_repeat;"
+		"loop_repeat%=:"
+		"loop loop_repeat%=;"
 		: 
 		: "m" (repeats)
 		: "%ecx"
