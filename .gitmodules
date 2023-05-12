@@ -1,3 +1,4 @@
 [submodule "nocrt"]
 	path = nocrt
 	url = https://github.com/JHRobotics/nocrt
+	branch = main
