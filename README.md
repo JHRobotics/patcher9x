@@ -49,6 +49,11 @@ Binary files and bootable floppy image are in [Releases](https://github.com/JHRo
 
 IMA file is a bootable floppy (FREEDOS) usable in a virtual machine to simple boot and patch the installed system. Binaries for win32 are Windows 98 compatible, so they can be run from safe mode (Hold CTRL on start-up). Binaries for other systems are for creating patched installation (in theory you can mount virtual HDD image and patch installed system on it, but doing it using boot the floppy is much simpler).
 
+The tool has also been packaged for Nix/NixOS:
+`$ nix develop nixpkgs#patcher9x`
+or
+`$ nix-shell -p patcher9x`
+
 ## Installation
 
 The simplest way is by downloading bootable floppy image. After booting (you will see `A:\`), run:
