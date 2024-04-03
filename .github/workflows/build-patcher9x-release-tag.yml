@@ -1,0 +1,43 @@
+name: Build patcher9x release
+
+on:
+  # Run manually from Actions tab
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Build patcher9x release
+    container:
+      image: ghcr.io/mcayland/patcher9x-builder:latest
+    steps:
+      - name: Checkout patcher9x
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Determine release version
+        run: |
+          PATCHER9X_VERSION=`head -n1 CHANGELOG | sed -nz 's/\([0-9\.]\{1,\}\).*/\1/p'`
+          echo "PATCHER9X_VERSION=$PATCHER9X_VERSION" >> $GITHUB_ENV
+
+      - name: Generate release changelog from CHANGELOG
+        # Ignore first line, use following lines up until the next empty line
+        run: |
+          cat CHANGELOG | sed -n '2,/^\r$/ p' > /tmp/release-changelog.txt
+
+      - name: Build patcher9x release
+        run: ./build-release.sh
+
+      - name: Upload patcher9x release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          name: "v${{ env.PATCHER9X_VERSION }}"
+          tag_name: "v${{ env.PATCHER9X_VERSION }}"
+          body_path: /tmp/release-changelog.txt
+          files: |
+            /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-boot.ima
+            /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-linux-amd64.tar.gz
+            /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-win32.zip
+            /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-win64.zip
