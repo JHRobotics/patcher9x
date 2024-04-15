@@ -29,7 +29,7 @@
 #include "patcher9x.h"
 
 #if defined(_WIN32)
-#include <Windows.h>
+#include <windows.h>
 /* ^ for QueryPerformanceCounter and QueryPerformanceFrequency */
 #endif
 
