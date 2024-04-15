@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build patcher9x release
     container:
-      image: ghcr.io/mcayland/patcher9x-builder:latest
+      image: ghcr.io/JHRobotics/patcher9x-builder:latest
     steps:
       - name: Checkout patcher9x
         uses: actions/checkout@v4
