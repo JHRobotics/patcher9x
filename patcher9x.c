@@ -406,7 +406,7 @@ static int ask_user_patch(options_t *options)
  **/
 static int run_interactive(options_t *options)
 {
-  char *upath = ask_user_path(options, "Enter path to WINDOWS\\SYSTEM, or Windows instalation\n", patcher9x_default_path);
+  char *upath = ask_user_path(options, "Enter path to WINDOWS\\SYSTEM, or Windows installation\n", patcher9x_default_path);
   int upath_dir = 0;
   int user_ans  = 0;
   int patch_success = 0;
