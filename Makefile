@@ -453,13 +453,29 @@ cpuspeed/speedndis_v2_diff.h.tmp: cpuspeed/speedndis_v2_dump.bin cpuspeed/speedn
 cpuspeed_ndis_patch_v2.h.tmp: cpuspeed/speedndis_v2.bin cpuspeed/speedndis_v2_orig.bin cpuspeed/speedndis_v2_reloc.bin makepatch$(HOST_SUFIX)
 	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v2 cpuspeed_ndis_patch_v2 128 0 128 > $@
 
-patch.g.o: vmm_patch.h vmm_patch_v2.h vmm_patch_me1.h vmm_patch_me2.h cpuspeed_ndis_patch_v1.h cpuspeed_ndis_patch_v2.h cpuspeed_ndis_patch_v3.h \
+# cpu speed NDIS.386 V4
+cpuspeed/speedndis_v4.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v4.asm
+	$(CPP) -nostdinc -E -P -Dversion_4 cpuspeed/speedndis_v4.asm -o $@
+
+cpuspeed/speedndis_v4_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v4.asm
+	$(CPP) -nostdinc -E -P -Doriginalcode -Dversion_4 cpuspeed/speedndis_v4.asm -o $@
+
+cpuspeed/speedndis_v4_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v4.asm
+	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_4 cpuspeed/speedndis_v4.asm -o $@
+
+cpuspeed/speedndis_v4_diff.h.tmp: cpuspeed/speedndis_v4_dump.bin cpuspeed/speedndis_v4_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v4_diff cpuspeed/speedndis_v4_dump.bin cpuspeed/speedndis_v4_orig.bin > $@
+
+cpuspeed_ndis_patch_v4.h.tmp: cpuspeed/speedndis_v4.bin cpuspeed/speedndis_v4_orig.bin cpuspeed/speedndis_v4_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v4 cpuspeed_ndis_patch_v4 113 0 113 > $@
+
+patch.g.o: vmm_patch.h vmm_patch_v2.h vmm_patch_me1.h vmm_patch_me2.h cpuspeed_ndis_patch_v1.h cpuspeed_ndis_patch_v2.h cpuspeed_ndis_patch_v3.h cpuspeed_ndis_patch_v4.h \
   cpuspeed_patch_v1.h cpuspeed_patch_v2.h cpuspeed_patch_v3.h cpuspeed_patch_v4.h cpuspeed_patch_v5.h cpuspeed_patch_v6.h cpuspeed_patch_v7.h cpuspeed_patch_v8.h \
   vmm_patch_old.h vmm_patch_old_v2.h vmm_patch_simple.h vmm_patch_simple_v2.h
 
 fasmdiff: vmm/fasmdiff.h vmm/fasmdiff_v2.h vmm/fasmdiff_me.h \
   cpuspeed/speed_v1_diff.h cpuspeed/speed_v2_diff.h cpuspeed/speed_v3_diff.h cpuspeed/speed_v4_diff.h \
-  cpuspeed/speedndis_v1_diff.h cpuspeed/speedndis_v2_diff.h cpuspeed/speedndis_v3_diff.h \
+  cpuspeed/speedndis_v1_diff.h cpuspeed/speedndis_v2_diff.h cpuspeed/speedndis_v3_diff.h cpuspeed/speedndis_v4_diff.h \
   cpuspeed/speed_v5_diff.h cpuspeed/speed_v6_diff.h cpuspeed/speed_v7_diff.h cpuspeed/speed_v8_diff.h \
   vmm/fasmdiff_old.h vmm/fasmdiff_old_v2.h
 

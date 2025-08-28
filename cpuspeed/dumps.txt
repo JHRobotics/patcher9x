@@ -13,3 +13,5 @@ dd if=SCSIPORT_FIX.PDR bs=1 skip=12166 count=60 of=speed_v8_dump.bin
 dd if=NDIS_FE.VXD bs=1 skip=157168 count=112 of=speedndis_v1_dump.bin
 
 dd if=NDIS_SE.VXD bs=1 skip=165312 count=128 of=speedndis_v2_dump.bin
+
+dd if=NDIS.386 bs=1 skip=24011 count=113 of=speedndis_v4_dump.bin

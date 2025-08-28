@@ -44,6 +44,7 @@ static pfiles_t pfiles[] = {
 	{"ESDI_506.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL }, /* WIN95 */
 	{"SCSIPORT.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL }, /* WIN95 */
 	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL },
+	{"NDIS.386",     "",      PATCH_CPU_SPEED_NDIS_ALL }, /* WFW3.11 */
 //	{"CS3KIT.EXE",   "",      PATCH_CPU_SPEED_ALL },
 	{NULL,           NULL,    0 }
 };
