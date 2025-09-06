@@ -1,5 +1,5 @@
 If you want obtain dump.bin you need:
-1) VMM32.VXD from instalation (from instalation NOT from windows/system directory),
+1) VMM32.VXD from installation (from installation NOT from windows/system directory),
    it is by default packed in CABs. If you look at position 0x10000, there should be magic
    "W3" (0x57 0x33). If there is "W4", that file is packed and you must use alternate
    way to optain dump.

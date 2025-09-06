@@ -80,7 +80,7 @@ Same as interactive but don't ask anything. Can be enabled with `-auto` switch a
 ### Batch mode
 In this mode program operate with single steps. Examples:
 
-Extract `VMM32.VXD` from instalation media
+Extract `VMM32.VXD` from installation media
 ```
 patcher9x --cabs-extract D:\WIN98 VMM32.VXD
 ```

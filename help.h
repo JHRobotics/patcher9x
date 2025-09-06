@@ -50,7 +50,7 @@ static const char HELP_NAME[] = "Patch for Windows 3.11/9x for run on newest CPU
 	"Usage:\n" HELP_PROGSTR " [options] [path]\n"
 	"  or\n"
 	HELP_PROGSTR " [options] <batch function> <batch arguments>\n"
-	"path: path to installed windows directory or directory with windows instalation\n"
+	"path: path to installed windows directory or directory with windows installation\n"
 	"options:\n"
 #ifndef HELP_SHORT /* shorten help a bit to fit 80x25 screen */
 	"\t-h,/?: print this help\n"
