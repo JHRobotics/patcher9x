@@ -47,6 +47,7 @@
 #include "../cpuspeed/speedndis_v1_diff.h"
 #include "../cpuspeed/speedndis_v2_diff.h"
 #include "../cpuspeed/speedndis_v3_diff.h"
+#include "../cpuspeed/speedndis_v4_diff.h"
 
 #include "fasmdiff_old.h"
 #include "fasmdiff_old_v2.h"
@@ -103,6 +104,7 @@ preset_t presets[] = {
 	PRESENT("cpuspeed", speedndis_v1),
 	PRESENT("cpuspeed", speedndis_v2),
 	PRESENT("cpuspeed", speedndis_v3),
+	PRESENT("cpuspeed", speedndis_v4),
 
 	{NULL, NULL, NULL, NULL, NULL, NULL, 0}
 };

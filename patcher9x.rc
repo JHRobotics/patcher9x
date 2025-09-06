@@ -40,13 +40,13 @@ BLOCK "StringFileInfo"
 	BLOCK "040904b0"
 	{
 		VALUE "CompanyName", "JHRobotics"
-		VALUE "FileDescription", "Patch for Windows 9x to fix CPU issues"
+		VALUE "FileDescription", "Patch for Windows 3.11/9x to fix CPU issues"
 		VALUE "FileVersion", PATCHER9X_VERSION_STR
 		VALUE "InternalName", "patcher9x.exe"
 		VALUE "LegalCopyright", "(C) 2022-2023 JHRobotics"
 		VALUE "OriginalFilename", "patcher9x.exe"
 		VALUE "PrivateBuild", PATCHER9X_VERSION_STR
-		VALUE "ProductName", "Patch for Windows 9x to fix CPU issues"
+		VALUE "ProductName", "Patch for Windows 3.11/9x to fix CPU issues"
 		VALUE "ProductVersion", PATCHER9X_VERSION_STR
 	}
 }

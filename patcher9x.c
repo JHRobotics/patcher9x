@@ -45,8 +45,8 @@ char patcher9x_default_path[MAX_PATH] = DEFAULT_PATH;
 
 static const char *question_dir_select[] = 
 {
-	"patch files, VMM32.VXD will be extracted, extracted files patched",
-	"patch files, VMM32.VXD will be patched directly",
+	"patch files, VMM32.VXD or equivalent will be extracted, extracted files patched",
+	"patch files, VMM32.VXD or equivalent will be patched directly",
 	"do 1 and 2 simultaneously"	,
 	"scan *.CAB archives, extract files and patch them (VMM32 directly)",
 };

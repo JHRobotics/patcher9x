@@ -1,5 +1,5 @@
-# Patch for Windows 95/98/98 SE/Me to fix CPU issues
-Virtualization of Microsoft Windows 9x systems is a bit problematic due to 2 major bugs:
+# Patch for Windows 3.11/95/98/98 SE/Me to fix CPU issues
+Virtualization of Microsoft Windows 3.11/9x systems is a bit problematic due to 2 major bugs:
 [TLB invalidation bug](#patch-for-windows-98me-to-fix-tlb-invalidation-bug) and [CPU speed limit bug](#patch-for-windows-9598-to-fix-cpu-speed-limit-bug).
 
 This program contains a set of patches to fix these bugs, and can be booted from a floppy on a virtual machine. It either applies the patch to the installed system, or it patches the installation files in order to create (relatively) bug-free installation media.
@@ -28,10 +28,13 @@ patcher9x -cputest
 
 Currently supported operation systems:
 
+- Windows 3.11
 - Windows 95
 - Windows 98
 - Windows 98 SE
 - Windows Me
+
+Windows 3.11 has the CPU speed limit bug in NDIS.386 which prevents startup when networking is enabled, although it is still possible to startup with `win /n`.
 
 Windows 95, 98 and 98 SE have the CPU speed limit bug. Windows 98 SE is a special case because it has "divide by zero" protection, but it also has a short loop test, so its timing information is probably useless and could potentially lead to other bugs.
 

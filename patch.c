@@ -49,6 +49,7 @@
 #include "cpuspeed_ndis_patch_v1.h"
 #include "cpuspeed_ndis_patch_v2.h"
 #include "cpuspeed_ndis_patch_v3.h"
+#include "cpuspeed_ndis_patch_v4.h"
 
 typedef struct _ppatch_t
 {
@@ -86,6 +87,7 @@ ppatch_t ppathes[] = {
 	{PATCH_CPU_SPEED_NDIS_V1, "CPU Speed NDIS.VXD #1 (1 048 576 LOOPs, W95+W98FE)",        PPATCH_FILL(cpuspeed_ndis_patch_v1)},
 	{PATCH_CPU_SPEED_NDIS_V2, "CPU Speed NDIS.VXD #2 (1 048 576 LOOPs, W98SE)",            PPATCH_FILL(cpuspeed_ndis_patch_v2)},
 	{PATCH_CPU_SPEED_NDIS_V3, "CPU Speed NDIS.VXD #3 (10 485 760, LOOPs, rloew's patch)",  PPATCH_FILL(cpuspeed_ndis_patch_v3)},	
+	{PATCH_CPU_SPEED_NDIS_V4, "CPU Speed NDIS.386 #4 (10 485 760, LOOPs, WFW3.11)",        PPATCH_FILL(cpuspeed_ndis_patch_v4)},
 	{PATCH_VMM98_OLD,         "W98 TLB patch #1 UPGRADE",                                  PPATCH_FILL(vmm_patch_old)},
 	{PATCH_VMM98_OLD_V2,      "W98 TLB patch #2 UPGRADE",                                  PPATCH_FILL(vmm_patch_old_v2)},
 	{PATCH_VMM98_SIMPLE,      "W98 TLB patch #1 (simple version)",                         PPATCH_FILL(vmm_patch_simple)},

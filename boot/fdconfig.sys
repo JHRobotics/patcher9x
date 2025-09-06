@@ -8,7 +8,7 @@
 
 MENUDEFAULT=1,5
 MENU
-MENU Patch for Windows 95/98/Me to fix CPU issues
+MENU Patch for Windows 3.11/95/98/Me to fix CPU issues
 MENU Boot and system utility disk
 MENU
 MENU 1 - FreeDOS EMS/XMS with CD-ROM (default)

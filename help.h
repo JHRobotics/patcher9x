@@ -45,7 +45,7 @@
 
 #define HELP_NAME_ARGS(_def) _def##_args
 
-static const char HELP_NAME[] = "Patch for Windows 9x for run on newest CPUs - AMD ZEN 2+, Intel Tiger Lake+\n"
+static const char HELP_NAME[] = "Patch for Windows 3.11/9x for run on newest CPUs - AMD ZEN 2+, Intel Tiger Lake+\n"
 	"Version: " PATCHER9X_VERSION_STR "\n\n"
 	"Usage:\n" HELP_PROGSTR " [options] [path]\n"
 	"  or\n"
@@ -65,10 +65,10 @@ static const char HELP_NAME[] = "Patch for Windows 9x for run on newest CPUs - A
 	"\t-force-w4: when patching VMM32.VXD, always compress to W4 file\n"
 	"\t-force-tlb: always try to apply TLB patch set\n"
 	"\t-force-cpupatch: always try to apply CPU SPEED patch set\n"
-	"\t-force-cpupatch-ndis: always try to apply CPU SPEED patch for NDIS.VXD\n"
+	"\t-force-cpupatch-ndis: always try to apply CPU SPEED patch for NDIS.VXD/NDIS.386\n"
 	"\t-no-tlb: do not apply TLB patches\n"
 	"\t-no-cpupatch: do not apply CPU SPEED patches\n"
-	"\t-no-cpupatch-ndis: do not apply CPU SPEED patches for NDIS.VXD\n"
+	"\t-no-cpupatch-ndis: do not apply CPU SPEED patches for NDIS.VXD/NDIS.386\n"
 	"\t-millennium: ignored, Me patch is included in TLB set\n"
 #endif
 	"\n"
