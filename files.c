@@ -43,8 +43,10 @@ static pfiles_t pfiles[] = {
 	{"SCSIPORT.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
 	{"ESDI_506.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL }, /* WIN95 */
 	{"SCSIPORT.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL }, /* WIN95 */
+	{"NDIS.VXD",     "VMM32", PATCH_CPU_SPEED_NDIS_ALL },
 	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL },
 	{"NDIS.386",     "",      PATCH_CPU_SPEED_NDIS_ALL }, /* WFW3.11 */
+	{"VCACHE.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL }, /* patchmem */
 //	{"CS3KIT.EXE",   "",      PATCH_CPU_SPEED_ALL },
 	{NULL,           NULL,    0 }
 };

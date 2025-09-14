@@ -12,6 +12,10 @@
 /.stfolder/
 /.stignore
 
+# not include MS bins and incomplete work
+/rloew/dump/
+/rloew/conv/
+
 # python
 __pycache__
 *.pyc
@@ -23,3 +27,4 @@ __pycache__
 *.tmp
 *.gen
 *.exe
+*.res

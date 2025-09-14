@@ -4,6 +4,8 @@
 #ifndef __VMM_PATCH_ME2_H__INCLUDED__
 #define __VMM_PATCH_ME2_H__INCLUDED__
 
+#include <patch.h>
+
 /* original data for search */
 const uint8_t vmm_patch_me2_orig[] = {
 	0x8B, 0x54, 0x24, 0x04, 0x56, 0x57, 0x8B, 0x4A, 0x04, 0x8B, 0x32, 0x8B, 0x41, 0x04, 0xA9, 0x00, 
@@ -43,6 +45,13 @@ const uint8_t vmm_patch_me2[] = {
 const uint8_t vmm_patch_me2_modif[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x03, 0xBF, 0xFF, 
+};
+
+const cpatch_t vmm_patch_me2_cp = {
+	vmm_patch_me2, sizeof(vmm_patch_me2),
+	vmm_patch_me2_orig, sizeof(vmm_patch_me2_orig),
+	vmm_patch_me2_orig_check, sizeof(vmm_patch_me2_orig_check),
+	vmm_patch_me2_modif, sizeof(vmm_patch_me2_modif)
 };
 
 #endif /* __VMM_PATCH_ME2_H__INCLUDED__ */

@@ -4,6 +4,8 @@
 #ifndef __CPUSPEED_PATCH_V2_H__INCLUDED__
 #define __CPUSPEED_PATCH_V2_H__INCLUDED__
 
+#include <patch.h>
+
 /* original data for search */
 const uint8_t cpuspeed_patch_v2_orig[] = {
 	0xB9, 0x80, 0x84, 0x1E, 0x00, 0xCD, 0x20, 0x3F, 0x00, 0x01, 0x00, 0x89, 0xC6, 0xE2, 0xFE, 0xCD, 
@@ -29,6 +31,13 @@ const uint8_t cpuspeed_patch_v2[] = {
 /* bitmap of modify bytes */
 const uint8_t cpuspeed_patch_v2_modif[] = {
 	0x78, 0x00, 0x01, 0xFF, 0xFE, 0xFF, 0xC0, 
+};
+
+const cpatch_t cpuspeed_patch_v2_cp = {
+	cpuspeed_patch_v2, sizeof(cpuspeed_patch_v2),
+	cpuspeed_patch_v2_orig, sizeof(cpuspeed_patch_v2_orig),
+	cpuspeed_patch_v2_orig_check, sizeof(cpuspeed_patch_v2_orig_check),
+	cpuspeed_patch_v2_modif, sizeof(cpuspeed_patch_v2_modif)
 };
 
 #endif /* __CPUSPEED_PATCH_V2_H__INCLUDED__ */

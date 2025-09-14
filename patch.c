@@ -25,6 +25,7 @@
 *******************************************************************************/
 #include "patcher9x.h"
 #include <bpatcher.h>
+#include <patch.h>
 #include "vmm_patch.h"
 #include "vmm_patch_v2.h"
 #include "vmm_patch_me1.h"
@@ -51,48 +52,54 @@
 #include "cpuspeed_ndis_patch_v3.h"
 #include "cpuspeed_ndis_patch_v4.h"
 
+#include "vcache_patch_v1.h"
+#include "vmm98_patch_v1.h"
+#include "vmm98_patch_v2.h"
+#include "vmm98_patch_v3.h"
+#include "vmm98_patch_v4.h"
+
+#include "vmmme_patch_v1.h"
+#include "vmmme_patch_v2.h"
+ 
 typedef struct _ppatch_t
 {
 	int id;
-	const char    *name;
-	const uint8_t *patch_data;
-	size_t         patch_size;
-	const uint8_t *orig_data;
-	size_t         orig_size;
-	const uint8_t *check_data;
-	size_t         check_size;
-	const uint8_t *modif_data;
-	size_t         modif_size;
+	const char     *name;
+	const cpatch_t *cpatch;
+	const spatch_t *spatch;
 } ppatch_t;
 
-#define PPATCH_FILL(_name) _name, sizeof(_name), \
-	_name##_orig,         sizeof(_name##_orig), \
-	_name##_orig_check,   sizeof(_name##_orig_check), \
-	_name##_modif,        sizeof(_name##_modif)
-
+#define SPATCH_BUF 512
 
 ppatch_t ppathes[] = {
-	{PATCH_VMM98,             "W98 TLB patch #1 (for SE, updated)",                        PPATCH_FILL(vmm_patch)},
-	{PATCH_VMM98_V2,          "W98 TLB patch #2 (for SE, Q242161, Q288430)",               PPATCH_FILL(vmm_patch_v2)},
-	{PATCH_VMMME,             "WinMe  TLB patch",                                          PPATCH_FILL(vmm_patch_me1)},
+	{PATCH_VMM98,               "W98 TLB patch #1 (for SE, updated)",                        &vmm_patch_cp,              NULL},
+	{PATCH_VMM98_V2,            "W98 TLB patch #2 (for SE, Q242161, Q288430)",               &vmm_patch_v2_cp,           NULL},
+	{PATCH_VMMME,               "WinMe  TLB patch",                                          &vmm_patch_me1_cp,          NULL},
 	/* ^ only first part, for this case is there special function */
-	{PATCH_CPU_SPEED_V1,      "CPU Speed #1 (1 000 000 LOOPs)",                            PPATCH_FILL(cpuspeed_patch_v1)},
-	{PATCH_CPU_SPEED_V2,      "CPU Speed #2 (2 000 000 LOOPs)",                            PPATCH_FILL(cpuspeed_patch_v2)},
-	{PATCH_CPU_SPEED_V3,      "CPU Speed #3 (10 000 000 LOOPs, FIX95)",                    PPATCH_FILL(cpuspeed_patch_v3)},
-	{PATCH_CPU_SPEED_V4,      "CPU Speed #4 (10 000 000 LOOPs, rloew's patch)",            PPATCH_FILL(cpuspeed_patch_v4)},
-	{PATCH_CPU_SPEED_V5,      "CPU Speed #5 (1 000 000 LOOPs)",                            PPATCH_FILL(cpuspeed_patch_v5)},
-	{PATCH_CPU_SPEED_V6,      "CPU Speed #6 (2 000 000 LOOPs)",                            PPATCH_FILL(cpuspeed_patch_v6)},
-	{PATCH_CPU_SPEED_V7,      "CPU Speed #7 (10 000 000 LOOPs, FIX95)",                    PPATCH_FILL(cpuspeed_patch_v7)},
-	{PATCH_CPU_SPEED_V8,      "CPU Speed #8 (10 000 000 LOOPs, rloew's patch)",            PPATCH_FILL(cpuspeed_patch_v8)},
-	{PATCH_CPU_SPEED_NDIS_V1, "CPU Speed NDIS.VXD #1 (1 048 576 LOOPs, W95+W98FE)",        PPATCH_FILL(cpuspeed_ndis_patch_v1)},
-	{PATCH_CPU_SPEED_NDIS_V2, "CPU Speed NDIS.VXD #2 (1 048 576 LOOPs, W98SE)",            PPATCH_FILL(cpuspeed_ndis_patch_v2)},
-	{PATCH_CPU_SPEED_NDIS_V3, "CPU Speed NDIS.VXD #3 (10 485 760, LOOPs, rloew's patch)",  PPATCH_FILL(cpuspeed_ndis_patch_v3)},	
-	{PATCH_CPU_SPEED_NDIS_V4, "CPU Speed NDIS.386 #4 (10 485 760, LOOPs, WFW3.11)",        PPATCH_FILL(cpuspeed_ndis_patch_v4)},
-	{PATCH_VMM98_OLD,         "W98 TLB patch #1 UPGRADE",                                  PPATCH_FILL(vmm_patch_old)},
-	{PATCH_VMM98_OLD_V2,      "W98 TLB patch #2 UPGRADE",                                  PPATCH_FILL(vmm_patch_old_v2)},
-	{PATCH_VMM98_SIMPLE,      "W98 TLB patch #1 (simple version)",                         PPATCH_FILL(vmm_patch_simple)},
-	{PATCH_VMM98_SIMPLE_V2,   "W98 TLB patch #2 (simple version, Q242161, Q288430)",       PPATCH_FILL(vmm_patch_simple_v2)},
-	{0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0}
+	{PATCH_CPU_SPEED_V1,        "CPU Speed #1 (1 000 000 LOOPs)",                            &cpuspeed_patch_v1_cp,      NULL},
+	{PATCH_CPU_SPEED_V2,        "CPU Speed #2 (2 000 000 LOOPs)",                            &cpuspeed_patch_v2_cp,      NULL},
+	{PATCH_CPU_SPEED_V3,        "CPU Speed #3 (10 000 000 LOOPs, FIX95)",                    &cpuspeed_patch_v3_cp,      NULL},
+	{PATCH_CPU_SPEED_V4,        "CPU Speed #4 (10 000 000 LOOPs, rloew's patch)",            &cpuspeed_patch_v4_cp,      NULL},
+	{PATCH_CPU_SPEED_V5,        "CPU Speed #5 (1 000 000 LOOPs)",                            &cpuspeed_patch_v5_cp,      NULL},
+	{PATCH_CPU_SPEED_V6,        "CPU Speed #6 (2 000 000 LOOPs)",                            &cpuspeed_patch_v6_cp,      NULL},
+	{PATCH_CPU_SPEED_V7,        "CPU Speed #7 (10 000 000 LOOPs, FIX95)",                    &cpuspeed_patch_v7_cp,      NULL},
+	{PATCH_CPU_SPEED_V8,        "CPU Speed #8 (10 000 000 LOOPs, rloew's patch)",            &cpuspeed_patch_v8_cp,      NULL},
+	{PATCH_CPU_SPEED_NDIS_V1,   "CPU Speed NDIS.VXD #1 (1 048 576 LOOPs, W95+W98FE)",        &cpuspeed_ndis_patch_v1_cp, NULL},
+	{PATCH_CPU_SPEED_NDIS_V2,   "CPU Speed NDIS.VXD #2 (1 048 576 LOOPs, W98SE)",            &cpuspeed_ndis_patch_v2_cp, NULL},
+	{PATCH_CPU_SPEED_NDIS_V3,   "CPU Speed NDIS.VXD #3 (10 485 760, LOOPs, rloew's patch)",  &cpuspeed_ndis_patch_v3_cp, NULL},
+	{PATCH_CPU_SPEED_NDIS_V4,   "CPU Speed NDIS.386 #4 (10 485 760, LOOPs, WFW3.11)",        &cpuspeed_ndis_patch_v4_cp, NULL},
+	{PATCH_VMM98_OLD,           "W98 TLB patch #1 UPGRADE",                                  &vmm_patch_old_cp,          NULL},
+	{PATCH_VMM98_OLD_V2,        "W98 TLB patch #2 UPGRADE",                                  &vmm_patch_old_v2_cp,       NULL},
+	{PATCH_VMM98_SIMPLE,        "W98 TLB patch #1 (simple version)",                         &vmm_patch_simple_cp,       NULL},
+	{PATCH_VMM98_SIMPLE_V2,     "W98 TLB patch #2 (simple version, Q242161, Q288430)",       &vmm_patch_simple_v2_cp,    NULL},
+	{PATCH_VCACHE,              "W98 memory limit - VCACHE.VXD (rloew's patch)",             NULL,                       &vcache_v1_sp},
+	{PATCH_VMM98SE_PATCHMEM,    "W98 memory limit - VMM.VXD (SE, rloew's patch)",            NULL,                       &vmm98_v1_sp},
+	{PATCH_VMM98FE_PATCHMEM,    "W98 memory limit - VMM.VXD (FE, rloew's patch)",            NULL,                       &vmm98_v2_sp},
+	{PATCH_VMM98SE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (SE+Q288430, rloew's patch)",    NULL,                       &vmm98_v3_sp},
+	{PATCH_VMM98FE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (FE+Q242161, rloew's patch)",    NULL,                       &vmm98_v4_sp},
+	{PATCH_VMMME_PATCHMEM,      "ME memory limit - VMM.VXD (rloew's patch)",                 NULL,                       &vmmme_v1_sp},
+	{PATCH_VMMME_PATCHMEM_V2,   "ME memory limit - VMM.VXD (Q296773, rloew's patch)",        NULL,                       &vmmme_v2_sp},
+	{0, NULL, NULL, NULL}
 };
 
 /* special case for ME patch */
@@ -118,7 +125,7 @@ int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *o
 	uint32_t exists  = 0;
 	int file_copied  = 0;
 	
-	for(patch = ppathes; patch->patch_data != NULL; patch++)
+	for(patch = ppathes; patch->name != NULL; patch++)
 	{
 		//printf("patch: %X\n", patch->id);
 		
@@ -128,94 +135,194 @@ int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *o
 		}
 		else if((to_apply & patch->id) != 0)
 		{
-			ssize_t pos;
-			bitstream_t bs_check, bs_patch;
-			bs_mem(&bs_check, (uint8_t*)patch->check_data, patch->check_size);
-			
-			/* if already applied updated patch ignore simple version */
-			if((applied & (PATCH_VMM98 | PATCH_VMM98_V2)) != 0)
+			if(patch->cpatch)
 			{
-				if(patch->id == PATCH_VMM98_SIMPLE || patch->id == PATCH_VMM98_SIMPLE_V2)
-				{
-					continue;
-				}
-			}
-			
-			fseek(fp, 0, SEEK_SET);
-			
-			pos = search_sieve_file(fp, patch->orig_data, patch->orig_size, &bs_check);
-			if(pos >= 0)
-			{
-				applied |= patch->id;
+				ssize_t pos;
+				bitstream_t bs_check, bs_patch;
+				bs_mem(&bs_check, (uint8_t*)patch->cpatch->check_data, patch->cpatch->check_size);
 				
-				if((to_apply & PATCH_DRY) == 0)
+				/* if already applied updated patch ignore simple version */
+				if((applied & (PATCH_VMM98 | PATCH_VMM98_V2)) != 0)
 				{
-					FILE *fw;
-					if(file_copied == 0)
-					{					
-						fw = FOPEN_LOG(dstfile, "wb");
-						fseek(fp, 0, SEEK_SET);
-						fs_file_copy(fp, fw, 0);
-						file_copied = 1;
-					}
-					else
+					if(patch->id == PATCH_VMM98_SIMPLE || patch->id == PATCH_VMM98_SIMPLE_V2)
 					{
-						fw = FOPEN_LOG(dstfile, "r+b");
+						continue;
 					}
+				}
+				
+				fseek(fp, 0, SEEK_SET);
+				
+				pos = search_sieve_file(fp, patch->cpatch->orig_data, patch->cpatch->orig_size, &bs_check);
+				if(pos >= 0)
+				{
+					applied |= patch->id;
 					
-					if(fw != NULL)
+					if((to_apply & PATCH_DRY) == 0)
 					{
-						void *buf = malloc(patch->patch_size);
-						if(buf != NULL)
+						FILE *fw;
+						if(file_copied == 0)
 						{
-							do
-							{
-								fseek(fp, pos, SEEK_SET);
-								if(fread(buf, 1, patch->patch_size, fp) == patch->patch_size)
-								{
-									bs_mem(&bs_patch, (uint8_t*)patch->modif_data, patch->modif_size);
-									patch_sieve(buf, patch->patch_data, patch->patch_size, &bs_patch);
-						
-									fseek(fw, pos, SEEK_SET);
-									fwrite(buf, 1, patch->patch_size, fw);				
-								}
-								else
-								{
-									status = PATCH_E_READ;
-								}
-								
-								/* some files has to be patched more times */
-								bs_reset(&bs_check);
-								pos = search_sieve_file(fp, patch->orig_data, patch->orig_size, &bs_check);
-								//printf("another pos: %zd\n", pos);
-								
-							} while(pos >= 0);
-							
-							free(buf);
+							fw = FOPEN_LOG(dstfile, "wb");
+							fseek(fp, 0, SEEK_SET);
+							fs_file_copy(fp, fw, 0);
+							file_copied = 1;
 						}
 						else
 						{
-							status = PATCH_E_MEM;
+							fw = FOPEN_LOG(dstfile, "r+b");
 						}
-						fclose(fw);
-					}
-					else
-					{
-						status = PATCH_E_WRITE;
-					}
-				} // ! dry run
-			} // 
-			else
-			{
-				/* original data not found, but we'll is pach isn't applied  */
-				fseek(fp, 0, SEEK_SET);
-				bs_reset(&bs_check);
-				pos = search_sieve_file(fp, patch->patch_data, patch->patch_size, &bs_check);
-				if(pos >= 0)
+						
+						if(fw != NULL)
+						{
+							void *buf = malloc(patch->cpatch->patch_size);
+							if(buf != NULL)
+							{
+								do
+								{
+									fseek(fp, pos, SEEK_SET);
+									if(fread(buf, 1, patch->cpatch->patch_size, fp) == patch->cpatch->patch_size)
+									{
+										bs_mem(&bs_patch, (uint8_t*)patch->cpatch->modif_data, patch->cpatch->modif_size);
+										patch_sieve(buf, patch->cpatch->patch_data, patch->cpatch->patch_size, &bs_patch);
+							
+										fseek(fw, pos, SEEK_SET);
+										fwrite(buf, 1, patch->cpatch->patch_size, fw);				
+									}
+									else
+									{
+										status = PATCH_E_READ;
+									}
+									
+									/* some files has to be patched more times */
+									bs_reset(&bs_check);
+									pos = search_sieve_file(fp, patch->cpatch->orig_data, patch->cpatch->orig_size, &bs_check);
+									//printf("another pos: %zd\n", pos);
+									
+								} while(pos >= 0);
+								
+								free(buf);
+							}
+							else
+							{
+								status = PATCH_E_MEM;
+							}
+							fclose(fw);
+						}
+						else
+						{
+							status = PATCH_E_WRITE;
+						}
+					} // ! dry run
+				} // 
+				else
 				{
-					exists |= patch->id;
+					/* original data not found, lets assume that patch isn't applied  */
+					fseek(fp, 0, SEEK_SET);
+					bs_reset(&bs_check);
+					pos = search_sieve_file(fp, patch->cpatch->patch_data, patch->cpatch->patch_size, &bs_check);
+					if(pos >= 0)
+					{
+						exists |= patch->id;
+					}
 				}
-			}
+			} // cpatch
+			else if(patch->spatch)
+			{
+				uint32_t fs;
+				int valid = 0;
+				int patch_exists = 0;
+				void *buf = malloc(SPATCH_BUF);
+				//printf("testing patch: %X -> %s\n", patch->id, dstfile);
+				
+				if(buf != NULL)
+				{
+					/* get file size and rewind */
+					fseek(fp, 0, SEEK_END);
+					fs = ftell(fp);
+					fseek(fp, 0, SEEK_SET);
+
+					/* there are localised strings at file end, so file size can be
+					   different across national versions. So check files size +- 10%
+					 */
+					uint32_t step = patch->spatch->filesize/10;
+					uint32_t fs_min = patch->spatch->filesize-step;
+					uint32_t fs_max = patch->spatch->filesize+step;
+
+					if(fs >= fs_min && fs <= fs_max)
+					{
+						const spatch_data_t *pdata = patch->spatch->data;
+						while(pdata->olddata != NULL)
+						{
+							fseek(fp, pdata->offset, SEEK_SET);
+							if(fread(buf, 1, pdata->size, fp) != pdata->size)
+							{
+								status = PATCH_E_READ;
+								break;
+							}
+
+							if(memcmp(buf, pdata->olddata, pdata->size) != 0)
+							{
+								if(memcmp(buf, pdata->newdata, pdata->size) != 0)
+								{
+									break;
+								}
+								patch_exists = 1;
+							}
+							pdata++;
+						}
+
+						if(pdata->olddata == NULL)
+						{
+							valid = 1;
+						}
+					}
+
+					if(valid && patch_exists)
+					{
+						exists |= patch->id;
+					}
+					else if(valid)
+					{
+						applied |= patch->id;
+						if((to_apply & PATCH_DRY) == 0)
+						{
+							FILE *fw;
+							if(file_copied == 0)
+							{
+								fw = FOPEN_LOG(dstfile, "wb");
+								fseek(fp, 0, SEEK_SET);
+								fs_file_copy(fp, fw, 0);
+								file_copied = 1;
+							}
+							else
+							{
+								fw = FOPEN_LOG(dstfile, "r+b");
+							}
+							
+							if(fw != NULL)
+							{
+								const spatch_data_t *pdata = patch->spatch->data;
+								while(pdata->newdata != NULL)
+								{
+									fseek(fw, pdata->offset, SEEK_SET);
+									fwrite(pdata->newdata, 1, pdata->size, fw);									
+									pdata++;
+								}
+								fclose(fw);
+							}
+							else
+							{
+								status = PATCH_E_WRITE;
+							}
+						}
+					}
+					free(buf);
+				}
+				else
+				{
+					status = PATCH_E_MEM;
+				}
+			} // spatch
 		} // if apply
 	} // for patch in patches
 	
@@ -590,7 +697,7 @@ void patch_print(uint32_t patches)
 	ppatch_t *patch;
 	int cnt = 0;
 	
-	for(patch = ppathes; patch->patch_data != NULL; patch++)
+	for(patch = ppathes; patch->name != NULL; patch++)
 	{
 		if((patch->id & patches) != 0)
 		{

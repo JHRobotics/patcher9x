@@ -27,10 +27,10 @@ FASM  ?= fasm
 ifdef RELEASE
   CFLAGS ?= -std=gnu99 -g0 -static -Os -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -fdata-sections -ffunction-sections
 else
-  CFLAGS ?= -std=gnu99 -g -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
+  CFLAGS ?= -std=gnu99 -g -static -O1 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
 endif
 
-CFLAGS := $(CFLAGS) -I./mspack -I./system -I./pe -I./nocrt
+CFLAGS := $(CFLAGS) -I./mspack -I./system -I./pe -I./nocrt -I./rloew
 
 HOST_CC      ?= $(CC)
 HOST_CFLAGS  ?= $(CFLAGS)
@@ -87,6 +87,7 @@ OBJS_HOST=system/bpatcher.h.o
 
 OBJS_MAKEPATCH = vmm/makepatch.h.o
 OBJS_MAKEDIFF  = vmm/makediff.h.o
+OBJS_BINDIFF   = rloew/bindiff.h.o
 
 ifeq ($(filter $(OS),Windows_NT),Windows_NT)
   OBJS_MAKEPATCH += vmm/makepatch.h.res
@@ -157,6 +158,9 @@ makepatch$(HOST_SUFIX): $(OBJS_HOST) $(OBJS_MAKEPATCH)
 	$(HOST_CC) $(HOST_CFLAGS) -o $@ $^ $(HOST_LDFLAGS)
 	
 makediff$(HOST_SUFIX): $(OBJS_HOST) $(OBJS_MAKEDIFF)
+	$(HOST_CC) $(HOST_CFLAGS) -o $@ $^ $(HOST_LDFLAGS)
+
+bindiff$(HOST_SUFIX): $(OBJS_HOST) $(OBJS_BINDIFF)
 	$(HOST_CC) $(HOST_CFLAGS) -o $@ $^ $(HOST_LDFLAGS)
 
 ########## VMM patch (SE only)
@@ -232,48 +236,48 @@ vmm/reloc_simple_v2.asm.gen: vmm/FlushMappedCacheBlock.asm
 
 # V1 (SE)
 
-vmm_patch.h.tmp: vmm/patched.bin vmm/original.bin vmm/reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) 98 vmm_patch 1040 448 592 > $@
+vmm_patch.h: vmm/patched.bin vmm/original.bin vmm/reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) 98 vmm_patch 1040 448 592 $@
 
 # V2 (SE)
 
-vmm_patch_v2.h.tmp: vmm/patched_v2.bin vmm/original_v2.bin vmm/reloc_v2.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) 98v2 vmm_patch_v2 1052 448 604 > $@
+vmm_patch_v2.h: vmm/patched_v2.bin vmm/original_v2.bin vmm/reloc_v2.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) 98v2 vmm_patch_v2 1052 448 604 $@
 
 # ME (2 parts)
 
-vmm_patch_me1.h.tmp: vmm/patchedme.bin vmm/originalme.bin vmm/relocme.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) me vmm_patch_me1 16320 12 461 > $@
+vmm_patch_me1.h: vmm/patchedme.bin vmm/originalme.bin vmm/relocme.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) me vmm_patch_me1 16320 12 461 $@
 
-vmm_patch_me2.h.tmp: vmm/patchedme.bin vmm/originalme.bin vmm/relocme.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) me vmm_patch_me2 16320 16160 160 > $@
+vmm_patch_me2.h: vmm/patchedme.bin vmm/originalme.bin vmm/relocme.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) me vmm_patch_me2 16320 16160 160 $@
 
-vmm/fasmdiff.h.tmp: vmm/original.bin vmm/dump.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff vmm/dump.bin vmm/original.bin > $@
+vmm/fasmdiff.h: vmm/original.bin vmm/dump.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff $@ vmm/dump.bin vmm/original.bin
 
-vmm/fasmdiff_v2.h.tmp: vmm/original_v2.bin vmm/dump_v2.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_v2 vmm/dump_v2.bin vmm/original_v2.bin > $@
+vmm/fasmdiff_v2.h: vmm/original_v2.bin vmm/dump_v2.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_v2 $@ vmm/dump_v2.bin vmm/original_v2.bin
 
-vmm/fasmdiff_me.h.tmp: vmm/originalme.bin vmm/dumpme.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_me vmm/dumpme.bin vmm/originalme.bin 0x1D8 0x3F20 > $@
+vmm/fasmdiff_me.h: vmm/originalme.bin vmm/dumpme.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_me $@ vmm/dumpme.bin vmm/originalme.bin 0x1D8 0x3F20
 
-vmm/fasmdiff_old.h.tmp: vmm/original_old.bin vmm/dump_old.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_old vmm/dump_old.bin vmm/original_old.bin > $@
+vmm/fasmdiff_old.h: vmm/original_old.bin vmm/dump_old.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_old $@ vmm/dump_old.bin vmm/original_old.bin
 
-vmm/fasmdiff_old_v2.h.tmp: vmm/original_old_v2.bin vmm/dump_old_v2.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_old_v2 vmm/dump_old_v2.bin vmm/original_old_v2.bin > $@
+vmm/fasmdiff_old_v2.h: vmm/original_old_v2.bin vmm/dump_old_v2.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) fasmdiff_old_v2 $@ vmm/dump_old_v2.bin vmm/original_old_v2.bin
 
-vmm_patch_old.h.tmp: vmm/patched.bin vmm/original_old.bin vmm/reloc_old.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) 98_old vmm_patch_old 1040 448 592 > $@
+vmm_patch_old.h: vmm/patched.bin vmm/original_old.bin vmm/reloc_old.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) 98_old vmm_patch_old 1040 448 592 $@
 	
-vmm_patch_old_v2.h.tmp: vmm/patched_v2.bin vmm/original_old_v2.bin vmm/reloc_old_v2.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) 98_old_v2 vmm_patch_old_v2 1052 448 604 > $@
+vmm_patch_old_v2.h: vmm/patched_v2.bin vmm/original_old_v2.bin vmm/reloc_old_v2.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) 98_old_v2 vmm_patch_old_v2 1052 448 604 $@
 
-vmm_patch_simple.h.tmp: vmm/patched_simple.bin vmm/original_simple.bin vmm/reloc_simple.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) 98_simple vmm_patch_simple 1040 448 592 > $@
+vmm_patch_simple.h: vmm/patched_simple.bin vmm/original_simple.bin vmm/reloc_simple.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) 98_simple vmm_patch_simple 1040 448 592 $@
 	
-vmm_patch_simple_v2.h.tmp: vmm/patched_simple_v2.bin vmm/original_simple_v2.bin vmm/reloc_simple_v2.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) 98_simple_v2 vmm_patch_simple_v2 1052 448 604 > $@
+vmm_patch_simple_v2.h: vmm/patched_simple_v2.bin vmm/original_simple_v2.bin vmm/reloc_simple_v2.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) 98_simple_v2 vmm_patch_simple_v2 1052 448 604 $@
 
 # cpu speed V1
 cpuspeed/speed_v1.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
@@ -285,11 +289,11 @@ cpuspeed/speed_v1_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 cpuspeed/speed_v1_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_1 cpuspeed/speed_v1.asm -o $@
 
-cpuspeed/speed_v1_diff.h.tmp: cpuspeed/speed_v1_dump.bin cpuspeed/speed_v1_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speed_v1_diff cpuspeed/speed_v1_dump.bin cpuspeed/speed_v1_orig.bin > $@
+cpuspeed/speed_v1_diff.h: cpuspeed/speed_v1_dump.bin cpuspeed/speed_v1_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speed_v1_diff $@ cpuspeed/speed_v1_dump.bin cpuspeed/speed_v1_orig.bin
 
-cpuspeed_patch_v1.h.tmp: cpuspeed/speed_v1.bin cpuspeed/speed_v1_orig.bin cpuspeed/speed_v1_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v1 cpuspeed_patch_v1 53 0 53 > $@
+cpuspeed_patch_v1.h: cpuspeed/speed_v1.bin cpuspeed/speed_v1_orig.bin cpuspeed/speed_v1_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v1 cpuspeed_patch_v1 53 0 53 $@
 
 
 # cpu speed V2
@@ -302,11 +306,11 @@ cpuspeed/speed_v2_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 cpuspeed/speed_v2_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_2 cpuspeed/speed_v1.asm -o $@
 
-cpuspeed/speed_v2_diff.h.tmp: cpuspeed/speed_v2_dump.bin cpuspeed/speed_v2_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speed_v2_diff cpuspeed/speed_v2_dump.bin cpuspeed/speed_v2_orig.bin > $@
+cpuspeed/speed_v2_diff.h: cpuspeed/speed_v2_dump.bin cpuspeed/speed_v2_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speed_v2_diff $@ cpuspeed/speed_v2_dump.bin cpuspeed/speed_v2_orig.bin
 
-cpuspeed_patch_v2.h.tmp: cpuspeed/speed_v2.bin cpuspeed/speed_v2_orig.bin cpuspeed/speed_v2_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v2 cpuspeed_patch_v2 53 0 53 > $@
+cpuspeed_patch_v2.h: cpuspeed/speed_v2.bin cpuspeed/speed_v2_orig.bin cpuspeed/speed_v2_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v2 cpuspeed_patch_v2 53 0 53 $@
 
 # cpu speed V4
 cpuspeed/speed_v4.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
@@ -318,11 +322,11 @@ cpuspeed/speed_v4_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 cpuspeed/speed_v4_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_4 cpuspeed/speed_v1.asm -o $@
 
-cpuspeed/speed_v4_diff.h.tmp: cpuspeed/speed_v4_dump.bin cpuspeed/speed_v4_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speed_v4_diff cpuspeed/speed_v4_dump.bin cpuspeed/speed_v4_orig.bin > $@
+cpuspeed/speed_v4_diff.h: cpuspeed/speed_v4_dump.bin cpuspeed/speed_v4_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speed_v4_diff $@ cpuspeed/speed_v4_dump.bin cpuspeed/speed_v4_orig.bin
 
-cpuspeed_patch_v4.h.tmp: cpuspeed/speed_v4.bin cpuspeed/speed_v4_orig.bin cpuspeed/speed_v4_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v4 cpuspeed_patch_v4 53 0 53 > $@
+cpuspeed_patch_v4.h: cpuspeed/speed_v4.bin cpuspeed/speed_v4_orig.bin cpuspeed/speed_v4_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v4 cpuspeed_patch_v4 53 0 53 $@
 
 # cpu speed V3
 cpuspeed/speed_v3.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v3.asm
@@ -334,11 +338,11 @@ cpuspeed/speed_v3_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v3.asm
 cpuspeed/speed_v3_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v3.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_3 cpuspeed/speed_v3.asm -o $@
 
-cpuspeed/speed_v3_diff.h.tmp: cpuspeed/speed_v3_dump.bin cpuspeed/speed_v3_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speed_v3_diff cpuspeed/speed_v3_dump.bin cpuspeed/speed_v3_orig.bin > $@
+cpuspeed/speed_v3_diff.h: cpuspeed/speed_v3_dump.bin cpuspeed/speed_v3_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speed_v3_diff $@ cpuspeed/speed_v3_dump.bin cpuspeed/speed_v3_orig.bin
 
-cpuspeed_patch_v3.h.tmp: cpuspeed/speed_v3.bin cpuspeed/speed_v3_orig.bin cpuspeed/speed_v3_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v3 cpuspeed_patch_v3 44 0 44 > $@
+cpuspeed_patch_v3.h: cpuspeed/speed_v3.bin cpuspeed/speed_v3_orig.bin cpuspeed/speed_v3_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v3 cpuspeed_patch_v3 44 0 44 $@
 
 # cpu speed V5
 cpuspeed/speed_v5.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
@@ -350,11 +354,11 @@ cpuspeed/speed_v5_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 cpuspeed/speed_v5_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_5 cpuspeed/speed_v5.asm -o $@
 
-cpuspeed/speed_v5_diff.h.tmp: cpuspeed/speed_v5_dump.bin cpuspeed/speed_v5_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speed_v5_diff cpuspeed/speed_v5_dump.bin cpuspeed/speed_v5_orig.bin > $@
+cpuspeed/speed_v5_diff.h: cpuspeed/speed_v5_dump.bin cpuspeed/speed_v5_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speed_v5_diff $@ cpuspeed/speed_v5_dump.bin cpuspeed/speed_v5_orig.bin
 
-cpuspeed_patch_v5.h.tmp: cpuspeed/speed_v5.bin cpuspeed/speed_v5_orig.bin cpuspeed/speed_v5_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v5 cpuspeed_patch_v5 69 0 69 > $@
+cpuspeed_patch_v5.h: cpuspeed/speed_v5.bin cpuspeed/speed_v5_orig.bin cpuspeed/speed_v5_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v5 cpuspeed_patch_v5 69 0 69 $@
 
 # cpu speed V6
 cpuspeed/speed_v6.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
@@ -366,11 +370,11 @@ cpuspeed/speed_v6_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 cpuspeed/speed_v6_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_6 cpuspeed/speed_v5.asm -o $@
 
-cpuspeed/speed_v6_diff.h.tmp: cpuspeed/speed_v6_dump.bin cpuspeed/speed_v6_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speed_v6_diff cpuspeed/speed_v6_dump.bin cpuspeed/speed_v6_orig.bin > $@
+cpuspeed/speed_v6_diff.h: cpuspeed/speed_v6_dump.bin cpuspeed/speed_v6_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speed_v6_diff $@ cpuspeed/speed_v6_dump.bin cpuspeed/speed_v6_orig.bin
 
-cpuspeed_patch_v6.h.tmp: cpuspeed/speed_v6.bin cpuspeed/speed_v6_orig.bin cpuspeed/speed_v6_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v6 cpuspeed_patch_v6 69 0 69 > $@
+cpuspeed_patch_v6.h: cpuspeed/speed_v6.bin cpuspeed/speed_v6_orig.bin cpuspeed/speed_v6_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v6 cpuspeed_patch_v6 69 0 69 $@
 
 # cpu speed V7
 cpuspeed/speed_v7.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
@@ -382,11 +386,11 @@ cpuspeed/speed_v7_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 cpuspeed/speed_v7_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v5.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_7 cpuspeed/speed_v5.asm -o $@
 
-cpuspeed/speed_v7_diff.h.tmp: cpuspeed/speed_v7_dump.bin cpuspeed/speed_v7_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speed_v7_diff cpuspeed/speed_v7_dump.bin cpuspeed/speed_v7_orig.bin > $@
+cpuspeed/speed_v7_diff.h: cpuspeed/speed_v7_dump.bin cpuspeed/speed_v7_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speed_v7_diff $@ cpuspeed/speed_v7_dump.bin cpuspeed/speed_v7_orig.bin
 
-cpuspeed_patch_v7.h.tmp: cpuspeed/speed_v7.bin cpuspeed/speed_v7_orig.bin cpuspeed/speed_v7_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v7 cpuspeed_patch_v7 69 0 69 > $@
+cpuspeed_patch_v7.h: cpuspeed/speed_v7.bin cpuspeed/speed_v7_orig.bin cpuspeed/speed_v7_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v7 cpuspeed_patch_v7 69 0 69 $@
 
 # cpu speed V8
 cpuspeed/speed_v8.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v8.asm
@@ -398,11 +402,11 @@ cpuspeed/speed_v8_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v8.asm
 cpuspeed/speed_v8_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speed_v8.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_8 cpuspeed/speed_v8.asm -o $@
 
-cpuspeed/speed_v8_diff.h.tmp: cpuspeed/speed_v8_dump.bin cpuspeed/speed_v8_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speed_v8_diff cpuspeed/speed_v8_dump.bin cpuspeed/speed_v8_orig.bin > $@
+cpuspeed/speed_v8_diff.h: cpuspeed/speed_v8_dump.bin cpuspeed/speed_v8_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speed_v8_diff $@ cpuspeed/speed_v8_dump.bin cpuspeed/speed_v8_orig.bin
 
-cpuspeed_patch_v8.h.tmp: cpuspeed/speed_v8.bin cpuspeed/speed_v8_orig.bin cpuspeed/speed_v8_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v8 cpuspeed_patch_v8 60 0 60 > $@
+cpuspeed_patch_v8.h: cpuspeed/speed_v8.bin cpuspeed/speed_v8_orig.bin cpuspeed/speed_v8_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speed_v8 cpuspeed_patch_v8 60 0 60 $@
 
 
 # cpu speed NDIS.VXD V1
@@ -415,11 +419,11 @@ cpuspeed/speedndis_v1_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 cpuspeed/speedndis_v1_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_1 cpuspeed/speedndis_v1.asm -o $@
 
-cpuspeed/speedndis_v1_diff.h.tmp: cpuspeed/speedndis_v1_dump.bin cpuspeed/speedndis_v1_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v1_diff cpuspeed/speedndis_v1_dump.bin cpuspeed/speedndis_v1_orig.bin > $@
+cpuspeed/speedndis_v1_diff.h: cpuspeed/speedndis_v1_dump.bin cpuspeed/speedndis_v1_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v1_diff $@ cpuspeed/speedndis_v1_dump.bin cpuspeed/speedndis_v1_orig.bin
 
-cpuspeed_ndis_patch_v1.h.tmp: cpuspeed/speedndis_v1.bin cpuspeed/speedndis_v1_orig.bin cpuspeed/speedndis_v1_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v1 cpuspeed_ndis_patch_v1 112 0 112 > $@
+cpuspeed_ndis_patch_v1.h: cpuspeed/speedndis_v1.bin cpuspeed/speedndis_v1_orig.bin cpuspeed/speedndis_v1_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v1 cpuspeed_ndis_patch_v1 112 0 112 $@
 
 # cpu speed NDIS.VXD V3
 cpuspeed/speedndis_v3.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
@@ -431,11 +435,11 @@ cpuspeed/speedndis_v3_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 cpuspeed/speedndis_v3_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v1.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_3 cpuspeed/speedndis_v1.asm -o $@
 
-cpuspeed/speedndis_v3_diff.h.tmp: cpuspeed/speedndis_v3_dump.bin cpuspeed/speedndis_v3_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v3_diff cpuspeed/speedndis_v3_dump.bin cpuspeed/speedndis_v3_orig.bin > $@
+cpuspeed/speedndis_v3_diff.h: cpuspeed/speedndis_v3_dump.bin cpuspeed/speedndis_v3_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v3_diff $@ cpuspeed/speedndis_v3_dump.bin cpuspeed/speedndis_v3_orig.bin
 
-cpuspeed_ndis_patch_v3.h.tmp: cpuspeed/speedndis_v3.bin cpuspeed/speedndis_v3_orig.bin cpuspeed/speedndis_v3_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v3 cpuspeed_ndis_patch_v3 112 0 112 > $@
+cpuspeed_ndis_patch_v3.h: cpuspeed/speedndis_v3.bin cpuspeed/speedndis_v3_orig.bin cpuspeed/speedndis_v3_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v3 cpuspeed_ndis_patch_v3 112 0 112 $@
 
 # cpu speed NDIS.VXD V2
 cpuspeed/speedndis_v2.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v2.asm
@@ -447,11 +451,11 @@ cpuspeed/speedndis_v2_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v2.asm
 cpuspeed/speedndis_v2_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v2.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_2 cpuspeed/speedndis_v2.asm -o $@
 
-cpuspeed/speedndis_v2_diff.h.tmp: cpuspeed/speedndis_v2_dump.bin cpuspeed/speedndis_v2_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v2_diff cpuspeed/speedndis_v2_dump.bin cpuspeed/speedndis_v2_orig.bin > $@
+cpuspeed/speedndis_v2_diff.h: cpuspeed/speedndis_v2_dump.bin cpuspeed/speedndis_v2_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v2_diff $@ cpuspeed/speedndis_v2_dump.bin cpuspeed/speedndis_v2_orig.bin
 
-cpuspeed_ndis_patch_v2.h.tmp: cpuspeed/speedndis_v2.bin cpuspeed/speedndis_v2_orig.bin cpuspeed/speedndis_v2_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v2 cpuspeed_ndis_patch_v2 128 0 128 > $@
+cpuspeed_ndis_patch_v2.h: cpuspeed/speedndis_v2.bin cpuspeed/speedndis_v2_orig.bin cpuspeed/speedndis_v2_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v2 cpuspeed_ndis_patch_v2 128 0 128 $@
 
 # cpu speed NDIS.386 V4
 cpuspeed/speedndis_v4.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v4.asm
@@ -463,11 +467,11 @@ cpuspeed/speedndis_v4_orig.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v4.asm
 cpuspeed/speedndis_v4_reloc.asm.gen: cpuspeed/speed.inc cpuspeed/speedndis_v4.asm
 	$(CPP) -nostdinc -E -P -Doriginalcode -Drelocate -Dversion_4 cpuspeed/speedndis_v4.asm -o $@
 
-cpuspeed/speedndis_v4_diff.h.tmp: cpuspeed/speedndis_v4_dump.bin cpuspeed/speedndis_v4_orig.bin makediff$(HOST_SUFIX)
-	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v4_diff cpuspeed/speedndis_v4_dump.bin cpuspeed/speedndis_v4_orig.bin > $@
+cpuspeed/speedndis_v4_diff.h: cpuspeed/speedndis_v4_dump.bin cpuspeed/speedndis_v4_orig.bin makediff$(HOST_SUFIX)
+	$(RUNPATH)makediff$(HOST_SUFIX) speedndis_v4_diff $@ cpuspeed/speedndis_v4_dump.bin cpuspeed/speedndis_v4_orig.bin
 
-cpuspeed_ndis_patch_v4.h.tmp: cpuspeed/speedndis_v4.bin cpuspeed/speedndis_v4_orig.bin cpuspeed/speedndis_v4_reloc.bin makepatch$(HOST_SUFIX)
-	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v4 cpuspeed_ndis_patch_v4 113 0 113 > $@
+cpuspeed_ndis_patch_v4.h: cpuspeed/speedndis_v4.bin cpuspeed/speedndis_v4_orig.bin cpuspeed/speedndis_v4_reloc.bin makepatch$(HOST_SUFIX)
+	$(RUNPATH)makepatch$(HOST_SUFIX) speedndis_v4 cpuspeed_ndis_patch_v4 113 0 113 $@
 
 patch.g.o: vmm_patch.h vmm_patch_v2.h vmm_patch_me1.h vmm_patch_me2.h cpuspeed_ndis_patch_v1.h cpuspeed_ndis_patch_v2.h cpuspeed_ndis_patch_v3.h cpuspeed_ndis_patch_v4.h \
   cpuspeed_patch_v1.h cpuspeed_patch_v2.h cpuspeed_patch_v3.h cpuspeed_patch_v4.h cpuspeed_patch_v5.h cpuspeed_patch_v6.h cpuspeed_patch_v7.h cpuspeed_patch_v8.h \
@@ -479,11 +483,43 @@ fasmdiff: vmm/fasmdiff.h vmm/fasmdiff_v2.h vmm/fasmdiff_me.h \
   cpuspeed/speed_v5_diff.h cpuspeed/speed_v6_diff.h cpuspeed/speed_v7_diff.h cpuspeed/speed_v8_diff.h \
   vmm/fasmdiff_old.h vmm/fasmdiff_old_v2.h
 
+soliddiff: rloew/vcache_patch_v1.h rloew/vmm98_patch_v1.h \
+  rloew/vmm98_patch_v2.h rloew/vmm98_patch_v3.h rloew/vmm98_patch_v4.h \
+  rloew/vmmme_patch_v1.h rloew/vmmme_patch_v2.h
+
+rloew/vcache_patch_v1.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vcache_v1 rloew/dump/VCACHE.BAK rloew/dump/VCACHE.VXD $@
+
+# 98SE
+rloew/vmm98_patch_v1.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v1 rloew/dump/VMM98.BAK rloew/dump/VMM98.VXD $@
+
+# 98FE
+rloew/vmm98_patch_v2.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v2 rloew/dump/VMM98FE.BAK rloew/dump/VMM98FE.VXD $@
+
+# 98SE+Q288430
+rloew/vmm98_patch_v3.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v3 rloew/dump/VMM_Q288430.BAK rloew/dump/VMM_Q288430.VXD $@
+
+# 98FE+Q242161
+rloew/vmm98_patch_v4.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v4 rloew/dump/VMM_Q242161.BAK rloew/dump/VMM_Q242161.VXD $@
+
+# ME
+rloew/vmmme_patch_v1.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v1 rloew/dump/VMMME.BAK rloew/dump/VMMME.VXD $@
+
+# ME+Q29677
+rloew/vmmme_patch_v2.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v2 rloew/dump/VMM_Q296773.BAK rloew/dump/VMM_Q296773.VXD $@
+
 clean:
 	-$(RM) $(OBJS_OUT)
 	-$(RM) $(OBJS_HOST)
 	-$(RM) $(OBJS_MAKEPATCH)
 	-$(RM) $(OBJS_MAKEDIFF)
+	-$(RM) $(OBJS_BINDIFF)
 	-$(RM) *.tmp
 	-$(RM) *.res
 	-cd vmm && $(RM) *.gen
@@ -494,4 +530,5 @@ clean:
 	-$(RM) $(OUTNAME)
 	-$(RM) makepatch$(HOST_SUFIX)
 	-$(RM) makediff$(HOST_SUFIX)
+	-$(RM) bindiff$(HOST_SUFIX)
 	-$(RM) $(TESTS)

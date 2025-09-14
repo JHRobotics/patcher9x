@@ -4,6 +4,8 @@
 #ifndef __CPUSPEED_NDIS_PATCH_V3_H__INCLUDED__
 #define __CPUSPEED_NDIS_PATCH_V3_H__INCLUDED__
 
+#include <patch.h>
+
 /* original data for search */
 const uint8_t cpuspeed_ndis_patch_v3_orig[] = {
 	0x29, 0xC9, 0xCD, 0x20, 0x3F, 0x00, 0x01, 0x00, 0x89, 0xC2, 0x81, 0xC2, 0x80, 0x00, 0x00, 0x00, 
@@ -35,6 +37,13 @@ const uint8_t cpuspeed_ndis_patch_v3[] = {
 /* bitmap of modify bytes */
 const uint8_t cpuspeed_ndis_patch_v3_modif[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F, 0xFF, 0xE0, 0x00, 0x00, 0x00, 
+};
+
+const cpatch_t cpuspeed_ndis_patch_v3_cp = {
+	cpuspeed_ndis_patch_v3, sizeof(cpuspeed_ndis_patch_v3),
+	cpuspeed_ndis_patch_v3_orig, sizeof(cpuspeed_ndis_patch_v3_orig),
+	cpuspeed_ndis_patch_v3_orig_check, sizeof(cpuspeed_ndis_patch_v3_orig_check),
+	cpuspeed_ndis_patch_v3_modif, sizeof(cpuspeed_ndis_patch_v3_modif)
 };
 
 #endif /* __CPUSPEED_NDIS_PATCH_V3_H__INCLUDED__ */

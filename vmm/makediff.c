@@ -60,30 +60,34 @@ int main(int argc, char *argv[])
 	bitstream_t bs;
 	char *dump_file = NULL;
 	char *original_file = NULL;
+	char *output_file = NULL;
 	size_t ignore_begin = SIZE_MAX;
 	size_t ignore_end   = SIZE_MAX;
 	char *prefix = NULL;
 	size_t prefix_len = 0;
 	char prefix_upper[PREFIX_MAX];
+	FILE *out = stdout;
+	int out_open = 0;
 	
-	if(argc < 4)
+	if(argc < 5)
 	{
-		printf("Usage: %s <prefix> <dump.bin> <original.bin> [ignore space begin] [ignore space end]", argv[0]);
+		printf("Usage: %s <prefix> <output.h> <dump.bin> <original.bin> [ignore space begin] [ignore space end]", argv[0]);
 		return 0;
 	}
 
   prefix        = argv[1];
-	dump_file     = argv[2];
-	original_file = argv[3];
-	
-	if(argc >= 5)
-	{
-		ignore_begin = strtoul(argv[4], NULL, 0);
-	}
+  output_file   = argv[2];
+	dump_file     = argv[3];
+	original_file = argv[4];
 	
 	if(argc >= 6)
 	{
-		ignore_end = strtoul(argv[5], NULL, 0);
+		ignore_begin = strtoul(argv[5], NULL, 0);
+	}
+	
+	if(argc >= 7)
+	{
+		ignore_end = strtoul(argv[6], NULL, 0);
 	}
 	
 	prefix_len = strlen(prefix);
@@ -106,63 +110,81 @@ int main(int argc, char *argv[])
 		mem2 = malloc(dumped_s);
 		mem3 = bs_mem_alloc(&bs, bs_calc_size(dumped_s));
 		
-		if(mem1 != NULL && mem2 != NULL)
+		if(strcmp(output_file, "-") != 0)
 		{
-			fread(mem1, 1, dumped_s, fp);
-			fclose(fp);
-			fp = fopen(original_file, "rb");
-			if(fp)
-			{
-				original_s = file_size(fp);
-				if(original_s == dumped_s)
-				{
-					uint8_t buf8 = 0;
-					
-					fread(mem2, 1, original_s, fp);
-					
-					for(i = ignore_begin; i < ignore_end; i++)
-					{
-						if(i < dumped_s)
-						{
-							mem1[i] = mem2[i] = 0x00;
-						}
-					}
-					
-					diff_sieve(mem1, mem2, original_s, &bs);
-					bs_reset(&bs);
-					
-					printf(h_header, prefix_upper, prefix_upper);
+			out = fopen(output_file, "wb");
+			out_open = 1;
+		}
 
-					printf("/* bitmap of differences between file assembled by FASM and original file by Microsoft */\nconst uint8_t vmm_%s[] = {\n\t", prefix);
-					for(i = 0, j = 0; i < original_s; i += 8, j++)
+		if(out != NULL)
+		{
+			if(mem1 != NULL && mem2 != NULL)
+			{
+				fread(mem1, 1, dumped_s, fp);
+				fclose(fp);
+				fp = fopen(original_file, "rb");
+				if(fp)
+				{
+					original_s = file_size(fp);
+					if(original_s == dumped_s)
 					{
-						buf8 = bs_read_bit(&bs, 8);
+						uint8_t buf8 = 0;
 						
-						if(j % 16 == 0)
+						fread(mem2, 1, original_s, fp);
+						
+						for(i = ignore_begin; i < ignore_end; i++)
 						{
-							printf("\n\t");
+							if(i < dumped_s)
+							{
+								mem1[i] = mem2[i] = 0x00;
+							}
 						}
-						printf("0x%02X, ", buf8);
+						
+						diff_sieve(mem1, mem2, original_s, &bs);
+						bs_reset(&bs);
+						
+						fprintf(out, h_header, prefix_upper, prefix_upper);
+	
+						fprintf(out, "/* bitmap of differences between file assembled by FASM and original file by Microsoft */\nconst uint8_t vmm_%s[] = {\n\t", prefix);
+						for(i = 0, j = 0; i < original_s; i += 8, j++)
+						{
+							buf8 = bs_read_bit(&bs, 8);
+							
+							if(j % 16 == 0)
+							{
+								fprintf(out, "\n\t");
+							}
+							fprintf(out, "0x%02X, ", buf8);
+						}
+						fprintf(out, "\n};\n\n");
+						
+						fprintf(out, h_footer, prefix_upper);
+						
+						status = EXIT_SUCCESS;
 					}
-					printf("\n};\n\n");
-					
-					printf(h_footer, prefix_upper);
-					
-					status = EXIT_SUCCESS;
+					else
+					{
+						fprintf(stderr, "Error: file sizes of dump.bin and original.bin are not same\n");
+					}
 				}
 				else
 				{
-					fprintf(stderr, "Error: file sizes of dump.bin and original.bin are not same\n");
+					fprintf(stderr, "Error: file %s not found\n", original_file);
 				}
 			}
 			else
 			{
-				fprintf(stderr, "Error: file %s not found\n", original_file);
+				fprintf(stderr, "Error: out of memory\n");
+			}
+
+			if(out_open)
+			{
+				fclose(out);
 			}
 		}
 		else
 		{
-			fprintf(stderr, "Error: out of memory\n");
+			fprintf(stderr, "Error: cannot open %s as output\n", output_file);
 		}
 	}
 	else
