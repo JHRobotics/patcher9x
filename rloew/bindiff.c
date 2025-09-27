@@ -83,10 +83,11 @@ static void print_diff(FILE *stream)
 int main(int argc, char *argv[])
 {
 	int close_out = 0;
+	uint32_t limit = 0;
 	
 	if(argc < 5)
 	{
-		printf("Usage: %s <prefix> <original file> <patched file> <output.h>\n", argv[0]);
+		printf("Usage: %s <prefix> <original file> <patched file> <output.h> [limit]\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 	
@@ -95,6 +96,11 @@ int main(int argc, char *argv[])
 	const char *newname = argv[3];
 	const char *outname = argv[4];
 	
+	if(argc >= 6)
+	{
+		limit = strtoul(argv[5], NULL, 0);
+	}
+
 	upper_case(prefix, prefix_upper, PREFIX_MAX);
 	
 	FILE *oldf = fopen(oldname, "rb");
@@ -144,6 +150,14 @@ int main(int argc, char *argv[])
 	{
 		int c1 = fgetc(oldf);
 		int c2 = fgetc(newf);
+		
+		if(limit)
+		{
+			if(offset >= limit)
+			{
+				break;
+			}
+		}
 		
 		if(c1 == EOF || c2 == EOF)
 		{

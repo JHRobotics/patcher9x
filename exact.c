@@ -79,7 +79,7 @@ static int action_extract_vxd(options_t *options, const char *path, const char *
 
 static int action_patch(options_t *options, const char *path, const char *out)
 {
-	uint32_t flags = 0;
+	uint64_t flags = 0;
 	char *tmpname;
 	int t = PATCH_E_MEM;
 	

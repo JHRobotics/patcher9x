@@ -461,7 +461,7 @@ int batch_vxd_extract_all(options_t *options, int argc, char **argv)
  * Apply patch to file
  *
  **/
-static int batch_patch_sel(options_t *options, int argc, char **argv, uint32_t patches)
+static int batch_patch_sel(options_t *options, int argc, char **argv, uint64_t patches)
 {
 	int r = PATCH_OK;
 	int type;
@@ -516,7 +516,7 @@ static int batch_patch_sel(options_t *options, int argc, char **argv, uint32_t p
 			continue;
 		}
 		
-		type = pe_read(&dos, &pe, fr);
+		type = pe_read(&dos, &pe, fr, 1);
 		if(type == PE_W3 || type == PE_W4)
 		{
 			fclose(fr);
@@ -565,6 +565,88 @@ static int batch_patch_sel(options_t *options, int argc, char **argv, uint32_t p
 			free(outname);
 		} // is not archive
 	} // for
+	
+	return r;
+}
+
+/**
+ * strip MZ header or replace with universal one
+ *
+ * required argv[0]: input
+ * required argv[1]: output
+ * 
+ **/
+static int batch_mz_strip(options_t *options, int argc, char **argv)
+{
+	int r = -1;
+	int replace = 0;
+	int dump = 0;
+	int i;
+	const char *in_name = NULL;
+	const char *out_name = NULL;
+	
+	for(i = 0; i < argc; i++)
+	{
+		if(strcmp(argv[i], "--replace") == 0)
+		{
+			replace = 1;
+		}
+		else if(strcmp(argv[i], "--dump") == 0)
+		{
+			dump = 1;
+		}
+		else if(in_name == NULL)
+		{
+			in_name = argv[i];
+		}
+		else if(out_name == NULL)
+		{
+			out_name = argv[i];
+		}
+		else
+		{
+			fprintf(stderr, "waste argument %s\n", argv[i]);
+			return r;
+		}
+	}
+
+	if(in_name == NULL){fprintf(stderr, "missing input\n"); return r;}
+	if(out_name == NULL){fprintf(stderr, "missing output\n"); return r;}
+
+	FILE *fr = fopen(in_name, "rb");
+	if(fr)
+	{
+		dos_header_t dos;
+		fread(&dos, 1, sizeof(dos_header_t), fr);
+		if(memcmp(dos.magic, MAGIC_DOS, 2) == 0)
+		{
+			if(dos.nextheader != 0)
+			{
+				FILE *fw = fopen(out_name, "wb");
+				if(fw)
+				{
+					if(dump == 0)
+					{
+						fseek(fr, dos.nextheader, SEEK_SET);
+						if(replace)
+						{
+							fwrite(dos_program_le, 1, DOS_PROGRAM_LE_SIZE, fw);
+						}
+						fs_file_copy(fr, fw, 0);
+						r = PATCH_OK;
+					}
+					else
+					{
+						fseek(fr, 0, SEEK_SET);
+						fs_file_copy(fr, fw, dos.nextheader);
+						r = PATCH_OK;
+					}
+					fclose(fw);
+				}else{fprintf(stderr, "cannot open output\n");}
+				fclose(fr);
+			}else{fprintf(stderr, "No next header, file is probably native 16bit EXE\n");}
+		}else{fprintf(stderr, "File is not MZ file");}
+	}else{fprintf(stderr, "cannot open input\n");}
 	
 	return r;
 }

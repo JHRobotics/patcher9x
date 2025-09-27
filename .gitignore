@@ -24,7 +24,13 @@ __pycache__
 /doc/tmp/
 *.o
 *.bak
+*.backup
 *.tmp
 *.gen
 *.exe
 *.res
+
+# bins
+makepatch
+bindiff
+patcher9x

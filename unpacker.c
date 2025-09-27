@@ -649,7 +649,7 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 	
 	if(fp)
 	{
-		t = pe_read(&dos, &pe, fp);
+		t = pe_read(&dos, &pe, fp, 1);
 		if(t == PE_W3)
 		{
 			w3 = pe_w3_read(&dos, &pe, fp);
@@ -697,7 +697,7 @@ int wx_unpack(const char *src, const char *infilename, const char *out, const ch
 					fp2 = FOPEN_LOG(tmpname, "rb");
 					if(fp2 != NULL)
 					{
-						if(pe_read(&dos2, &pe2, fp2) == PE_W3)
+						if(pe_read(&dos2, &pe2, fp2, 1) == PE_W3)
 						{
 							w3 = pe_w3_read(&dos2, &pe2, fp2);
 							if(w3 != NULL)
@@ -773,7 +773,7 @@ int wx_to_w3(const char *in, const char *out)
 	fp = FOPEN_LOG(in, "rb");
 	if(fp)
 	{
-		t = pe_read(&dos, &pe, fp);
+		t = pe_read(&dos, &pe, fp, 1);
 		if(t == PE_W4)
 		{
 			w4 = pe_w4_read(&dos, &pe, fp);
@@ -826,7 +826,7 @@ int wx_to_w4(const char *in, const char *out)
 	fp = FOPEN_LOG(in, "rb");
 	if(fp)
 	{
-		t = pe_read(&dos, &pe, fp);
+		t = pe_read(&dos, &pe, fp, 1);
 		if(t == PE_W3)
 		{
 			w3 = pe_w3_read(&dos, &pe, fp);
@@ -968,7 +968,8 @@ vxd_filelist_t *vxd_filelist_open(const char *file, const char *tmp)
 		return NULL;
 	}
 	
-	type = pe_read(&dos, &pe, fr);
+	type = pe_read(&dos, &pe, fr, 1);
+//	printf("pe_read = %d\n", type);
 	if(type == PE_W3)
 	{
 		list->w3 = pe_w3_read(&dos, &pe, fr);
@@ -982,7 +983,7 @@ vxd_filelist_t *vxd_filelist_open(const char *file, const char *tmp)
 			fr = fopen(tmp, "rb");
 			if(fr)
 			{
-				type = pe_read(&dos, &pe, fr);
+				type = pe_read(&dos, &pe, fr, 1);
 				if(type == PE_W3)
 				{
 					list->w3 = pe_w3_read(&dos, &pe, fr);

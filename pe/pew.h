@@ -174,10 +174,15 @@ typedef struct _pe_w3_t
 #define PE_ERROR_COMPAT  12
 #define PE_ERROR_MALLOC 13
 
-
 #define PE_W4_CHUNKSIZE 8192
 
-int      pe_read(dos_header_t *dos, pe_header_t *pe, FILE *fp);
+#define PE_W3_MINHEADER 0x400
+
+#define DOS_PROGRAM_LE_SIZE (8*16)
+
+extern const uint8_t dos_program_le[DOS_PROGRAM_LE_SIZE];
+
+int      pe_read(dos_header_t *dos, pe_header_t *pe, FILE *fp, int assume_w3);
 pe_w4_t *pe_w4_read(dos_header_t *dos, pe_header_t *pe, FILE *fp);
 pe_w4_t *pe_w4_alloc(size_t data_size);
 void     pe_w4_free(pe_w4_t *w4);

@@ -120,25 +120,31 @@
 #define PATCH_VMM98_SIMPLE_V2 0x00080000
 
 /* CPU speed patch (for NDIS) with 10 485 760 (0x00A00000) LOOP - patched (Windows 3.11) */
-#define PATCH_CPU_SPEED_NDIS_V4 0x000100000
+#define PATCH_CPU_SPEED_NDIS_V4 0x00100000
 
 /* rloew's patchmem (vcache.vxd) */
-#define PATCH_VCACHE              0x000200000
+#define PATCH_MEM_VCACHE          (1ULL << 32)
 
 /* rloew's patchmem (vmm.vxd) - SE */
-#define PATCH_VMM98SE_PATCHMEM    0x000400000
+#define PATCH_MEM98SE_PATCHMEM    (1ULL << 33)
 /* SE, Q288430 */
-#define PATCH_VMM98SE_PATCHMEM_V2 0x000800000
+#define PATCH_MEM98SE_PATCHMEM_V2 (1ULL << 34)
 
 /* rloew's patchmem (vmm.vxd) - FE */
-#define PATCH_VMM98FE_PATCHMEM    0x001000000
+#define PATCH_MEM98FE_PATCHMEM    (1ULL << 35)
 /* FE, Q242161 */
-#define PATCH_VMM98FE_PATCHMEM_V2 0x002000000
+#define PATCH_MEM98FE_PATCHMEM_V2 (1ULL << 36)
 
 /* rloew's patchmem (vmm.vxd) - ME */
-#define PATCH_VMMME_PATCHMEM      0x004000000
+#define PATCH_MEMME_PATCHMEM      (1ULL << 37)
 /* ME, Q296773 */
-#define PATCH_VMMME_PATCHMEM_V2   0x008000000
+#define PATCH_MEMME_PATCHMEM_V2   (1ULL << 38)
+
+/* W3 unpack patch */
+#define PATCH_MEM_W3              (1ULL << 39)
+
+/* control registry fix */
+#define PATCH_WIN_COM             (1ULL << 40)
 
 /* sumary defs */
 #define PATCH_CPU_SPEED_ALL (PATCH_CPU_SPEED_V1|PATCH_CPU_SPEED_V2|PATCH_CPU_SPEED_V3|PATCH_CPU_SPEED_V4|\
@@ -148,9 +154,9 @@
 
 #define PATCH_VMM_ALL (PATCH_VMM98|PATCH_VMMME|PATCH_VMM98_V2| \
 	PATCH_VMM98_OLD|PATCH_VMM98_OLD_V2|PATCH_VMM98_SIMPLE|PATCH_VMM98_SIMPLE_V2| \
-	PATCH_VCACHE|PATCH_VMM98SE_PATCHMEM|PATCH_VMM98FE_PATCHMEM| \
-	PATCH_VMM98SE_PATCHMEM_V2|PATCH_VMM98FE_PATCHMEM_V2| \
-	PATCH_VMMME_PATCHMEM|PATCH_VMMME_PATCHMEM_V2)
+	PATCH_MEM_VCACHE|PATCH_MEM98SE_PATCHMEM|PATCH_MEM98FE_PATCHMEM| \
+	PATCH_MEM98SE_PATCHMEM_V2|PATCH_MEM98FE_PATCHMEM_V2| \
+	PATCH_MEMME_PATCHMEM|PATCH_MEMME_PATCHMEM_V2|PATCH_MEM_W3)
 
 /* program modes */
 #define MODE_AUTO        1 /* automaticly determine action from path */
@@ -199,8 +205,8 @@ typedef struct _options_t
 	int force_w3;
 	int force_w4;
 	int no_backup;
-	uint32_t patches;
-	uint32_t unmask;
+	uint64_t patches;
+	uint64_t unmask;
 	//int millennium;
 	const char *input;
 	const char *output;
@@ -236,15 +242,15 @@ const char *vxd_filelist_get(vxd_filelist_t *list);
 void vxd_filelist_close(vxd_filelist_t *list);
 
 /* patch.c */
-int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applied);
-int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int flags);
+int patch_apply(const char *srcfile, const char *dstfile, uint64_t flags, int *applied);
+int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, uint64_t flags);
 int patch_backup_file(const char *path, int nobackup);
-int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *out_applied, uint32_t *out_exists);
-void patch_print(uint32_t patches);
+int patch_selected(FILE *fp, const char *dstfile, uint64_t to_apply, uint64_t *out_applied, uint64_t *out_exists);
+void patch_print(uint64_t patches);
 
 /* files.c */
-pmodfiles_t files_lookup(const char *path, uint32_t global_flags, uint32_t global_unmask, uint32_t lookup_flags);
-pmodfiles_t files_apply(const char *upath, uint32_t global_flags, uint32_t global_unmask);
+pmodfiles_t files_lookup(const char *path, uint64_t global_flags, uint64_t global_unmask, uint32_t lookup_flags);
+pmodfiles_t files_apply(const char *upath, uint64_t global_flags, uint64_t global_unmask);
 int files_status(pmodfiles_t list);
 void files_cleanup(pmodfiles_t *plist);
 int files_commit(pmodfiles_t *plist, int nobackup);

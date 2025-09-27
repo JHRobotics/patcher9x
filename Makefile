@@ -485,34 +485,39 @@ fasmdiff: vmm/fasmdiff.h vmm/fasmdiff_v2.h vmm/fasmdiff_me.h \
 
 soliddiff: rloew/vcache_patch_v1.h rloew/vmm98_patch_v1.h \
   rloew/vmm98_patch_v2.h rloew/vmm98_patch_v3.h rloew/vmm98_patch_v4.h \
-  rloew/vmmme_patch_v1.h rloew/vmmme_patch_v2.h
+  rloew/vmmme_patch_v1.h rloew/vmmme_patch_v2.h \
+  rloew/w3_patch_v1.h
 
 rloew/vcache_patch_v1.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vcache_v1 rloew/dump/VCACHE.BAK rloew/dump/VCACHE.VXD $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vcache_v1 rloew/dump/VCACHE.org rloew/dump/VCACHE.fix $@
 
 # 98SE
 rloew/vmm98_patch_v1.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v1 rloew/dump/VMM98.BAK rloew/dump/VMM98.VXD $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v1 rloew/dump/VMM98.org rloew/dump/VMM98.fix $@
 
 # 98FE
 rloew/vmm98_patch_v2.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v2 rloew/dump/VMM98FE.BAK rloew/dump/VMM98FE.VXD $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v2 rloew/dump/VMM98FE.org rloew/dump/VMM98FE.fix $@
 
 # 98SE+Q288430
 rloew/vmm98_patch_v3.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v3 rloew/dump/VMM_Q288430.BAK rloew/dump/VMM_Q288430.VXD $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v3 rloew/dump/VMM_Q288430.org rloew/dump/VMM_Q288430.fix $@
 
 # 98FE+Q242161
 rloew/vmm98_patch_v4.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v4 rloew/dump/VMM_Q242161.BAK rloew/dump/VMM_Q242161.VXD $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v4 rloew/dump/VMM_Q242161.org rloew/dump/VMM_Q242161.fix $@
 
 # ME
 rloew/vmmme_patch_v1.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v1 rloew/dump/VMMME.BAK rloew/dump/VMMME.VXD $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v1 rloew/dump/VMMME.org rloew/dump/VMMME.fix $@
 
 # ME+Q29677
 rloew/vmmme_patch_v2.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v2 rloew/dump/VMM_Q296773.BAK rloew/dump/VMM_Q296773.VXD $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v2 rloew/dump/VMM_Q296773.org rloew/dump/VMM_Q296773.fix $@
+
+# 98 W3 loader patch
+rloew/w3_patch_v1.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) w3_v1 rloew/dump/w3.org rloew/dump/w3.fix $@ 65536
 
 clean:
 	-$(RM) $(OBJS_OUT)

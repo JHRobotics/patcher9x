@@ -30,7 +30,7 @@ typedef struct _pfiles_t
 {
 	const char *file;
 	const char *dir;
-	uint32_t flags;
+	uint64_t flags;
 } pfiles_t;
 
 
@@ -59,9 +59,9 @@ typedef struct _pmodfile_t
 	char *tname;
 	char *fname;
 	pfiles_t *pfile;
-	uint32_t applied;
-	uint32_t exists;
-	uint32_t flags;
+	uint64_t applied;
+	uint64_t exists;
+	uint64_t flags;
 	struct _pmodfile_t *next;
 } pmodfile_t;
 
@@ -100,7 +100,7 @@ static pmodfiles_t pmodfiles_init()
 	return list;
 }
 
-static void pmodfiles_add(pmodfiles_t list, char *fname, char *tname, uint32_t flags, uint32_t applied, uint32_t exists, pfiles_t *pfile)
+static void pmodfiles_add(pmodfiles_t list, char *fname, char *tname, uint64_t flags, uint64_t applied, uint64_t exists, pfiles_t *pfile)
 {
 	pmodfile_t *item = (pmodfile_t*)malloc(sizeof(pmodfile_t));
 	if(item != NULL)
@@ -131,7 +131,7 @@ static void pmodfiles_add(pmodfiles_t list, char *fname, char *tname, uint32_t f
 
 #define FLAGS() ((pfile->flags | global_flags) & (~global_unmask))
 
-pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t global_unmask, uint32_t lookup_flags)
+pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t global_unmask, uint32_t lookup_flags)
 {
 	char *ename, *vname;
 	pfiles_t *pfile;
@@ -162,10 +162,19 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 	{
 		char *dir = NULL, *dir_mem = NULL;
 		char *fname = NULL, *tname = NULL;
-		uint32_t exists;
-		uint32_t applied;
+		uint64_t exists;
+		uint64_t applied;
 		int list_item_added = 0;
-		
+
+		/* skip second NDIS.VXD when extracting cabs */
+		if(strlen(pfile->dir) > 0 && (lookup_flags & (PATCH_LOOKUP_CABS | PATCH_LOOKUP_ONE_CAB)) != 0)
+		{
+			if(istrcmp(pfile->file, "NDIS.VXD") == 0)
+			{
+				continue;
+			}
+		}
+
 		if(strlen(pfile->dir) > 0 && (lookup_flags & PATCH_LOOKUP_CABS) == 0 && (lookup_flags & PATCH_LOOKUP_ONE_CAB) == 0)
 		{
 			dir_mem = dir = fs_path_get(path, pfile->dir, NULL);
@@ -283,7 +292,7 @@ pmodfiles_t files_lookup(const char *upath, uint32_t global_flags, uint32_t glob
 	return list;
 }
 
-pmodfiles_t files_apply(const char *filepath, uint32_t global_flags, uint32_t global_unmask)
+pmodfiles_t files_apply(const char *filepath, uint64_t global_flags, uint64_t global_unmask)
 {
 	pfiles_t *pfile;
 	pmodfiles_t list;
@@ -322,8 +331,8 @@ pmodfiles_t files_apply(const char *filepath, uint32_t global_flags, uint32_t gl
 			
 			cnt++;
 			
-			uint32_t exists;
-			uint32_t applied;
+			uint64_t exists;
+			uint64_t applied;
 			
 			tname = fs_path_get3(filepath, NULL, "p9x");
 			if(tname != NULL)

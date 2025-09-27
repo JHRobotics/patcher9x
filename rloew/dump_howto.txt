@@ -1,0 +1,42 @@
+How create dump
+=================
+
+1) Copy vmm32.vxd from unpatched system
+	+	Windows 98 SE: VMM32_98.VXD
+	+	Windows 98 FE: VMM32_98FE.VXD
+	+	Windows ME: VMM32_ME.VXD
+	+	FE+Q242161: VMM32_Q242161.VXD
+	+	SE+Q288430: VMM32_Q288430.VXD
+	+	ME+Q296773: VMM32_Q296773.VXD
+	+	Any Windows 98: VCACHE.VXD 
+2) Apply patchmem and copy patched files:
+	+	Windows 98 SE: VMM32_98.NEW
+	+	Windows 98 FE: VMM32_98FE.NEW
+	+	Windows ME: VMM32_ME.NEW
+	+	FE+Q242161: VMM32_Q242161.NEW
+	+	SE+Q288430: VMM32_Q288430.NEW
+	+	ME+Q296773: VMM32_Q296773.NEW
+	+	Any Windows 98: VCACHE.NEW
+	
+3) Now need extract VMM.VXD from VMM32 archive and strip MZ file header
+	+ `patcher9x --vxd-extract VMM32_98.VXD VMM.VXD`
+	+ `patcher9x --mz-strip VMM.VXD VMM98.org`
+	+ Do it for all original files:
+		* VMM98.org
+		* VMM98FE.org
+		* VMMME.org
+		* VMM_Q242161.org
+		* VMM_Q288430.org
+		* VMM_Q296773.org
+	+ Do if also for fixed files:
+		* VMM98.fix
+		* VMM98FE.fix
+		* VMMME.fix
+		* VMM_Q242161.fix
+		* VMM_Q288430.fix
+		* VMM_Q296773.fix
+	+ For VCACHE.VXD is only need to strip the header:
+		* patcher9x --mz-strip VCACHE.VXD VCACHE.org
+		* patcher9x --mz-strip VCACHE.NEW VCACHE.fix
+4) Run `make soliddiff` to regenerate .h files
+

@@ -32,7 +32,7 @@
 #include "nocrt.h"
 
 /* header of LE file  */
-static const uint8_t dos_program_le[] = 
+const uint8_t dos_program_le[DOS_PROGRAM_LE_SIZE] = 
 {
 	0x4D, 0x5A, 0x80, 0x00, 0x1F, 0x03, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, // MZ€.........ÿÿ..
 	0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ¸.......@.......
@@ -44,7 +44,7 @@ static const uint8_t dos_program_le[] =
 	0x6D, 0x6F, 0x64, 0x65, 0x2E, 0x0D, 0x0A, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mode...$........
 };
 
-int pe_read(dos_header_t *dos, pe_header_t *pe, FILE *fp)
+int pe_read(dos_header_t *dos, pe_header_t *pe, FILE *fp, int assume_w3)
 {
 	memset(dos, 0, sizeof(dos_header_t));
 	memset(pe,  0, sizeof(pe_header_t));
@@ -82,6 +82,30 @@ int pe_read(dos_header_t *dos, pe_header_t *pe, FILE *fp)
 	
 	if(memcmp(pe->magic, MAGIC_LE, 2) == 0)
 	{
+		if(assume_w3)
+		{
+			/* this is hack - if W3 contains only one LE, could point "next header"
+			   in MZ header directly to LE skipping W3 header, so we subtract
+			   1 024 bytes (1 entry W3 header) and check again.
+			*/
+			if(dos->nextheader > PE_W3_MINHEADER)
+			{
+				pe_header_t w3_test;
+				fseek(fp, dos->nextheader - PE_W3_MINHEADER, SEEK_SET);
+				fread(&w3_test, sizeof(pe_header_t), 1, fp);
+				if(memcmp(w3_test.magic, MAGIC_W3, 2) == 0)
+				{
+					memcpy(pe, &w3_test, sizeof(pe_header_t));
+					dos->nextheader -= PE_W3_MINHEADER;
+					return PE_W3;
+				}
+				else
+				{
+					/* move back to original position */
+					fseek(fp, PE_W3_MINHEADER, SEEK_CUR);
+				}
+			}
+		}
 		return PE_LE;
 	}
 	

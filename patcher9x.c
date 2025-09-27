@@ -523,7 +523,7 @@ static int run_interactive(options_t *options)
   	int type = 0;
   	FILE *fp = fopen(upath, "rb");
   			
-  	type = pe_read(&dos, &pe, fp);
+  	type = pe_read(&dos, &pe, fp, 1);
   	fclose(fp);
   			
   	switch(type)

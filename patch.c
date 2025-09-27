@@ -26,6 +26,8 @@
 #include "patcher9x.h"
 #include <bpatcher.h>
 #include <patch.h>
+#include <pew.h>
+
 #include "vmm_patch.h"
 #include "vmm_patch_v2.h"
 #include "vmm_patch_me1.h"
@@ -60,10 +62,12 @@
 
 #include "vmmme_patch_v1.h"
 #include "vmmme_patch_v2.h"
- 
+
+#include "w3_patch_v1.h"
+
 typedef struct _ppatch_t
 {
-	int id;
+	uint64_t id;
 	const char     *name;
 	const cpatch_t *cpatch;
 	const spatch_t *spatch;
@@ -92,18 +96,25 @@ ppatch_t ppathes[] = {
 	{PATCH_VMM98_OLD_V2,        "W98 TLB patch #2 UPGRADE",                                  &vmm_patch_old_v2_cp,       NULL},
 	{PATCH_VMM98_SIMPLE,        "W98 TLB patch #1 (simple version)",                         &vmm_patch_simple_cp,       NULL},
 	{PATCH_VMM98_SIMPLE_V2,     "W98 TLB patch #2 (simple version, Q242161, Q288430)",       &vmm_patch_simple_v2_cp,    NULL},
-	{PATCH_VCACHE,              "W98 memory limit - VCACHE.VXD (rloew's patch)",             NULL,                       &vcache_v1_sp},
-	{PATCH_VMM98SE_PATCHMEM,    "W98 memory limit - VMM.VXD (SE, rloew's patch)",            NULL,                       &vmm98_v1_sp},
-	{PATCH_VMM98FE_PATCHMEM,    "W98 memory limit - VMM.VXD (FE, rloew's patch)",            NULL,                       &vmm98_v2_sp},
-	{PATCH_VMM98SE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (SE+Q288430, rloew's patch)",    NULL,                       &vmm98_v3_sp},
-	{PATCH_VMM98FE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (FE+Q242161, rloew's patch)",    NULL,                       &vmm98_v4_sp},
-	{PATCH_VMMME_PATCHMEM,      "ME memory limit - VMM.VXD (rloew's patch)",                 NULL,                       &vmmme_v1_sp},
-	{PATCH_VMMME_PATCHMEM_V2,   "ME memory limit - VMM.VXD (Q296773, rloew's patch)",        NULL,                       &vmmme_v2_sp},
+	{PATCH_MEM_VCACHE,          "W98 memory limit - VCACHE.VXD (rloew's patch)",             NULL,                       &vcache_v1_sp},
+	{PATCH_MEM98SE_PATCHMEM,    "W98 memory limit - VMM.VXD (SE - all or FE+Q242161, rloew's patch)", NULL,              &vmm98_v1_sp},
+	{PATCH_MEM98FE_PATCHMEM,    "W98 memory limit - VMM.VXD (FE, rloew's patch)",            NULL,                       &vmm98_v2_sp},
+	//{PATCH_MEM98SE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (SE+Q288430, rloew's patch)",    NULL,                       &vmm98_v3_sp},
+	//{PATCH_MEM98FE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (FE+Q242161, rloew's patch)",    NULL,                       &vmm98_v4_sp},
+	{PATCH_MEMME_PATCHMEM,      "ME memory limit - VMM.VXD (rloew's patch)",                 NULL,                       &vmmme_v1_sp},
+	{PATCH_MEMME_PATCHMEM_V2,   "ME memory limit - VMM.VXD (Q296773, rloew's patch)",        NULL,                       &vmmme_v2_sp},
+	{PATCH_MEM_W3,              "W98 memory limit - W3 patch (rloew's patch)",               NULL,                       &w3_v1_sp},
 	{0, NULL, NULL, NULL}
 };
 
 /* special case for ME patch */
-static int patch_select_me(FILE *fp, const char *dstfile, int *file_copied, uint32_t *applied, uint32_t *exists);
+static int patch_select_me(FILE *fp, const char *dstfile, int *file_copied, uint64_t *applied, uint64_t *exists);
+
+/* binary patch case */
+static int spatch_apply(FILE *fp, const char *dstfile, int *file_copied, uint32_t offset, uint32_t fs, uint64_t patch_id, const spatch_t *spatch, uint64_t *applied, uint64_t *exists, int dry);
+
+/* special case for win.com patch */
+static int patch_select_wincom(FILE *fp, const char *dstfile, int *file_copied, uint64_t *applied, uint64_t *exists);
 
 /**
  * Apply selected set of patches
@@ -117,17 +128,17 @@ static int patch_select_me(FILE *fp, const char *dstfile, int *file_copied, uint
  * @return: PATCH_OK on success (at last one patch will be applied) or one of PATCH_E_* codes
  *
  **/
-int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *out_applied, uint32_t *out_exists)
+int patch_selected(FILE *fp, const char *dstfile, uint64_t to_apply, uint64_t *out_applied, uint64_t *out_exists)
 {
 	int status = PATCH_OK;
 	ppatch_t *patch;
-	uint32_t applied = 0;
-	uint32_t exists  = 0;
+	uint64_t applied = 0;
+	uint64_t exists  = 0;
 	int file_copied  = 0;
 	
 	for(patch = ppathes; patch->name != NULL; patch++)
 	{
-		//printf("patch: %X\n", patch->id);
+		//printf("patch: %llX\n", patch->id);
 		
 		if((to_apply & patch->id) != 0 && patch->id == PATCH_VMMME)
 		{
@@ -228,100 +239,62 @@ int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *o
 			} // cpatch
 			else if(patch->spatch)
 			{
-				uint32_t fs;
-				int valid = 0;
-				int patch_exists = 0;
-				void *buf = malloc(SPATCH_BUF);
-				//printf("testing patch: %X -> %s\n", patch->id, dstfile);
-				
-				if(buf != NULL)
+				/* try apply spatch normaly from file begin */
+				uint32_t fs = 0;
+
+				if(patch->id == PATCH_MEM_W3)
 				{
-					/* get file size and rewind */
-					fseek(fp, 0, SEEK_END);
-					fs = ftell(fp);
-					fseek(fp, 0, SEEK_SET);
-
-					/* there are localised strings at file end, so file size can be
-					   different across national versions. So check files size +- 10%
-					 */
-					uint32_t step = patch->spatch->filesize/10;
-					uint32_t fs_min = patch->spatch->filesize-step;
-					uint32_t fs_max = patch->spatch->filesize+step;
-
-					if(fs >= fs_min && fs <= fs_max)
-					{
-						const spatch_data_t *pdata = patch->spatch->data;
-						while(pdata->olddata != NULL)
-						{
-							fseek(fp, pdata->offset, SEEK_SET);
-							if(fread(buf, 1, pdata->size, fp) != pdata->size)
-							{
-								status = PATCH_E_READ;
-								break;
-							}
-
-							if(memcmp(buf, pdata->olddata, pdata->size) != 0)
-							{
-								if(memcmp(buf, pdata->newdata, pdata->size) != 0)
-								{
-									break;
-								}
-								patch_exists = 1;
-							}
-							pdata++;
-						}
-
-						if(pdata->olddata == NULL)
-						{
-							valid = 1;
-						}
-					}
-
-					if(valid && patch_exists)
-					{
-						exists |= patch->id;
-					}
-					else if(valid)
-					{
-						applied |= patch->id;
-						if((to_apply & PATCH_DRY) == 0)
-						{
-							FILE *fw;
-							if(file_copied == 0)
-							{
-								fw = FOPEN_LOG(dstfile, "wb");
-								fseek(fp, 0, SEEK_SET);
-								fs_file_copy(fp, fw, 0);
-								file_copied = 1;
-							}
-							else
-							{
-								fw = FOPEN_LOG(dstfile, "r+b");
-							}
-							
-							if(fw != NULL)
-							{
-								const spatch_data_t *pdata = patch->spatch->data;
-								while(pdata->newdata != NULL)
-								{
-									fseek(fw, pdata->offset, SEEK_SET);
-									fwrite(pdata->newdata, 1, pdata->size, fw);									
-									pdata++;
-								}
-								fclose(fw);
-							}
-							else
-							{
-								status = PATCH_E_WRITE;
-							}
-						}
-					}
-					free(buf);
+					/* special case to apply on W3 archive */
+					status = spatch_apply(fp, dstfile, &file_copied, 0, 0, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
 				}
 				else
 				{
-					status = PATCH_E_MEM;
-				}
+					/* try to apply on every object in file */
+					dos_header_t dos;
+					pe_header_t pe;
+					int pe_test = 0;
+					
+					fseek(fp, 0, SEEK_END);
+					fs = ftell(fp);
+					fseek(fp, 0, SEEK_SET);
+					pe_test = pe_read(&dos, &pe, fp, 1);
+
+					if(pe_test != PE_W3) /* single file */
+					{
+						uint32_t off = 0;
+						if(pe_test == PE_LE)
+						{
+							off = DOS_PROGRAM_LE_SIZE;
+							fs -= DOS_PROGRAM_LE_SIZE;
+						}
+						
+						status = spatch_apply(fp, dstfile, &file_copied, off, fs, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
+					}
+					else /* W3 file */
+					{
+						pe_w3_t *w3 = pe_w3_read(&dos, &pe, fp);
+						if(w3 != NULL)
+						{
+							size_t j;
+							for(j = 0; j < w3->files_cnt; j++)
+							{
+								size_t file_size = 0;
+								size_t file_offset = w3->files[j].file_offset;
+								if(j+1 < w3->files_cnt)
+								{
+									file_size = w3->files[j+1].file_offset - file_offset;
+								}
+								else
+								{
+									file_size = w3->file_size - file_offset;
+								}
+								//printf("W3: %s at %u (%u)\n", w3->files[j].name, file_offset, file_size);
+								status = spatch_apply(fp, dstfile, &file_copied, file_offset, file_size, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
+							}
+							pe_w3_free(w3);
+						}				
+					} // W3
+				} // not yet applied
 			} // spatch
 		} // if apply
 	} // for patch in patches
@@ -358,7 +331,7 @@ int patch_selected(FILE *fp, const char *dstfile, uint32_t to_apply, uint32_t *o
 
 #define SIZEOF_MAX(_a, _b) (sizeof(_a) > sizeof(_b) ? sizeof(_a) : sizeof(_b)) 
 
-static int patch_select_me(FILE *fp, const char *dstfile, int *file_copied, uint32_t *applied, uint32_t *exists)
+static int patch_select_me(FILE *fp, const char *dstfile, int *file_copied, uint64_t *applied, uint64_t *exists)
 {
 	int status = PATCH_OK;
 	ssize_t pos_a, pos_b;
@@ -455,10 +428,109 @@ static int patch_select_me(FILE *fp, const char *dstfile, int *file_copied, uint
 }
 
 /**
+ * Apply binary patch
+ *
+ * @param offset: byte offset to file start
+ * @param fs: file size of fp
+ *
+ **/
+static int spatch_apply(FILE *fp, const char *dstfile, int *file_copied, uint32_t offset, uint32_t fs, uint64_t patch_id, const spatch_t *spatch, uint64_t *applied, uint64_t *exists, int dry)
+{
+	int status = PATCH_OK;
+	
+	/* there are localised strings at file end, so file size can be
+	   different across national versions. So check files size +- 10%
+	 */
+	uint32_t step = spatch->filesize/10;
+	uint32_t fs_min = spatch->filesize-step;
+	uint32_t fs_max = spatch->filesize+step;
+	int valid = 0;
+	int patch_exists = 0;
+	void *buf = malloc(SPATCH_BUF);
+	
+	if(buf == NULL)
+	{
+		return PATCH_E_MEM;
+	}
+
+	if((fs == 0) || (fs >= fs_min && fs <= fs_max))
+	{
+		const spatch_data_t *pdata = spatch->data;
+		while(pdata->olddata != NULL)
+		{
+			fseek(fp, offset + pdata->offset, SEEK_SET);
+			if(fread(buf, 1, pdata->size, fp) != pdata->size)
+			{
+				status = PATCH_E_READ;
+				break;
+			}
+
+			if(memcmp(buf, pdata->olddata, pdata->size) != 0)
+			{
+				if(memcmp(buf, pdata->newdata, pdata->size) != 0)
+				{
+					break;
+				}
+				patch_exists = 1;
+			}
+			pdata++;
+		}
+
+		if(pdata->olddata == NULL)
+		{
+			valid = 1;
+		}
+	}
+
+	if(valid && patch_exists)
+	{
+		(*exists) |= patch_id;
+	}
+	else if(valid)
+	{
+		(*applied) |= patch_id;
+		if(!dry)
+		{
+			FILE *fw;
+			if(*file_copied == 0)
+			{
+				fw = FOPEN_LOG(dstfile, "wb");
+				fseek(fp, 0, SEEK_SET);
+				fs_file_copy(fp, fw, 0);
+				*file_copied = 1;
+			}
+			else
+			{
+				fw = FOPEN_LOG(dstfile, "r+b");
+			}
+
+			if(fw != NULL)
+			{
+				const spatch_data_t *pdata = spatch->data;
+				while(pdata->newdata != NULL)
+				{
+					fseek(fw, offset + pdata->offset, SEEK_SET);
+					fwrite(pdata->newdata, 1, pdata->size, fw);									
+					pdata++;
+				}
+				fclose(fw);
+			}
+			else
+			{
+				status = PATCH_E_WRITE;
+			}
+		}
+	}
+	
+	free(buf);
+	return status;
+}
+
+/**
  * Apply patch and if check failure check if applied.
  *
  **/
-int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applied)
+int patch_apply(const char *srcfile, const char *dstfile, uint64_t flags, int *applied)
 {
 	int status = PATCH_E_NOTFOUND;
 	FILE        *fp;
@@ -482,7 +554,7 @@ int patch_apply(const char *srcfile, const char *dstfile, int flags, int *applie
  * Apply patch on W3/W4 file and compress/decompress if it is W4 file
  *
  **/
-int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, int flags)
+int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname, uint64_t flags)
 {
 	int status = PATCH_OK;
 	int w4_decompres = 0;
@@ -497,7 +569,7 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 	fp = FOPEN_LOG(srcfile, "rb");
 	if(fp)
 	{
-		t = pe_read(&dos, &pe, fp);
+		t = pe_read(&dos, &pe, fp, 1);
 		if(t == PE_W4)
 		{
 			w4 = pe_w4_read(&dos, &pe, fp);
@@ -559,7 +631,7 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 		
 		if(fp)
 		{
-			t = pe_read(&dos, &pe, fp);
+			t = pe_read(&dos, &pe, fp, 1);
 			if(t == PE_W3)
 			{
 				w3 = pe_w3_read(&dos, &pe, fp);
@@ -590,7 +662,7 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 			fp = FOPEN_LOG(dstfile, "rb");
 			if(fp != NULL)
 			{
-				t = pe_read(&dos, &pe, fp);
+				t = pe_read(&dos, &pe, fp, 1);
 				if(t == PE_W4)
 				{
 					w4 = pe_w4_read(&dos, &pe, fp);
@@ -692,7 +764,7 @@ int patch_backup_file(const char *path, int nobackup)
 	return status;
 }
 
-void patch_print(uint32_t patches)
+void patch_print(uint64_t patches)
 {
 	ppatch_t *patch;
 	int cnt = 0;
