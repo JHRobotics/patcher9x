@@ -8,23 +8,24 @@
 
 MENUDEFAULT=1,5
 MENU
-MENU Patch for Windows 3.11/95/98/Me to fix CPU issues
+MENU Patch for Windows 95/98/Me to fix CPU issues
 MENU Boot and system utility disk
 MENU
 MENU 1 - FreeDOS EMS/XMS with CD-ROM (default)
-MENU 2 - FreeDOS EMS/XMS without CD-ROM 
-MENU 3 - FreeDOS without extended memory (safe mode)
+MENU 2 - FreeDOS EMS/XMS without CD-ROM
+MENU 3 - FreeDOS EMS only
+MENU 4 - FreeDOS without extended memory (safe mode)
 
 REM Don't load freedos to highmemory because it will break Windows installer!
-REM 12?DOS=HIGH
-REM 12?DOS=UMB
-REM 12?DOSDATA=UMB
+REM 123?DOS=HIGH
+REM 123?DOS=UMB
+REM 123?DOSDATA=UMB
 
-12?DEVICE=HIMEMX.EXE
+123?DEVICE=HIMEMX.EXE
 12?DEVICE=JEMM386.EXE X=TEST I=TEST I=B000-B7FF NOVME NOINVLPG
 
 1?DEVICEHIGH=udvd2.sys /d:shsu-cdx
 1?INSTALLHIGH=shsucdx.com /d:shsu-cdx
 
 REM 12?SHELLHIGH=COMMAND.COM /E:1024 /P=AUTOEXEC.BAT
-123?SHELL=COMMAND.COM /E:1024 /P=AUTOEXEC.BAT
+1234?SHELL=COMMAND.COM /E:1024 /P=AUTOEXEC.BAT

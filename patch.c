@@ -65,6 +65,8 @@
 
 #include "w3_patch_v1.h"
 
+#include "crfix.h"
+
 typedef struct _ppatch_t
 {
 	uint64_t id;
@@ -103,7 +105,8 @@ ppatch_t ppathes[] = {
 	//{PATCH_MEM98FE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (FE+Q242161, rloew's patch)",    NULL,                       &vmm98_v4_sp},
 	{PATCH_MEMME_PATCHMEM,      "ME memory limit - VMM.VXD (rloew's patch)",                 NULL,                       &vmmme_v1_sp},
 	{PATCH_MEMME_PATCHMEM_V2,   "ME memory limit - VMM.VXD (Q296773, rloew's patch)",        NULL,                       &vmmme_v2_sp},
-	{PATCH_MEM_W3,              "W98 memory limit - W3 patch (rloew's patch)",               NULL,                       &w3_v1_sp},
+	{PATCH_MEM_W3,              "W98 memory limit - W3 loader patch (rloew's patch)",        NULL,                       &w3_v1_sp},
+	{PATCH_WIN_COM,             "win.com - control registry cleanup",                        NULL,                       NULL},
 	{0, NULL, NULL, NULL}
 };
 
@@ -114,7 +117,7 @@ static int patch_select_me(FILE *fp, const char *dstfile, int *file_copied, uint
 static int spatch_apply(FILE *fp, const char *dstfile, int *file_copied, uint32_t offset, uint32_t fs, uint64_t patch_id, const spatch_t *spatch, uint64_t *applied, uint64_t *exists, int dry);
 
 /* special case for win.com patch */
-static int patch_select_wincom(FILE *fp, const char *dstfile, int *file_copied, uint64_t *applied, uint64_t *exists);
+static int patch_select_wincom(FILE *fp, const char *dstfile, int *file_copied, uint64_t *applied, uint64_t *exists, int dry_run);
 
 /**
  * Apply selected set of patches
@@ -143,6 +146,10 @@ int patch_selected(FILE *fp, const char *dstfile, uint64_t to_apply, uint64_t *o
 		if((to_apply & patch->id) != 0 && patch->id == PATCH_VMMME)
 		{
 			status = patch_select_me(fp, dstfile, &file_copied, &applied, &exists);
+		}
+		else if((to_apply & patch->id) != 0 && patch->id == PATCH_WIN_COM)
+		{
+			status = patch_select_wincom(fp, dstfile, &file_copied, &applied, &exists, to_apply & PATCH_DRY);
 		}
 		else if((to_apply & patch->id) != 0)
 		{
@@ -526,6 +533,120 @@ static int spatch_apply(FILE *fp, const char *dstfile, int *file_copied, uint32_
 	return status;
 }
 
+static int is_zero(uint8_t *ptr, size_t s)
+{
+	while(s)
+	{
+		if(ptr[s-1] != 0x00)
+		{
+			break;
+		}
+		s--;
+	}
+	return s == 0;
+}
+
+static uint32_t good_addrs[] = {0x4500, 0x2000, 0x800, 0};
+
+/**
+ * Apply special case for win.com patch
+ *
+ */
+static int patch_select_wincom(FILE *fp, const char *dstfile, int *file_copied, uint64_t *applied, uint64_t *exists, int dry_run)
+{
+	int status = PATCH_OK;
+	uint8_t data[4];
+	fseek(fp, 0, SEEK_SET);
+	fread(data, 1, 3, fp);
+	if(data[0] == X86_JMP)
+	{
+		uint32_t def_jmp = data[1] | (((uint32_t)data[2]) << 8);
+		def_jmp += 3 + COM_ORG;
+		
+		uint8_t *test_buf = malloc(sizeof(crfix_code));
+		if(test_buf != NULL)
+		{
+			fseek(fp, JMP_TO_FILEOFF(def_jmp-CRFIX_CODE_START), SEEK_SET);
+			//printf("check offset = %X (addr=0x%X)\n", JMP_TO_FILEOFF(def_jmp-CRFIX_CODE_START), def_jmp);
+			
+			fread(test_buf, 1, CRFIX_CHECK_BYTES, fp);
+			if(memcmp(crfix_code, test_buf, CRFIX_CHECK_BYTES) != 0)
+			{
+				uint32_t *test_addr;
+				for(test_addr = &good_addrs[0]; *test_addr != 0; test_addr++)
+				{
+					fseek(fp, JMP_TO_FILEOFF(*test_addr), SEEK_SET);	
+					if(fread(test_buf, 1, sizeof(crfix_code), fp) == sizeof(crfix_code))
+					{
+						if(is_zero(test_buf, sizeof(crfix_code)))
+						{
+							if(dry_run == 0)
+							{
+								FILE *fw = NULL;
+								if(*file_copied == 0)
+								{
+									fw = FOPEN_LOG(dstfile, "wb");
+									fseek(fp, 0, SEEK_SET);
+									fs_file_copy(fp, fw, 0);
+									*file_copied = 1;
+								}
+								else
+								{
+									fw = FOPEN_LOG(dstfile, "r+b");
+								}
+						
+								if(fw != NULL)
+								{
+									/* copy code block */
+									uint32_t jmp_im = JMP_TO_INST16_OFF(def_jmp, (*test_addr) + CRFIX_JMP_POS);
+									//printf("return jmp: %X\n", jmp_im);
+									
+									memcpy(test_buf, crfix_code, sizeof(crfix_code));
+									
+									/* jump to original code */
+									test_buf[CRFIX_JMP_POS]   = X86_JMP;
+									test_buf[CRFIX_JMP_POS+1] = jmp_im & 0xFF;
+									test_buf[CRFIX_JMP_POS+2] = (jmp_im >> 8) & 0xFF;
+
+									/* write block */
+									fseek(fw, JMP_TO_FILEOFF(*test_addr), SEEK_SET);
+									fwrite(test_buf, 1, sizeof(crfix_code), fw);
+									
+									/* jump to new code at beginning */
+									jmp_im = JMP_TO_INST16_OFF(*test_addr + CRFIX_CODE_START, COM_ORG);
+									test_buf[0]   = X86_JMP;
+									test_buf[1]   = jmp_im & 0xFF;
+									test_buf[2]   = (jmp_im >> 8) & 0xFF;
+
+									/* write begin 3 bytes */
+									fseek(fw, 0, SEEK_SET);
+									fwrite(test_buf, 1, 3, fw);
+
+									fclose(fw);
+								} // fw
+							}
+							*applied |= PATCH_WIN_COM;
+							break;
+						} // is_zero
+					}
+				} // for
+			}
+			else
+			{
+				*exists |= PATCH_WIN_COM;
+			}
+			
+			free(test_buf);
+		}
+		else
+		{
+			status = PATCH_E_MEM;
+		}
+	}
+	
+	return status;
+}
+
 /**
  * Apply patch and if check failure check if applied.
  *
@@ -541,6 +662,7 @@ int patch_apply(const char *srcfile, const char *dstfile, uint64_t flags, int *a
 		status = patch_selected(fp, dstfile, flags, NULL, NULL);
 		
 		fclose(fp);
+		//printf("complete\n");
 	}
 	else
 	{

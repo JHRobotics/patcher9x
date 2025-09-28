@@ -47,6 +47,8 @@ static pfiles_t pfiles[] = {
 	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL },
 	{"NDIS.386",     "",      PATCH_CPU_SPEED_NDIS_ALL }, /* WFW3.11 */
 	{"VCACHE.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL }, /* patchmem */
+	{"win.cnf",      "",      PATCH_WIN_COM}, /* win.com in CAB */
+	{"win.com",      "..",    PATCH_WIN_COM}, /* win.com on WINDOWS dir or in ME CAB */
 //	{"CS3KIT.EXE",   "",      PATCH_CPU_SPEED_ALL },
 	{NULL,           NULL,    0 }
 };

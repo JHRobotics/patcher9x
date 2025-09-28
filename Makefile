@@ -30,7 +30,7 @@ else
   CFLAGS ?= -std=gnu99 -g -static -O1 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
 endif
 
-CFLAGS := $(CFLAGS) -I./mspack -I./system -I./pe -I./nocrt -I./rloew
+CFLAGS := $(CFLAGS) -I./mspack -I./system -I./pe -I./nocrt -I./rloew -I./crfix
 
 HOST_CC      ?= $(CC)
 HOST_CFLAGS  ?= $(CFLAGS)
