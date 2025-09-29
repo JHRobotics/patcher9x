@@ -31,26 +31,27 @@ typedef struct _pfiles_t
 	const char *file;
 	const char *dir;
 	uint64_t flags;
+	int ignore_in_cabscan;
 } pfiles_t;
 
 
 static pfiles_t pfiles[] = {
-	{"VMM32.VXD",    "",      PATCH_VX_PACK | PATCH_VMM_ALL | PATCH_CPU_SPEED_ALL },
-	{"VMM.VXD",      "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL },
-	{"NTKERN.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_CPU_SPEED_ALL },
-	{"IOS.VXD",      "VMM32", PATCH_VX_UNPACK | PATCH_CPU_SPEED_ALL },
-	{"ESDI_506.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
-	{"SCSIPORT.PDR", "IOSUB", PATCH_CPU_SPEED_ALL },
-	{"ESDI_506.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL }, /* WIN95 */
-	{"SCSIPORT.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL }, /* WIN95 */
-	{"NDIS.VXD",     "VMM32", PATCH_CPU_SPEED_NDIS_ALL },
-	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL },
-	{"NDIS.386",     "",      PATCH_CPU_SPEED_NDIS_ALL }, /* WFW3.11 */
-	{"VCACHE.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL }, /* patchmem */
-	{"win.cnf",      "",      PATCH_WIN_COM}, /* win.com in CAB */
-	{"win.com",      "..",    PATCH_WIN_COM}, /* win.com on WINDOWS dir or in ME CAB */
+	{"VMM32.VXD",    "",      PATCH_VX_PACK | PATCH_VMM_ALL | PATCH_CPU_SPEED_ALL, 0},
+	{"VMM.VXD",      "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL, 0},
+	{"NTKERN.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_CPU_SPEED_ALL, 0},
+	{"IOS.VXD",      "VMM32", PATCH_VX_UNPACK | PATCH_CPU_SPEED_ALL, 0},
+	{"ESDI_506.PDR", "IOSUB", PATCH_CPU_SPEED_ALL, 0},
+	{"SCSIPORT.PDR", "IOSUB", PATCH_CPU_SPEED_ALL, 0},
+	{"ESDI_506.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL, 1}, /* WIN95 */
+	{"SCSIPORT.PDR", "IOSUBSYS", PATCH_CPU_SPEED_ALL, 1}, /* WIN95 */
+	{"NDIS.VXD",     "VMM32", PATCH_CPU_SPEED_NDIS_ALL, 0},
+	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL, 1},
+	{"NDIS.386",     "",      PATCH_CPU_SPEED_NDIS_ALL, 0}, /* WFW3.11 */
+	{"VCACHE.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL, 1}, /* patchmem */
+	{"win.cnf",      "",      PATCH_WIN_COM, 0}, /* win.com in CAB */
+	{"win.com",      "..",    PATCH_WIN_COM, 0}, /* win.com on WINDOWS dir or in ME CAB */
 //	{"CS3KIT.EXE",   "",      PATCH_CPU_SPEED_ALL },
-	{NULL,           NULL,    0 }
+	{NULL,           NULL,    0, 0}
 };
 
 #define L_F_CREATED 1
@@ -141,6 +142,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 	char *path = (char*)upath;
 	char *path_mem = NULL;
 	int ename_created = 0;
+	cab_scan_file_t *lookup_files;
 	
 	list = pmodfiles_init();
 	if(!list)
@@ -160,6 +162,26 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 	ename = fs_path_get(path, "VMM32.W3", NULL);
 	vname = fs_path_get(path, "VMM32.VXD", NULL);
 	
+	if(lookup_flags & PATCH_LOOKUP_CABS)
+	{
+		cab_scan_file_t **pitem = &lookup_files;
+		for(pfile = pfiles; pfile->file != NULL; pfile++)
+		{
+			*pitem = malloc(sizeof(cab_scan_file_t));
+			if(*pitem)
+			{
+				strcpy((*pitem)->filename, pfile->file);
+				strcpy((*pitem)->cabname, "");
+				(*pitem)->used = 0;
+				(*pitem)->next = NULL;
+				pitem = &((*pitem)->next);
+			}
+		}
+		printf("Searching in CAB archives ... ");
+		cab_lookup_build(upath, lookup_files);
+		printf("done\n");
+	}
+	
 	for(pfile = pfiles; pfile->file != NULL; pfile++)
 	{
 		char *dir = NULL, *dir_mem = NULL;
@@ -168,13 +190,9 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 		uint64_t applied;
 		int list_item_added = 0;
 
-		/* skip second NDIS.VXD when extracting cabs */
-		if(strlen(pfile->dir) > 0 && (lookup_flags & (PATCH_LOOKUP_CABS | PATCH_LOOKUP_ONE_CAB)) != 0)
+		if(pfile->ignore_in_cabscan && (lookup_flags & (PATCH_LOOKUP_CABS | PATCH_LOOKUP_ONE_CAB)) != 0)
 		{
-			if(istrcmp(pfile->file, "NDIS.VXD") == 0)
-			{
-				continue;
-			}
+			continue;
 		}
 
 		if(strlen(pfile->dir) > 0 && (lookup_flags & PATCH_LOOKUP_CABS) == 0 && (lookup_flags & PATCH_LOOKUP_ONE_CAB) == 0)
@@ -243,6 +261,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 		}
 		else if((lookup_flags & PATCH_LOOKUP_CABS) != 0)
 		{
+#if 0
 			if(cab_search_unpack(path, pfile->file, fname) > 0)
 			{
 				FILE *fp = fopen(fname, "rb");
@@ -253,6 +272,37 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 					
 					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
 					list_item_added = 1;
+				}
+			}
+#endif
+			cab_scan_file_t *item;
+			for(item = lookup_files; item != NULL; item = item->next)
+			{
+				if(strcmp(pfile->file, item->filename) == 0)
+				{
+					if(item->used > 0)
+					{
+						break;
+					}
+
+					if(strlen(item->cabname))
+					{
+						//printf("%s is in %s\n", pfile->file, item->cabname);
+						if(cab_unpack(item->cabname, pfile->file, fname, NULL) > 0)
+						{
+							FILE *fp = fopen(fname, "rb");
+							if(fp)
+							{
+								patch_selected(fp, tname, FLAGS(), &applied, &exists);
+								fclose(fp);
+								
+								pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
+								list_item_added = 1;
+							}
+						}
+					}
+					item->used++;
+					break;
 				}
 			}
 		}
@@ -272,7 +322,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 				}
 			}
 		}
-		
+				
 		if(list_item_added == 0)
 		{
 			if(tname != NULL) fs_path_free(tname);
@@ -285,6 +335,13 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 	if(ename_created)
 	{
 		fs_unlink(ename);
+	}
+	
+	while(lookup_files != NULL)
+	{
+		cab_scan_file_t *trash = lookup_files;
+		lookup_files = trash->next;
+		free(trash);
 	}
 	
 	if(ename != NULL) fs_path_free(ename);

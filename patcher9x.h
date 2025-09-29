@@ -217,6 +217,14 @@ typedef struct _pmodfiles_t *pmodfiles_t;
 struct scanned_files_list;
 typedef struct scanned_files_list scanned_files_list_t;
 
+typedef struct _cab_scan_file_t
+{
+	char filename[MAX_PATH];
+	char cabname[MAX_PATH];
+	int  used;
+	struct _cab_scan_file_t *next;
+} cab_scan_file_t;
+
 /*
  * Functions
  */
@@ -224,6 +232,7 @@ typedef struct scanned_files_list scanned_files_list_t;
 /* unpack.c */
 int cab_search_unpack(const char *dirname, const char *infilename, const char *out);
 int cab_unpack(const char *srccab, const char *infilename, const char *out, scanned_files_list_t *list);
+int cab_lookup_build(const char *dir, cab_scan_file_t *interests);
 
 int wx_unpack(const char *src, const char *infilename, const char *out, const char *tmpname);
 int wx_to_w3(const char *in, const char *out);

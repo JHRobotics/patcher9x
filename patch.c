@@ -141,168 +141,171 @@ int patch_selected(FILE *fp, const char *dstfile, uint64_t to_apply, uint64_t *o
 	
 	for(patch = ppathes; patch->name != NULL; patch++)
 	{
-		//printf("patch: %llX\n", patch->id);
-		
-		if((to_apply & patch->id) != 0 && patch->id == PATCH_VMMME)
+		if((to_apply & patch->id) != 0)
 		{
-			status = patch_select_me(fp, dstfile, &file_copied, &applied, &exists);
-		}
-		else if((to_apply & patch->id) != 0 && patch->id == PATCH_WIN_COM)
-		{
-			status = patch_select_wincom(fp, dstfile, &file_copied, &applied, &exists, to_apply & PATCH_DRY);
-		}
-		else if((to_apply & patch->id) != 0)
-		{
-			if(patch->cpatch)
+			//printf("patch: %llX\n", patch->id);
+			
+			if(patch->id == PATCH_VMMME)
 			{
-				ssize_t pos;
-				bitstream_t bs_check, bs_patch;
-				bs_mem(&bs_check, (uint8_t*)patch->cpatch->check_data, patch->cpatch->check_size);
-				
-				/* if already applied updated patch ignore simple version */
-				if((applied & (PATCH_VMM98 | PATCH_VMM98_V2)) != 0)
+				status = patch_select_me(fp, dstfile, &file_copied, &applied, &exists);
+			}
+			else if(patch->id == PATCH_WIN_COM)
+			{
+				status = patch_select_wincom(fp, dstfile, &file_copied, &applied, &exists, to_apply & PATCH_DRY);
+			}
+			else
+			{
+				if(patch->cpatch)
 				{
-					if(patch->id == PATCH_VMM98_SIMPLE || patch->id == PATCH_VMM98_SIMPLE_V2)
-					{
-						continue;
-					}
-				}
-				
-				fseek(fp, 0, SEEK_SET);
-				
-				pos = search_sieve_file(fp, patch->cpatch->orig_data, patch->cpatch->orig_size, &bs_check);
-				if(pos >= 0)
-				{
-					applied |= patch->id;
+					ssize_t pos;
+					bitstream_t bs_check, bs_patch;
+					bs_mem(&bs_check, (uint8_t*)patch->cpatch->check_data, patch->cpatch->check_size);
 					
-					if((to_apply & PATCH_DRY) == 0)
+					/* if already applied updated patch ignore simple version */
+					if((applied & (PATCH_VMM98 | PATCH_VMM98_V2)) != 0)
 					{
-						FILE *fw;
-						if(file_copied == 0)
+						if(patch->id == PATCH_VMM98_SIMPLE || patch->id == PATCH_VMM98_SIMPLE_V2)
 						{
-							fw = FOPEN_LOG(dstfile, "wb");
-							fseek(fp, 0, SEEK_SET);
-							fs_file_copy(fp, fw, 0);
-							file_copied = 1;
+							continue;
 						}
-						else
-						{
-							fw = FOPEN_LOG(dstfile, "r+b");
-						}
+					}
+					
+					fseek(fp, 0, SEEK_SET);
+					
+					pos = search_sieve_file(fp, patch->cpatch->orig_data, patch->cpatch->orig_size, &bs_check);
+					if(pos >= 0)
+					{
+						applied |= patch->id;
 						
-						if(fw != NULL)
+						if((to_apply & PATCH_DRY) == 0)
 						{
-							void *buf = malloc(patch->cpatch->patch_size);
-							if(buf != NULL)
+							FILE *fw;
+							if(file_copied == 0)
 							{
-								do
-								{
-									fseek(fp, pos, SEEK_SET);
-									if(fread(buf, 1, patch->cpatch->patch_size, fp) == patch->cpatch->patch_size)
-									{
-										bs_mem(&bs_patch, (uint8_t*)patch->cpatch->modif_data, patch->cpatch->modif_size);
-										patch_sieve(buf, patch->cpatch->patch_data, patch->cpatch->patch_size, &bs_patch);
-							
-										fseek(fw, pos, SEEK_SET);
-										fwrite(buf, 1, patch->cpatch->patch_size, fw);				
-									}
-									else
-									{
-										status = PATCH_E_READ;
-									}
-									
-									/* some files has to be patched more times */
-									bs_reset(&bs_check);
-									pos = search_sieve_file(fp, patch->cpatch->orig_data, patch->cpatch->orig_size, &bs_check);
-									//printf("another pos: %zd\n", pos);
-									
-								} while(pos >= 0);
-								
-								free(buf);
+								fw = FOPEN_LOG(dstfile, "wb");
+								fseek(fp, 0, SEEK_SET);
+								fs_file_copy(fp, fw, 0);
+								file_copied = 1;
 							}
 							else
 							{
-								status = PATCH_E_MEM;
+								fw = FOPEN_LOG(dstfile, "r+b");
 							}
-							fclose(fw);
-						}
-						else
-						{
-							status = PATCH_E_WRITE;
-						}
-					} // ! dry run
-				} // 
-				else
-				{
-					/* original data not found, lets assume that patch isn't applied  */
-					fseek(fp, 0, SEEK_SET);
-					bs_reset(&bs_check);
-					pos = search_sieve_file(fp, patch->cpatch->patch_data, patch->cpatch->patch_size, &bs_check);
-					if(pos >= 0)
-					{
-						exists |= patch->id;
-					}
-				}
-			} // cpatch
-			else if(patch->spatch)
-			{
-				/* try apply spatch normaly from file begin */
-				uint32_t fs = 0;
-
-				if(patch->id == PATCH_MEM_W3)
-				{
-					/* special case to apply on W3 archive */
-					status = spatch_apply(fp, dstfile, &file_copied, 0, 0, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
-				}
-				else
-				{
-					/* try to apply on every object in file */
-					dos_header_t dos;
-					pe_header_t pe;
-					int pe_test = 0;
-					
-					fseek(fp, 0, SEEK_END);
-					fs = ftell(fp);
-					fseek(fp, 0, SEEK_SET);
-					pe_test = pe_read(&dos, &pe, fp, 1);
-
-					if(pe_test != PE_W3) /* single file */
-					{
-						uint32_t off = 0;
-						if(pe_test == PE_LE)
-						{
-							off = DOS_PROGRAM_LE_SIZE;
-							fs -= DOS_PROGRAM_LE_SIZE;
-						}
-						
-						status = spatch_apply(fp, dstfile, &file_copied, off, fs, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
-					}
-					else /* W3 file */
-					{
-						pe_w3_t *w3 = pe_w3_read(&dos, &pe, fp);
-						if(w3 != NULL)
-						{
-							size_t j;
-							for(j = 0; j < w3->files_cnt; j++)
+							
+							if(fw != NULL)
 							{
-								size_t file_size = 0;
-								size_t file_offset = w3->files[j].file_offset;
-								if(j+1 < w3->files_cnt)
+								void *buf = malloc(patch->cpatch->patch_size);
+								if(buf != NULL)
 								{
-									file_size = w3->files[j+1].file_offset - file_offset;
+									do
+									{
+										fseek(fp, pos, SEEK_SET);
+										if(fread(buf, 1, patch->cpatch->patch_size, fp) == patch->cpatch->patch_size)
+										{
+											bs_mem(&bs_patch, (uint8_t*)patch->cpatch->modif_data, patch->cpatch->modif_size);
+											patch_sieve(buf, patch->cpatch->patch_data, patch->cpatch->patch_size, &bs_patch);
+								
+											fseek(fw, pos, SEEK_SET);
+											fwrite(buf, 1, patch->cpatch->patch_size, fw);				
+										}
+										else
+										{
+											status = PATCH_E_READ;
+										}
+										
+										/* some files has to be patched more times */
+										bs_reset(&bs_check);
+										pos = search_sieve_file(fp, patch->cpatch->orig_data, patch->cpatch->orig_size, &bs_check);
+										//printf("another pos: %zd\n", pos);
+										
+									} while(pos >= 0);
+									
+									free(buf);
 								}
 								else
 								{
-									file_size = w3->file_size - file_offset;
+									status = PATCH_E_MEM;
 								}
-								//printf("W3: %s at %u (%u)\n", w3->files[j].name, file_offset, file_size);
-								status = spatch_apply(fp, dstfile, &file_copied, file_offset, file_size, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
+								fclose(fw);
 							}
-							pe_w3_free(w3);
-						}				
-					} // W3
-				} // not yet applied
-			} // spatch
+							else
+							{
+								status = PATCH_E_WRITE;
+							}
+						} // ! dry run
+					} // 
+					else
+					{
+						/* original data not found, lets assume that patch isn't applied  */
+						fseek(fp, 0, SEEK_SET);
+						bs_reset(&bs_check);
+						pos = search_sieve_file(fp, patch->cpatch->patch_data, patch->cpatch->patch_size, &bs_check);
+						if(pos >= 0)
+						{
+							exists |= patch->id;
+						}
+					}
+				} // cpatch
+				else if(patch->spatch)
+				{
+					/* try apply spatch normaly from file begin */
+					uint32_t fs = 0;
+	
+					if(patch->id == PATCH_MEM_W3)
+					{
+						/* special case to apply on W3 archive */
+						status = spatch_apply(fp, dstfile, &file_copied, 0, 0, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
+					}
+					else
+					{
+						/* try to apply on every object in file */
+						dos_header_t dos;
+						pe_header_t pe;
+						int pe_test = 0;
+						
+						fseek(fp, 0, SEEK_END);
+						fs = ftell(fp);
+						fseek(fp, 0, SEEK_SET);
+						pe_test = pe_read(&dos, &pe, fp, 1);
+	
+						if(pe_test != PE_W3) /* single file */
+						{
+							uint32_t off = 0;
+							if(pe_test == PE_LE)
+							{
+								off = DOS_PROGRAM_LE_SIZE;
+								fs -= DOS_PROGRAM_LE_SIZE;
+							}
+							
+							status = spatch_apply(fp, dstfile, &file_copied, off, fs, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
+						}
+						else /* W3 file */
+						{
+							pe_w3_t *w3 = pe_w3_read(&dos, &pe, fp);
+							if(w3 != NULL)
+							{
+								size_t j;
+								for(j = 0; j < w3->files_cnt; j++)
+								{
+									size_t file_size = 0;
+									size_t file_offset = w3->files[j].file_offset;
+									if(j+1 < w3->files_cnt)
+									{
+										file_size = w3->files[j+1].file_offset - file_offset;
+									}
+									else
+									{
+										file_size = w3->file_size - file_offset;
+									}
+									//printf("W3: %s at %u (%u)\n", w3->files[j].name, file_offset, file_size);
+									status = spatch_apply(fp, dstfile, &file_copied, file_offset, file_size, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
+								}
+								pe_w3_free(w3);
+							}				
+						} // W3
+					} // not yet applied
+				} // spatch
+			} // normal patches
 		} // if apply
 	} // for patch in patches
 	
@@ -546,7 +549,7 @@ static int is_zero(uint8_t *ptr, size_t s)
 	return s == 0;
 }
 
-static uint32_t good_addrs[] = {0x4500, 0x2000, 0x800, 0};
+static uint32_t good_addrs[] = {0x4400, 0x4500, 0x4600, 0x2000, 0x800, 0};
 
 /**
  * Apply special case for win.com patch

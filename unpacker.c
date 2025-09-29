@@ -618,6 +618,59 @@ int cab_search_unpack(const char *dirname, const char *infilename, const char *o
 }
 
 /**
+ * Prescan all CABs in folder for interested files.
+ **/
+int cab_lookup_build(const char *dirname, cab_scan_file_t *interests)
+{
+	fs_dir_t *dir = fs_dir_open(dirname);
+	int cnt = 0;
+	const char *fn;
+
+	if(dir)
+	{
+  	struct mscab_decompressor *cabd = mspack_create_cab_decompressor(NULL);
+
+		if(cabd)
+		{
+			while((fn = fs_dir_read(dir, FS_FILTER_FILE)) != NULL)
+			{
+				if(fs_ext_match(fn, "cab") != 0)
+				{
+					char *cabfile = fs_path_get(dirname, fn, NULL);
+
+					if(cabfile)
+					{
+						struct mscabd_cabinet *cab = cabd->open(cabd, cabfile);
+						if(cab)
+						{
+							struct mscabd_file *file;
+							for(file = cab->files; file; file = file->next)
+							{
+								cab_scan_file_t *item;
+								for(item = interests; item != NULL; item = item->next)
+								{
+									if(istrcmp(file->filename, item->filename) == 0)
+									{
+										strcpy(item->cabname, cabfile);
+										cnt++;
+									}
+								}
+							} // for
+							cabd->close(cabd, cab);
+						} // cab
+						fs_path_free(cabfile);
+					}
+				} // match cab
+			} // while
+			mspack_destroy_cab_decompressor(cabd);
+		} // cabd
+		fs_dir_close(&dir);
+	} // dir
+
+  return cnt;
+}
+
+/**
  * Extract driver form VMM32.VXD or diffent W3/W4 file.
  * 
  * @param src: path to W3/W4 file
