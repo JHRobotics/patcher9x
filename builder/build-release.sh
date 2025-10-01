@@ -156,7 +156,7 @@ cp LICENSE /tmp/dosbox/c/LICENSE.TXT
 unix2dos /tmp/dosbox/c/LICENSE.TXT
 
 # Copy CWSDPMI files to /tmp/dosfiles
-mkdir -p /tmp/cwsdpmi && unzip -o -d /mnt/cwsdpmi /opt/cwsdpmi/cwsdpmi.zip bin/CWSDPMI.EXE bin/cwsdpmi.doc && \
+mkdir -p /tmp/cwsdpmi && unzip -o -d /tmp/cwsdpmi /opt/cwsdpmi/cwsdpmi.zip bin/CWSDPMI.EXE bin/cwsdpmi.doc && \
 cp -p /tmp/cwsdpmi/bin/CWSDPMI.EXE /tmp/dosbox/c && \
 cp -p /tmp/cwsdpmi/bin/cwsdpmi.doc /tmp/dosbox/c/CWSDPMI.TXT && cd $SRCDIR
 
@@ -191,5 +191,5 @@ echo "exit" >> /tmp/dosbox/dosbox.conf
 cd /tmp/dosbox && dosbox && cd $SRCDIR
 
 # copy images
-/tmp/dosbox/floppy.ima /tmp/patcher9x-$VERSION-boot.ima
-/tmp/dosbox/floppy.ima /tmp/patcher9x-$VERSION-boot.img
+cp /tmp/dosbox/floppy.ima /tmp/patcher9x-$VERSION-boot.ima
+cp /tmp/dosbox/floppy.ima /tmp/patcher9x-$VERSION-boot.img

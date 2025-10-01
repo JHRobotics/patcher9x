@@ -2,7 +2,7 @@ FROM debian:12 AS djgpp
 
 # Install djgpp build dependencies
 RUN apt-get update && \
-    apt-get install -y bison flex curl gcc g++ make texinfo zlib1g-dev g++ unzip bzip2 xz-utils git dosbox
+    apt-get install -y bison flex curl gcc g++ make texinfo zlib1g-dev g++ unzip bzip2 xz-utils git
 
 # Download build-djgpp project
 RUN git clone --depth 1 https://github.com/andrewwutw/build-djgpp.git && \
@@ -14,7 +14,7 @@ FROM debian:12 AS base
 
 # Install mingw-w64 i686 and x86_64 compilers
 RUN apt-get update && \
-    apt-get install -y file wget mtools unzip zip gcc gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 fasm make git dos2unix nasm
+    apt-get install -y file wget mtools unzip zip gcc gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 fasm make git dos2unix nasm dosbox
 
 # Install djgpp
 COPY --from=djgpp /usr/local/djgpp /usr/local/djgpp
