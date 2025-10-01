@@ -1,3 +1,11 @@
+0.9.8x
+- Support for Windows for Workgroups (WFW) 3.11 (by @mcayland)
+- Included memory patch (port of PATCHMEM by rloew)
+- Attempt to reset CR/MSR registers in loader (win.com)
+  inspired by https://github.com/mintsuki/cregfix
+- Updated to FreeDOS 1.4 (boot floppy)
+- Faster archive scan
+
 0.8.50
 - Support for Windows 95 4.0.950
 - "exact mode" removed, replace is batch mode, with simpler actions but offers
