@@ -4,13 +4,13 @@
 #define PATCHER9X_STR(x) PATCHER9X_STR_(x)
 
 #define PATCHER9X_MAJOR 0
-#define PATCHER9X_MINOR 8
+#define PATCHER9X_MINOR 9
 
 #ifndef PATCHER9X_PATCH
-#define PATCHER9X_PATCH 50
+#define PATCHER9X_PATCH 77
 #endif
 
-#define PATCHER9X_TAG "BETA4"
+#define PATCHER9X_TAG "RC1"
 
 #define PATCHER9X_VERSION_STR_BUILD(_ma, _mi, _pa, _tag) \
 	_ma "." _mi "." _pa "-" _tag

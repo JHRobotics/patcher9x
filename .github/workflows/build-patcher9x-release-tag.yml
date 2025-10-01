@@ -18,7 +18,7 @@ jobs:
 
       - name: Determine release version
         run: |
-          PATCHER9X_VERSION=`head -n1 CHANGELOG | sed -nz 's/\([0-9\.]\{1,\}\).*/\1/p'`
+          PATCHER9X_VERSION=`make get-version`
           echo "PATCHER9X_VERSION=$PATCHER9X_VERSION" >> $GITHUB_ENV
 
       - name: Generate release changelog from CHANGELOG
@@ -27,7 +27,7 @@ jobs:
           cat CHANGELOG | sed -n '2,/^\r$/ p' > /tmp/release-changelog.txt
 
       - name: Build patcher9x release
-        run: ./build-release.sh
+        run: ./builder/build-release.sh
 
       - name: Upload patcher9x release
         uses: softprops/action-gh-release@v2

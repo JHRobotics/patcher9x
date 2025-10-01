@@ -14,7 +14,7 @@ FROM debian:12 AS base
 
 # Install mingw-w64 i686 and x86_64 compilers
 RUN apt-get update && \
-    apt-get install -y file wget mtools unzip zip gcc gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 fasm make git
+    apt-get install -y file wget mtools unzip zip gcc gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 fasm make git dos2unix nasm
 
 # Install djgpp
 COPY --from=djgpp /usr/local/djgpp /usr/local/djgpp
@@ -26,6 +26,11 @@ ENV PATH /usr/local/djgpp/bin:$PATH
 RUN mkdir -p /opt/freedos && \
     wget https://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/distributions/1.3/official/FD13-LiteUSB.zip -O /opt/freedos/freedos-liteusb.zip && \
     wget https://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/distributions/1.3/official/FD13-FloppyEdition.zip -O /opt/freedos/freedos-floppy.zip
+
+# Download FreeDOS boot templates
+RUN mkdir -p /opt/jhr && \
+    wget https://files.emulace.cz/dev/freedos-13.ima -O /opt/jhr/freedos-13.ima && \
+    wget https://files.emulace.cz/dev/freedos-14.ima -O /opt/jhr/freedos-14.ima
 
 # Grab CWSDPMI binary
 RUN mkdir -p /opt/cwsdpmi && \

@@ -62,8 +62,8 @@ ifdef PROFILE
   endif
   ifeq ($(PROFILE),nocrt64)
     GUEST_LDFLAGS += -nostdlib -nodefaultlibs -lgcc -lkernel32 -luser32
-    GUEST_CFLAGS  += -DNOCRT -DNOCRT_FLOAT -DNOCRT_MEM -DNOCRT_FILE -ffreestanding
-    OBJS_GUEST    += nocrt/nocrt.g.o nocrt/nocrt_exe.g.o nocrt/nocrt_file_win.g.o nocrt/nocrt_math.g.o nocrt/nocrt_mem_win.g.o
+    GUEST_CFLAGS  += -DNOCRT -DNOCRT_FLOAT -DNOCRT_CALC -DNOCRT_MEM -DNOCRT_FILE -ffreestanding
+    OBJS_GUEST    += nocrt/nocrt.g.o nocrt/nocrt_exe.g.o nocrt/nocrt_file_win.g.o nocrt/nocrt_math.g.o nocrt/nocrt_math_calc.g.o nocrt/nocrt_mem_win.g.o
     RES_FLAGS     += --target=pe-x86-64
   endif
 endif
@@ -102,7 +102,7 @@ all: $(OUTNAME)
 
 tests: $(TESTS)
 
-.PHONY: all tests clean fasmdiff
+.PHONY: all tests clean fasmdiff soliddiff doscross$(SUFIX) get-version get-help
 
 %.g.o: %.c $(DEPS_GUEST)
 	$(GUEST_CC) $(GUEST_CFLAGS) -c -o $@ $<
@@ -519,6 +519,15 @@ rloew/vmmme_patch_v2.h: bindiff$(HOST_SUFIX)
 rloew/w3_patch_v1.h: bindiff$(HOST_SUFIX)
 	$(RUNPATH)bindiff$(HOST_SUFIX) w3_v1 rloew/dump/w3.org rloew/dump/w3.fix $@ 65536
 
+doscross$(HOST_SUFIX): builder/doscross.c version.h help.h batch.h
+	@$(HOST_CC) $(HOST_CFLAGS) -o $@ $< $(HOST_LDFLAGS)
+
+get-version: doscross$(HOST_SUFIX)
+	@$(RUNPATH)doscross$(HOST_SUFIX) version
+
+get-help: doscross$(HOST_SUFIX)
+	@$(RUNPATH)doscross$(HOST_SUFIX) help $(OUTNAME)
+
 clean:
 	-$(RM) $(OBJS_OUT)
 	-$(RM) $(OBJS_HOST)
@@ -536,4 +545,5 @@ clean:
 	-$(RM) makepatch$(HOST_SUFIX)
 	-$(RM) makediff$(HOST_SUFIX)
 	-$(RM) bindiff$(HOST_SUFIX)
+	-$(RM) doscross$(HOST_SUFIX)
 	-$(RM) $(TESTS)
