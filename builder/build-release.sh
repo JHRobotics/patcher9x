@@ -142,26 +142,22 @@ cd /tmp/archive-linux-amd64 && tar zcvf /tmp/patcher9x-$VERSION-linux-amd64.tar.
 #mcopy -pm /tmp/dosfiles/INFO.TXT n: && \
 #mcopy -pm /tmp/dosfiles/README.TXT n:
 
-# using templates
-cp /opt/jhr/freedos-14.ima /tmp/floppy.ima
+# using floppy template
+# floppy image mounted in /tmp/floppy-mnt
+cp -p /tmp/build-djgpp/patch9x.exe /mnt/floppy/PATCH9X.EXE
 
-mkdir -p /tmp/floppy
-mount -o loop /tmp/floppy.ima /tmp/floppy
-cp -p /tmp/build-djgpp/patch9x.exe /tmp/floppy/PATCH9X.EXE
-make PROFILE=djgpp get-help > /tmp/floppy/README.TXT
-unix2dos /tmp/floppy/README.TXT
+# copy readme
+make PROFILE=djgpp get-help > /tmp/floppy-mnt/README.TXT
+unix2dos /tmp/floppy-mnt/README.TXT
 
 # Copy CWSDPMI files to /tmp/dosfiles
-mkdir -p /tmp/cwsdpmi && unzip -o -d /tmp/cwsdpmi /opt/cwsdpmi/cwsdpmi.zip bin/CWSDPMI.EXE bin/cwsdpmi.doc && \
-cp -p /tmp/cwsdpmi/bin/CWSDPMI.EXE /tmp/floppy && \
-cp -p /tmp/cwsdpmi/bin/cwsdpmi.doc /tmp/floppy/CWSDPMI.TXT && \
-cp -p boot/autoexec.bat /tmp/floppy/AUTOEXEC.BAT && \
-cp -p boot/cdrom.bat /tmp/floppy/CDROM.BAT && \
-cp -p boot/fdconfig.sys /tmp/floppy/FDCONFIG.SYS && \
-cp -p boot/info.bat /tmp/floppy/INFO.BAT && \
-cp -p boot/info.txt /tmp/floppy/INFO.TX && cd $SRCDIR
+mkdir -p /tmp/cwsdpmi && unzip -o -d /mnt/cwsdpmi /opt/cwsdpmi/cwsdpmi.zip bin/CWSDPMI.EXE bin/cwsdpmi.doc && \
+cp -p /tmp/cwsdpmi/bin/CWSDPMI.EXE /tmp/floppy-mnt && \
+cp -p /tmp/cwsdpmi/bin/cwsdpmi.doc /tmp/floppy-mnt/CWSDPMI.TXT && cd $SRCDIR
 
-umount /mnt/floppy
-
-# Copy the ima file to /tmp
-cp /tmp/floppy.ima /tmp/patcher9x-$VERSION-boot.ima
+# copy other files
+cp -p boot/autoexec.bat /tmp/floppy-mnt/AUTOEXEC.BAT && \
+cp -p boot/cdrom.bat /tmp/floppy-mnt/CDROM.BAT && \
+cp -p boot/fdconfig.sys /tmp/floppy-mnt/FDCONFIG.SYS && \
+cp -p boot/info.bat /tmp/floppy-mnt/INFO.BAT && \
+cp -p boot/info.txt /tmp/floppy-mnt/INFO.TX

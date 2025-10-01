@@ -21,6 +21,10 @@ jobs:
           PATCHER9X_VERSION=`make get-version`
           echo "PATCHER9X_VERSION=$PATCHER9X_VERSION" >> $GITHUB_ENV
 
+      - name: Mount floppy image
+        run: |
+          cp /opt/jhr/freedos-14.ima /tmp/floppy.ima && mkdir -p /tmp/floppy-mnt && echo ${{ secrets.USERPWD }} | sudo -S -- mount -o loop,rw,umask=0000 /tmp/floppy.ima /tmp/floppy-mnt
+
       - name: Generate release changelog from CHANGELOG
         # Ignore first line, use following lines up until the next empty line
         run: |
@@ -29,6 +33,12 @@ jobs:
       - name: Build patcher9x release
         run: ./builder/build-release.sh
 
+      - name: Umount floppy image
+        run: echo ${{ secrets.USERPWD }} | sudo -S -- umount /tmp/floppy-mnt
+
+      - name: Rename floppy images
+        run: cp /tmp/floppy.ima /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-boot.ima && cp /tmp/floppy.ima /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-boot.img
+
       - name: Upload patcher9x release
         uses: softprops/action-gh-release@v2
         with:
@@ -36,8 +46,11 @@ jobs:
           name: "v${{ env.PATCHER9X_VERSION }}"
           tag_name: "v${{ env.PATCHER9X_VERSION }}"
           body_path: /tmp/release-changelog.txt
+          overwrite_files: false
+          draft: true
           files: |
             /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-boot.ima
+            /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-boot.img
             /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-linux-amd64.tar.gz
             /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-win32.zip
             /tmp/patcher9x-${{ env.PATCHER9X_VERSION }}-win64.zip
