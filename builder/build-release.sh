@@ -142,22 +142,54 @@ cd /tmp/archive-linux-amd64 && tar zcvf /tmp/patcher9x-$VERSION-linux-amd64.tar.
 #mcopy -pm /tmp/dosfiles/INFO.TXT n: && \
 #mcopy -pm /tmp/dosfiles/README.TXT n:
 
+rm -rf /tmp/dosbox && mkdir -p /tmp/dosbox/c
+cp /opt/jhr/freedos-14.ima /tmp/dosbox/floppy.ima
+
+
 # using floppy template
-# floppy image mounted in /tmp/floppy-mnt
-cp -p /tmp/build-djgpp/patch9x.exe /mnt/floppy/PATCH9X.EXE
+cp -p /tmp/build-djgpp/patch9x.exe /tmp/dosbox/c/PATCH9X.EXE
 
 # copy readme
-make PROFILE=djgpp get-help > /tmp/floppy-mnt/README.TXT
-unix2dos /tmp/floppy-mnt/README.TXT
+make PROFILE=djgpp get-help > /tmp/dosbox/c/PATCH9X.TXT
+unix2dos /tmp/dosbox/c/PATCH9X.TXT
+cp LICENSE /tmp/dosbox/c/LICENSE.TXT
+unix2dos /tmp/dosbox/c/LICENSE.TXT
 
 # Copy CWSDPMI files to /tmp/dosfiles
 mkdir -p /tmp/cwsdpmi && unzip -o -d /mnt/cwsdpmi /opt/cwsdpmi/cwsdpmi.zip bin/CWSDPMI.EXE bin/cwsdpmi.doc && \
-cp -p /tmp/cwsdpmi/bin/CWSDPMI.EXE /tmp/floppy-mnt && \
-cp -p /tmp/cwsdpmi/bin/cwsdpmi.doc /tmp/floppy-mnt/CWSDPMI.TXT && cd $SRCDIR
+cp -p /tmp/cwsdpmi/bin/CWSDPMI.EXE /tmp/dosbox/c && \
+cp -p /tmp/cwsdpmi/bin/cwsdpmi.doc /tmp/dosbox/c/CWSDPMI.TXT && cd $SRCDIR
 
 # copy other files
-cp -p boot/autoexec.bat /tmp/floppy-mnt/AUTOEXEC.BAT && \
-cp -p boot/cdrom.bat /tmp/floppy-mnt/CDROM.BAT && \
-cp -p boot/fdconfig.sys /tmp/floppy-mnt/FDCONFIG.SYS && \
-cp -p boot/info.bat /tmp/floppy-mnt/INFO.BAT && \
-cp -p boot/info.txt /tmp/floppy-mnt/INFO.TX
+cp -p boot/autoexec.bat /tmp/dosbox/c/AUTOEXEC.BAT && \
+cp -p boot/cdrom.bat /tmp/dosbox/c/CDROM.BAT && \
+cp -p boot/fdconfig.sys /tmp/dosbox/c/FDCONFIG.SYS && \
+cp -p boot/info.bat /tmp/dosbox/c/INFO.BAT && \
+cp -p boot/info.txt /tmp/dosbox/c/INFO.TXT
+
+# video is not needed
+export SDL_VIDEODRIVER=dummy
+
+# create dosbox.conf
+echo "[autoexec]" > /tmp/dosbox/dosbox.conf
+echo "mount C: c" >> /tmp/dosbox/dosbox.conf
+echo "C:" >> /tmp/dosbox/dosbox.conf
+echo "rescan" >> /tmp/dosbox/dosbox.conf
+echo "imgmount a: floppy.ima -t floppy" >> /tmp/dosbox/dosbox.conf
+echo "copy README.TXT A:\README.TXT /y" >> /tmp/dosbox/dosbox.conf
+echo "copy AUTOEXEC.BAT A:\AUTOEXEC.BAT /y" >> /tmp/dosbox/dosbox.conf
+echo "copy PATCH9X.EXE A:\PATCH9X.EXE /y" >> /tmp/dosbox/dosbox.conf
+echo "copy PATCH9X.TXT A:\PATCH9X.TXT /y" >> /tmp/dosbox/dosbox.conf
+echo "copy LICENSE.TXT A:\LICENSE.TXT /y" >> /tmp/dosbox/dosbox.conf
+echo "copy CWSDPMI.EXE A:\CWSDPMI.EXE /y" >> /tmp/dosbox/dosbox.conf
+echo "copy cwsdpmi.doc A:\CWSDPMI.TXT /y" >> /tmp/dosbox/dosbox.conf
+echo "copy INFO.BAT A:\INFO.BAT /y" >> /tmp/dosbox/dosbox.conf
+echo "copy INFO.TXT A:\INFO.TXT /y" >> /tmp/dosbox/dosbox.conf
+echo "exit" >> /tmp/dosbox/dosbox.conf
+
+# run dosbox
+cd /tmp/dosbox && dosbox && cd $SRCDIR
+
+# copy images
+/tmp/dosbox/floppy.ima /tmp/patcher9x-$VERSION-boot.ima
+/tmp/dosbox/floppy.ima /tmp/patcher9x-$VERSION-boot.img

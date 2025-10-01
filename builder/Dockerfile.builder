@@ -2,7 +2,7 @@ FROM debian:12 AS djgpp
 
 # Install djgpp build dependencies
 RUN apt-get update && \
-    apt-get install -y bison flex curl gcc g++ make texinfo zlib1g-dev g++ unzip bzip2 xz-utils git
+    apt-get install -y bison flex curl gcc g++ make texinfo zlib1g-dev g++ unzip bzip2 xz-utils git dosbox
 
 # Download build-djgpp project
 RUN git clone --depth 1 https://github.com/andrewwutw/build-djgpp.git && \
