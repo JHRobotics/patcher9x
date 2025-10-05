@@ -123,28 +123,23 @@
 #define PATCH_CPU_SPEED_NDIS_V4 0x00100000
 
 /* rloew's patchmem (vcache.vxd) */
-#define PATCH_MEM_VCACHE          (1ULL << 32)
+#define PATCH_MEM_VCACHE98        (1ULL << 32)
+#define PATCH_MEM_VCACHE95        (1ULL << 33)
+#define PATCH_MEM_VCACHEME        (1ULL << 34)
 
-/* rloew's patchmem (vmm.vxd) - SE */
-#define PATCH_MEM98SE_PATCHMEM    (1ULL << 33)
-/* SE, Q288430 */
-#define PATCH_MEM98SE_PATCHMEM_V2 (1ULL << 34)
+/* rloew's patchmem (vmm.vxd) */
+#define PATCH_MEM98SE_PATCHMEM    (1ULL << 35) /* SE, FE+Q242161 */
+#define PATCH_MEM98FE_PATCHMEM    (1ULL << 36) /* FE */
+#define PATCH_MEM95_PATCHMEM      (1ULL << 37)
+#define PATCH_MEMME_PATCHMEM      (1ULL << 38)
+#define PATCH_MEMME_PATCHMEM_V2   (1ULL << 39) /* ME, Q296773 */
 
-/* rloew's patchmem (vmm.vxd) - FE */
-#define PATCH_MEM98FE_PATCHMEM    (1ULL << 35)
-/* FE, Q242161 */
-#define PATCH_MEM98FE_PATCHMEM_V2 (1ULL << 36)
-
-/* rloew's patchmem (vmm.vxd) - ME */
-#define PATCH_MEMME_PATCHMEM      (1ULL << 37)
-/* ME, Q296773 */
-#define PATCH_MEMME_PATCHMEM_V2   (1ULL << 38)
-
-/* W3 unpack patch */
-#define PATCH_MEM_W3              (1ULL << 39)
+/* W3 unpack patch - 98 */
+#define PATCH_MEM_W3_98           (1ULL << 40)
+#define PATCH_MEM_W3_95           (1ULL << 41)
 
 /* control registry fix */
-#define PATCH_WIN_COM             (1ULL << 40)
+#define PATCH_WIN_COM             (1ULL << 42)
 
 /* sumary defs */
 #define PATCH_CPU_SPEED_ALL (PATCH_CPU_SPEED_V1|PATCH_CPU_SPEED_V2|PATCH_CPU_SPEED_V3|PATCH_CPU_SPEED_V4|\
@@ -154,9 +149,11 @@
 
 #define PATCH_VMM_ALL (PATCH_VMM98|PATCH_VMMME|PATCH_VMM98_V2| \
 	PATCH_VMM98_OLD|PATCH_VMM98_OLD_V2|PATCH_VMM98_SIMPLE|PATCH_VMM98_SIMPLE_V2| \
-	PATCH_MEM_VCACHE|PATCH_MEM98SE_PATCHMEM|PATCH_MEM98FE_PATCHMEM| \
-	PATCH_MEM98SE_PATCHMEM_V2|PATCH_MEM98FE_PATCHMEM_V2| \
-	PATCH_MEMME_PATCHMEM|PATCH_MEMME_PATCHMEM_V2|PATCH_MEM_W3)
+	PATCH_MEM_VCACHE98|PATCH_MEM_VCACHE95|PATCH_MEM_VCACHEME|\
+	PATCH_MEM98SE_PATCHMEM|PATCH_MEM98FE_PATCHMEM| \
+	PATCH_MEM95_PATCHMEM| \
+	PATCH_MEMME_PATCHMEM|PATCH_MEMME_PATCHMEM_V2|\
+	PATCH_MEM_W3_95|PATCH_MEM_W3_98)
 
 /* program modes */
 #define MODE_AUTO        1 /* automaticly determine action from path */

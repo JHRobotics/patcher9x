@@ -55,15 +55,19 @@
 #include "cpuspeed_ndis_patch_v4.h"
 
 #include "vcache_patch_v1.h"
+#include "vcache_patch_v2.h"
+#include "vcache_patch_v3.h"
+
 #include "vmm98_patch_v1.h"
 #include "vmm98_patch_v2.h"
-#include "vmm98_patch_v3.h"
-#include "vmm98_patch_v4.h"
 
 #include "vmmme_patch_v1.h"
 #include "vmmme_patch_v2.h"
 
+#include "vmm95_patch_v1.h"
+
 #include "w3_patch_v1.h"
+#include "w3_patch_v2.h"
 
 #include "crfix.h"
 
@@ -98,14 +102,16 @@ ppatch_t ppathes[] = {
 	{PATCH_VMM98_OLD_V2,        "W98 TLB patch #2 UPGRADE",                                  &vmm_patch_old_v2_cp,       NULL},
 	{PATCH_VMM98_SIMPLE,        "W98 TLB patch #1 (simple version)",                         &vmm_patch_simple_cp,       NULL},
 	{PATCH_VMM98_SIMPLE_V2,     "W98 TLB patch #2 (simple version, Q242161, Q288430)",       &vmm_patch_simple_v2_cp,    NULL},
-	{PATCH_MEM_VCACHE,          "W98 memory limit - VCACHE.VXD (rloew's patch)",             NULL,                       &vcache_v1_sp},
-	{PATCH_MEM98SE_PATCHMEM,    "W98 memory limit - VMM.VXD (SE - all or FE+Q242161, rloew's patch)", NULL,              &vmm98_v1_sp},
+	{PATCH_MEM_VCACHE98,        "W98 memory limit - VCACHE.VXD (rloew's patch)",             NULL,                       &vcache_v1_sp},
+	{PATCH_MEM_VCACHE95,        "W95 memory limit - VCACHE.VXD (rloew's patch)",             NULL,                       &vcache_v2_sp},
+	{PATCH_MEM_VCACHEME,        "ME memory limit - VCACHE.VXD (rloew's patch)",              NULL,                       &vcache_v3_sp},
+	{PATCH_MEM98SE_PATCHMEM,    "W98 memory limit - VMM.VXD (SE or FE+Q242161, rloew's patch)", NULL,                   &vmm98_v1_sp},
 	{PATCH_MEM98FE_PATCHMEM,    "W98 memory limit - VMM.VXD (FE, rloew's patch)",            NULL,                       &vmm98_v2_sp},
-	//{PATCH_MEM98SE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (SE+Q288430, rloew's patch)",    NULL,                       &vmm98_v3_sp},
-	//{PATCH_MEM98FE_PATCHMEM_V2, "W98 memory limit - VMM.VXD (FE+Q242161, rloew's patch)",    NULL,                       &vmm98_v4_sp},
 	{PATCH_MEMME_PATCHMEM,      "ME memory limit - VMM.VXD (rloew's patch)",                 NULL,                       &vmmme_v1_sp},
 	{PATCH_MEMME_PATCHMEM_V2,   "ME memory limit - VMM.VXD (Q296773, rloew's patch)",        NULL,                       &vmmme_v2_sp},
-	{PATCH_MEM_W3,              "W98 memory limit - W3 loader patch (rloew's patch)",        NULL,                       &w3_v1_sp},
+	{PATCH_MEM95_PATCHMEM,      "W95 memory limit - VMM.VXD (rloew's patch)",                NULL,                       &vmm95_v1_sp},
+	{PATCH_MEM_W3_98,           "W98 memory limit - W3 loader patch (rloew's patch)",        NULL,                       &w3_v1_sp},
+	{PATCH_MEM_W3_95,           "W95 memory limit - W3 loader patch (rloew's patch)",        NULL,                       &w3_v2_sp},
 	{PATCH_WIN_COM,             "win.com - control registry cleanup",                        NULL,                       NULL},
 	{0, NULL, NULL, NULL}
 };
@@ -251,7 +257,7 @@ int patch_selected(FILE *fp, const char *dstfile, uint64_t to_apply, uint64_t *o
 					/* try apply spatch normaly from file begin */
 					uint32_t fs = 0;
 	
-					if(patch->id == PATCH_MEM_W3)
+					if(patch->id == PATCH_MEM_W3_95 || patch->id == PATCH_MEM_W3_98)
 					{
 						/* special case to apply on W3 archive */
 						status = spatch_apply(fp, dstfile, &file_copied, 0, 0, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);

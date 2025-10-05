@@ -801,7 +801,7 @@ int fs_is_writeable_dir(const char *path, const char *tmpname)
 	FILE *fp;
 	char *testfile = NULL;
 	int result = 0;
-	const char readbuf[16] = "QWERTYUIOP123456";
+	const char readbuf[16] = {'Q','W','E','R','T','Y','U','I','O','P','1','2','3','4','5','6'};
 	char writebuf[16];
 	
 	if(tmpname == NULL)

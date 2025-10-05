@@ -412,7 +412,7 @@ static int run_interactive(options_t *options)
   int patch_success = 0;
   uint32_t lookup_flags = 0;
   
- 	pmodfiles_t list;
+ 	pmodfiles_t list = NULL;
  	int cnt = 0;
   
   /*
@@ -424,6 +424,7 @@ static int run_interactive(options_t *options)
   	int dir_is_install = 0;
   	int dir_is_windows = 0;
   	int dir_have_vmm32 = 0;
+  	int dir_is_3x      = 0;
   	int default_ans    = 0;
   	char *test_file;
   			
@@ -478,7 +479,18 @@ static int run_interactive(options_t *options)
   		}
   		fs_path_free(test_file);
   	}
-  			
+
+  	test_file = fs_path_get(upath, "WIN386.EXE", NULL); /* SYSTEM folder on WIN 3.X */
+  	if(test_file)
+  	{
+  		if(fs_file_exists(test_file))
+  		{
+  			dir_is_system = 1;
+  			dir_is_3x = 1;
+  		}
+  		fs_path_free(test_file);
+  	}
+
   	test_file = fs_path_get(upath, "COMMAND.COM", NULL); /* WINDOWS folder */
   	if(test_file)
   	{
@@ -489,7 +501,7 @@ static int run_interactive(options_t *options)
   		fs_path_free(test_file);
   	}
   			
-  	test_file = fs_path_get(upath, "VMM32.VXD", NULL);
+  	test_file = fs_path_get(upath, "VMM32.VXD", NULL); /* SYSTEM/VMM folder */
   	if(test_file)
   	{
   		if(fs_file_exists(test_file))
@@ -506,6 +518,11 @@ static int run_interactive(options_t *options)
   	else if(dir_is_system && dir_have_vmm32)
   	{
   		/* default selection for now */
+  		default_ans = 2;
+  	}
+  	else if(dir_is_system && dir_is_3x)
+  	{
+  		/* FIXME: theres no vmm... */
   		default_ans = 2;
   	}
   	else if(dir_is_windows)
@@ -547,12 +564,12 @@ static int run_interactive(options_t *options)
   {
   	fprintf(stderr, "Error: Path (%s) must lead to directory or file\n", upath);
   }
-  		
+
  	if(user_ans == 0)
  	{
  		return EXIT_SUCCESS;
  	}
-  
+
   /* if dir on individual CAB*/
   if(upath_dir != 0)
   {
@@ -606,7 +623,7 @@ static int run_interactive(options_t *options)
   		}
 	  }
   }
-  
+
 	if(list != NULL)
 	{
 		cnt = files_status(list);
@@ -682,7 +699,7 @@ int main(int argc, char **argv)
   	return EXIT_FAILURE;
   }
   
-  batch_argv = calloc(sizeof(char*), argc);
+  batch_argv = calloc(argc, sizeof(char*));
   
   if(read_arg(&options, argc, argv, &batch_id, &batch_argc, batch_argv) == 0)
   {

@@ -239,11 +239,12 @@ int main(int argc, char *argv[])
 		{
 			size_t site_bs = bs_calc_size(bin_size);
 			uint8_t buf8 = 0;
+			size_t bin_size_round = (bin_size + 7) & 0xFFFFFFF8;
 			
 			/* buffers */
-			mem1 = malloc(bin_size);
-			mem2 = malloc(bin_size);
-			mem3 = malloc(bin_size);
+			mem1 = calloc(1, bin_size_round);
+			mem2 = calloc(1, bin_size_round);
+			mem3 = calloc(1, bin_size_round);
 			
 			/* bitstreams */
 			patch_diff_mem   = bs_mem_alloc(&patch_diff, site_bs);
@@ -260,15 +261,15 @@ int main(int argc, char *argv[])
 				
 				fread(mem1, 1, bin_size, original);
 				fread(mem2, 1, bin_size, relocated);
-				diff_sieve(mem1, mem2, bin_size, &reloc_diff);
+				diff_sieve(mem1, mem2, bin_size_round, &reloc_diff);
 				
 				fread(mem2, 1, bin_size, patched);
-				diff_sieve(mem1, mem2, bin_size, &patch_diff);
+				diff_sieve(mem1, mem2, bin_size_round, &patch_diff);
 				
 				if(dumped != NULL)
 				{
 					fread(mem3, 1, bin_size, dumped);
-					diff_sieve(mem1, mem3, bin_size, &orig_diff);
+					diff_sieve(mem1, mem3, bin_size_round, &orig_diff);
 				}
 				else
 				{
@@ -285,14 +286,14 @@ int main(int argc, char *argv[])
 				bs_reset(&patch_diff);
 				bs_reset(&reloc_diff);
 				bs_reset(&cmp);
-				bs_logic(BS_AND, &patch_diff, &reloc_diff, &cmp, bin_size);
+				bs_logic(BS_AND, &patch_diff, &reloc_diff, &cmp, bin_size_round);
 				bs_reset(&cmp);
-				test_realoc = bs_is_zero(&cmp, bin_size);
+				test_realoc = bs_is_zero(&cmp, bin_size_round);
 				if(test_realoc == 0)
 				{
 					size_t i = 0;
 					fprintf(stderr, "Realocation issues (one bit -> one byte):\n");
-					for(i = 0; i < bs_calc_size(bin_size); i++)
+					for(i = 0; i < bs_calc_size(bin_size_round); i++)
 					{
 						fprintf(stderr, "%02X ", ((uint8_t*)cmp_mem)[i]);
 					}
@@ -303,7 +304,7 @@ int main(int argc, char *argv[])
 				bs_reset(&orig_diff);
 				bs_reset(&reloc_diff);
 				bs_reset(&cmp);
-				bs_logic(BS_OR, &orig_diff, &reloc_diff, &cmp, bin_size);
+				bs_logic(BS_OR, &orig_diff, &reloc_diff, &cmp, bin_size_round);
 								
 				// orig
 				fprintf(out, "/* original data for search */\nconst uint8_t %s_orig[] = {", prefix);
@@ -326,7 +327,7 @@ int main(int argc, char *argv[])
 					buf8 = bs_read_bit(&cmp, i);
 				}
 				fprintf(out, "/* bitmap of bytes to check */\nconst uint8_t %s_orig_check[] = {\n\t", prefix);
-				for(; i < bin_size; i += 8)
+				for(; i < bin_size_round; i += 8)
 				{
 				  buf8 = ~bs_read_bit(&cmp, 8);
 				  if(i >= patch_ofset && i < patch_ofset+patch_size)
@@ -362,7 +363,7 @@ int main(int argc, char *argv[])
 					buf8 = bs_read_bit(&patch_diff, i);
 				}
 				fprintf(out, "/* bitmap of modify bytes */\nconst uint8_t %s_modif[] = {", prefix);
-				for(; i < bin_size; i += 8)
+				for(; i < bin_size_round; i += 8)
 				{
 				  buf8 = bs_read_bit(&patch_diff, 8);
 				  if(i >= patch_ofset && i < patch_ofset+patch_size)
@@ -390,7 +391,7 @@ int main(int argc, char *argv[])
 				if(test_realoc == 0)
 				{
 					fprintf(stderr, "Error: Code changes on relocate symbols!\n");
-					result = EXIT_SUCCESS; // !
+					//result = EXIT_SUCCESS; // !
 				}
 				else
 				{

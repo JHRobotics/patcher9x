@@ -483,41 +483,48 @@ fasmdiff: vmm/fasmdiff.h vmm/fasmdiff_v2.h vmm/fasmdiff_me.h \
   cpuspeed/speed_v5_diff.h cpuspeed/speed_v6_diff.h cpuspeed/speed_v7_diff.h cpuspeed/speed_v8_diff.h \
   vmm/fasmdiff_old.h vmm/fasmdiff_old_v2.h
 
-soliddiff: rloew/vcache_patch_v1.h rloew/vmm98_patch_v1.h \
-  rloew/vmm98_patch_v2.h rloew/vmm98_patch_v3.h rloew/vmm98_patch_v4.h \
+soliddiff: rloew/vcache_patch_v1.h rloew/vcache_patch_v2.h rloew/vcache_patch_v3.h \
+  rloew/vmm98_patch_v1.h rloew/vmm98_patch_v2.h \
   rloew/vmmme_patch_v1.h rloew/vmmme_patch_v2.h \
-  rloew/w3_patch_v1.h
+  rloew/vmm95_patch_v1.h \
+  rloew/w3_patch_v1.h rloew/w3_patch_v2.h
 
 rloew/vcache_patch_v1.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vcache_v1 rloew/dump/VCACHE.org rloew/dump/VCACHE.fix $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vcache_v1 rloew/dump/vcache98.org rloew/dump/vcache98.fix $@
+
+rloew/vcache_patch_v2.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vcache_v2 rloew/dump/vcache95.org rloew/dump/vcache95.fix $@
+
+rloew/vcache_patch_v3.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vcache_v3 rloew/dump/vcacheme.org rloew/dump/vcacheme.fix $@
 
 # 98SE
 rloew/vmm98_patch_v1.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v1 rloew/dump/VMM98.org rloew/dump/VMM98.fix $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v1 rloew/dump/vmm98.org rloew/dump/vmm98.fix $@
 
 # 98FE
 rloew/vmm98_patch_v2.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v2 rloew/dump/VMM98FE.org rloew/dump/VMM98FE.fix $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v2 rloew/dump/vmm98fe.org rloew/dump/vmm98fe.fix $@
 
-# 98SE+Q288430
-rloew/vmm98_patch_v3.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v3 rloew/dump/VMM_Q288430.org rloew/dump/VMM_Q288430.fix $@
-
-# 98FE+Q242161
-rloew/vmm98_patch_v4.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmm98_v4 rloew/dump/VMM_Q242161.org rloew/dump/VMM_Q242161.fix $@
+# 95
+rloew/vmm95_patch_v1.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmm95_v1 rloew/dump/vmm95.org rloew/dump/vmm95.fix $@
 
 # ME
 rloew/vmmme_patch_v1.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v1 rloew/dump/VMMME.org rloew/dump/VMMME.fix $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v1 rloew/dump/vmmme.org rloew/dump/vmmme.fix $@
 
 # ME+Q29677
 rloew/vmmme_patch_v2.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v2 rloew/dump/VMM_Q296773.org rloew/dump/VMM_Q296773.fix $@
+	$(RUNPATH)bindiff$(HOST_SUFIX) vmmme_v2 rloew/dump/vmmme_q296773.org rloew/dump/vmmme_q296773.fix $@
 
 # 98 W3 loader patch
 rloew/w3_patch_v1.h: bindiff$(HOST_SUFIX)
-	$(RUNPATH)bindiff$(HOST_SUFIX) w3_v1 rloew/dump/w3.org rloew/dump/w3.fix $@ 65536
+	$(RUNPATH)bindiff$(HOST_SUFIX) w3_v1 rloew/dump/w3_98.org rloew/dump/w3_98.fix $@ 65536
+
+# 95 W3 loader patch
+rloew/w3_patch_v2.h: bindiff$(HOST_SUFIX)
+	$(RUNPATH)bindiff$(HOST_SUFIX) w3_v2 rloew/dump/w3_95.org rloew/dump/w3_95.fix $@
 
 doscross$(HOST_SUFIX): builder/doscross.c version.h help.h batch.h
 	@$(HOST_CC) $(HOST_CFLAGS) -o $@ $< $(HOST_LDFLAGS)

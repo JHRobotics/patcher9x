@@ -47,7 +47,7 @@ static pfiles_t pfiles[] = {
 	{"NDIS.VXD",     "VMM32", PATCH_CPU_SPEED_NDIS_ALL, 0},
 	{"NDIS.VXD",     "",      PATCH_CPU_SPEED_NDIS_ALL, 1},
 	{"NDIS.386",     "",      PATCH_CPU_SPEED_NDIS_ALL, 0}, /* WFW3.11 */
-	{"VCACHE.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL, 1}, /* patchmem */
+	{"VCACHE.VXD",   "VMM32", PATCH_VX_UNPACK | PATCH_VMM_ALL, 0}, /* patchmem */
 	{"win.cnf",      "",      PATCH_WIN_COM, 0}, /* win.com in CAB */
 	{"win.com",      "..",    PATCH_WIN_COM, 0}, /* win.com on WINDOWS dir or in ME CAB */
 //	{"CS3KIT.EXE",   "",      PATCH_CPU_SPEED_ALL },
@@ -142,7 +142,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 	char *path = (char*)upath;
 	char *path_mem = NULL;
 	int ename_created = 0;
-	cab_scan_file_t *lookup_files;
+	cab_scan_file_t *lookup_files = NULL;
 	
 	list = pmodfiles_init();
 	if(!list)
@@ -238,7 +238,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 			{
 				patch_selected(fp, tname, FLAGS(), &applied, &exists);
 				fclose(fp);
-				
+
 				pmodfiles_add(list, fname, tname, L_T_CREATED, applied, exists, pfile);
 				list_item_added = 1;
 			}
@@ -253,7 +253,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 				{
 					patch_selected(fp, tname, FLAGS(), &applied, &exists);
 					fclose(fp);
-					
+
 					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
 					list_item_added = 1;
 				}
@@ -269,7 +269,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 				{
 					patch_selected(fp, tname, FLAGS(), &applied, &exists);
 					fclose(fp);
-					
+
 					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
 					list_item_added = 1;
 				}
@@ -295,7 +295,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 							{
 								patch_selected(fp, tname, FLAGS(), &applied, &exists);
 								fclose(fp);
-								
+
 								pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
 								list_item_added = 1;
 							}
@@ -316,7 +316,7 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 				{
 					patch_selected(fp, tname, FLAGS(), &applied, &exists);
 					fclose(fp);
-					
+
 					pmodfiles_add(list, fname, tname, L_F_CREATED|L_T_CREATED, applied, exists, pfile);
 					list_item_added = 1;
 				}
