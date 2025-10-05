@@ -142,11 +142,10 @@ cd /tmp/archive-linux-amd64 && tar zcvf /tmp/patcher9x-$VERSION-linux-amd64.tar.
 #mcopy -pm /tmp/dosfiles/INFO.TXT n: && \
 #mcopy -pm /tmp/dosfiles/README.TXT n:
 
+# using floppy template + dosbox to generate bool floppy
 rm -rf /tmp/dosbox && mkdir -p /tmp/dosbox/c
 cp /opt/jhr/freedos-14.ima /tmp/dosbox/floppy.ima
 
-
-# using floppy template
 cp -p /tmp/build-djgpp/patch9x.exe /tmp/dosbox/c/PATCH9X.EXE
 
 # copy readme
@@ -155,7 +154,7 @@ unix2dos /tmp/dosbox/c/PATCH9X.TXT
 cp LICENSE /tmp/dosbox/c/LICENSE.TXT
 unix2dos /tmp/dosbox/c/LICENSE.TXT
 
-# Copy CWSDPMI files to /tmp/dosfiles
+# copy CWSDPMI files to /tmp/dosfiles
 mkdir -p /tmp/cwsdpmi && unzip -o -d /tmp/cwsdpmi /opt/cwsdpmi/cwsdpmi.zip bin/CWSDPMI.EXE bin/cwsdpmi.doc && \
 cp -p /tmp/cwsdpmi/bin/CWSDPMI.EXE /tmp/dosbox/c && \
 cp -p /tmp/cwsdpmi/bin/cwsdpmi.doc /tmp/dosbox/c/CWSDPMI.TXT && cd $SRCDIR
@@ -167,25 +166,41 @@ cp -p boot/fdconfig.sys /tmp/dosbox/c/FDCONFIG.SYS && \
 cp -p boot/info.bat /tmp/dosbox/c/INFO.BAT && \
 cp -p boot/info.txt /tmp/dosbox/c/INFO.TXT
 
+# readme afrer boot
+sed "s/%VERSION%/$VERSION/" boot/readme.txt.template > /tmp/dosbox/c/README.TXT
+dos2unix /tmp/dosbox/c/README.TXT
+
+# copy drivers
+mkdir -p /tmp/dosbox/c/EXTRA/INTELINF && unzip -o -d /tmp/dosbox/c/EXTRA/INTELINF /opt/drivers/intelinf.zip
+mkdir -p /tmp/dosbox/c/EXTRA/SATA && unzip -o -d /tmp/dosbox/c/EXTRA/SATA /opt/drivers/sata.zip
+mkdir -p /tmp/dosbox/c/EXTRA/AHCI && unzip -o -d /tmp/dosbox/c/EXTRA/AHCI /opt/drivers/ahci.zip
+
+mkdir -p /tmp/cregfix && unzip -o -d /tmp/cregfix /opt/cregfix/cregfix.zip && \
+cp -p /tmp/cregfix/cregfix-trunk/cregfix.com /tmp/dosbox/c/EXTRA/CREGFIX.COM && \
+cat /tmp/cregfix/cregfix-trunk/README > /tmp/dosbox/c/EXTRA/CREGFIX.TXT && \
+echo >> /tmp/dosbox/c/EXTRA/CREGFIX.TXT && \
+cat /tmp/cregfix/cregfix-trunk/LICENSE >> /tmp/dosbox/c/EXTRA/CREGFIX.TXT
+
+mkdir -p /tmp/simd95 && unzip -o -d /tmp/simd95 /opt/jhr/simd95.zip && \
+cp -p /tmp/simd95/simd95.com /tmp/dosbox/c/EXTRA/SIMD95.COM && \
+cat /tmp/simd95/readme.txt > /tmp/dosbox/c/EXTRA/SIMD95.TXT && \
+echo >> /tmp/dosbox/c/EXTRA/SIMD95.TXT && \
+cat /tmp/simd95/licence.txt >> /tmp/dosbox/c/EXTRA/SIMD95.TXT
+
 # video is not needed
 export SDL_VIDEODRIVER=dummy
 
 # create dosbox.conf
-echo "[autoexec]" > /tmp/dosbox/dosbox.conf
-echo "mount C: c" >> /tmp/dosbox/dosbox.conf
-echo "C:" >> /tmp/dosbox/dosbox.conf
-echo "rescan" >> /tmp/dosbox/dosbox.conf
-echo "imgmount a: floppy.ima -t floppy" >> /tmp/dosbox/dosbox.conf
-echo "copy README.TXT A:\README.TXT /y" >> /tmp/dosbox/dosbox.conf
-echo "copy AUTOEXEC.BAT A:\AUTOEXEC.BAT /y" >> /tmp/dosbox/dosbox.conf
-echo "copy PATCH9X.EXE A:\PATCH9X.EXE /y" >> /tmp/dosbox/dosbox.conf
-echo "copy PATCH9X.TXT A:\PATCH9X.TXT /y" >> /tmp/dosbox/dosbox.conf
-echo "copy LICENSE.TXT A:\LICENSE.TXT /y" >> /tmp/dosbox/dosbox.conf
-echo "copy CWSDPMI.EXE A:\CWSDPMI.EXE /y" >> /tmp/dosbox/dosbox.conf
-echo "copy cwsdpmi.doc A:\CWSDPMI.TXT /y" >> /tmp/dosbox/dosbox.conf
-echo "copy INFO.BAT A:\INFO.BAT /y" >> /tmp/dosbox/dosbox.conf
-echo "copy INFO.TXT A:\INFO.TXT /y" >> /tmp/dosbox/dosbox.conf
-echo "exit" >> /tmp/dosbox/dosbox.conf
+export DBCFG=/tmp/dosbox/dosbox.conf
+echo "[autoexec]" > $DBCFG
+echo "mount C: c" >> $DBCFG
+echo "C:" >> $DBCFG
+echo "rescan" >> $DBCFG
+echo "imgmount a: floppy.ima -t floppy" >> $DBCFG
+echo "A:" >> $DBCFG
+# use xcopy from template
+echo "xcopy /E /Y C:\ A:\" >> $DBCFG
+echo "exit" >> $DBCFG
 
 # run dosbox
 cd /tmp/dosbox && dosbox && cd $SRCDIR

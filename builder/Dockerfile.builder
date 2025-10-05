@@ -32,6 +32,18 @@ RUN mkdir -p /opt/jhr && \
     wget https://files.emulace.cz/dev/freedos-13.ima -O /opt/jhr/freedos-13.ima && \
     wget https://files.emulace.cz/dev/freedos-14.ima -O /opt/jhr/freedos-14.ima
 
+# Download Simd95
+RUN wget https://github.com/JHRobotics/simd95/releases/download/v1.1/simd95-v1.1.zip -O /opt/jhr/simd95.zip
+
+# Download Cregfix
+RUN mkdir -p /opt/cregfix && wget https://github.com/mintsuki/cregfix/archive/refs/heads/trunk.zip -O /opt/cregfix/cregfix.zip
+
+# Download extra drivers
+RUN mkdir -p /opt/drivers && \
+    wget https://files.emulace.cz/drivers/intelinf.zip -O /opt/drivers/intelinf.zip && \
+    wget https://files.emulace.cz/drivers/ahci.zip -O /opt/drivers/ahci.zip && \
+    wget https://files.emulace.cz/drivers/sata.zip -O /opt/drivers/sata.zip
+
 # Grab CWSDPMI binary
 RUN mkdir -p /opt/cwsdpmi && \
     wget http://sandmann.dotster.com/cwsdpmi/csdpmi7b.zip -O /opt/cwsdpmi/cwsdpmi.zip
