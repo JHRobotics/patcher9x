@@ -199,7 +199,7 @@ echo "rescan" >> $DBCFG
 echo "imgmount a: floppy.ima -t floppy" >> $DBCFG
 echo "A:" >> $DBCFG
 # use xcopy from template
-echo "xcopy /E /Y C:\ A:\" >> $DBCFG
+echo "xcopy /E /Y C:\\ A:\\" >> $DBCFG
 echo "exit" >> $DBCFG
 
 # run dosbox
