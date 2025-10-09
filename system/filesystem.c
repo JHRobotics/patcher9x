@@ -463,8 +463,11 @@ char *fs_path_dup(const char *path)
 	if(path != NULL)
 	{
 		len = strlen(path);
-		new_path = malloc(len);
-		memcpy(new_path, path, len+1);		
+		new_path = malloc(len+1);
+		if(new_path)
+		{
+			memcpy(new_path, path, len+1);
+		}
 	}
 	
 	return new_path;

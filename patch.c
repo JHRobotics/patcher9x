@@ -144,7 +144,7 @@ int patch_selected(FILE *fp, const char *dstfile, uint64_t to_apply, uint64_t *o
 	uint64_t applied = 0;
 	uint64_t exists  = 0;
 	int file_copied  = 0;
-	
+
 	for(patch = ppathes; patch->name != NULL; patch++)
 	{
 		if((to_apply & patch->id) != 0)
@@ -279,8 +279,16 @@ int patch_selected(FILE *fp, const char *dstfile, uint64_t to_apply, uint64_t *o
 							uint32_t off = 0;
 							if(pe_test == PE_LE)
 							{
-								off = DOS_PROGRAM_LE_SIZE;
-								fs -= DOS_PROGRAM_LE_SIZE;
+								if(dos.nextheader == 0)
+								{
+									off = DOS_PROGRAM_LE_SIZE;
+									fs -= DOS_PROGRAM_LE_SIZE;
+								}
+								else
+								{
+									off = dos.nextheader;
+									fs -= off;
+								}
 							}
 							
 							status = spatch_apply(fp, dstfile, &file_copied, off, fs, patch->id, patch->spatch, &applied, &exists, to_apply & PATCH_DRY);
@@ -485,6 +493,7 @@ static int spatch_apply(FILE *fp, const char *dstfile, int *file_copied, uint32_
 			{
 				if(memcmp(buf, pdata->newdata, pdata->size) != 0)
 				{
+					//printf("0x%llX: fail at: 0x%X\n", patch_id, pdata->offset);
 					break;
 				}
 				patch_exists = 1;
@@ -497,6 +506,10 @@ static int spatch_apply(FILE *fp, const char *dstfile, int *file_copied, uint32_
 			valid = 1;
 		}
 	}
+	/*else
+	{
+		printf("0x%llX: error size\n", patch_id);
+	}*/
 
 	if(valid && patch_exists)
 	{

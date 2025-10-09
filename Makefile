@@ -27,7 +27,11 @@ FASM  ?= fasm
 ifdef RELEASE
   CFLAGS ?= -std=gnu99 -g0 -static -Os -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -fdata-sections -ffunction-sections
 else
-  CFLAGS ?= -std=gnu99 -g -static -O1 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
+  ifdef SANITIZE
+    CFLAGS ?= -std=gnu99 -g -O0 -fsanitize=address -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
+  else
+    CFLAGS ?= -std=gnu99 -g -O1 -static -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
+  endif
 endif
 
 CFLAGS := $(CFLAGS) -I./mspack -I./system -I./pe -I./nocrt -I./rloew -I./crfix

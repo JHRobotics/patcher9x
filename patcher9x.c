@@ -687,6 +687,7 @@ int main(int argc, char **argv)
   int batch_id = -1;
   int batch_argc = 0;
   char **batch_argv = NULL;
+  int rc = EXIT_FAILURE;
   options_t options;
   
   set_default_path(patcher9x_default_path);
@@ -701,40 +702,46 @@ int main(int argc, char **argv)
   
   batch_argv = calloc(argc, sizeof(char*));
   
-  if(read_arg(&options, argc, argv, &batch_id, &batch_argc, batch_argv) == 0)
-  {
-  	if(options.cputest)
-  	{
-  		cputest();
-  		return EXIT_SUCCESS;
-  	}
-  	else if(options.print_version)
-  	{
-  		printf("%s\n", PATCHER9X_VERSION_STR);
-  		return EXIT_SUCCESS;
-  	}
-  	else if(options.print_help)
-  	{
-  		print_help(argv[0], options.print_help);
-  		return EXIT_SUCCESS;
-  	} 
-  	/*else if(options.mode == MODE_EXACT)
-  	{
-  		return run_exact(&options);
-  	}*/
-  	else if(options.mode == MODE_BATCH)
-  	{
-  		return batch_run(&options, batch_id, batch_argc, batch_argv);
-  	}
-  	else /* run interactive */
-  	{
-  		return run_interactive(&options);
-  	}
-  }
-  else
-  {
-  	printf("Command line error!\nUse %s -h to see help\n", argv[0]);
-  }
   
-  return EXIT_FAILURE;
+  if(batch_argv)
+  {
+	  if(read_arg(&options, argc, argv, &batch_id, &batch_argc, batch_argv) == 0)
+	  {
+	  	if(options.cputest)
+	  	{
+	  		cputest();
+	  		rc = EXIT_SUCCESS;
+	  	}
+	  	else if(options.print_version)
+	  	{
+	  		printf("%s\n", PATCHER9X_VERSION_STR);
+	  		rc = EXIT_SUCCESS;
+	  	}
+	  	else if(options.print_help)
+	  	{
+	  		print_help(argv[0], options.print_help);
+	  		rc = EXIT_SUCCESS;
+	  	} 
+	  	/*else if(options.mode == MODE_EXACT)
+	  	{
+	  		return run_exact(&options);
+	  	}*/
+	  	else if(options.mode == MODE_BATCH)
+	  	{
+	  		rc = batch_run(&options, batch_id, batch_argc, batch_argv);
+	  	}
+	  	else /* run interactive */
+	  	{
+	  		rc = run_interactive(&options);
+	  	}
+	  }
+	  else
+	  {
+	  	printf("Command line error!\nUse %s -h to see help\n", argv[0]);
+	  }
+
+	  free(batch_argv);
+	}
+ 
+  return rc;
 }
