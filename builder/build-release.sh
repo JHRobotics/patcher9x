@@ -187,6 +187,9 @@ cat /tmp/simd95/readme.txt > /tmp/dosbox/c/EXTRA/SIMD95.TXT && \
 echo >> /tmp/dosbox/c/EXTRA/SIMD95.TXT && \
 cat /tmp/simd95/licence.txt >> /tmp/dosbox/c/EXTRA/SIMD95.TXT
 
+# Copy SPLI8MB.EXE from original patchmem
+unzip -o -d /tmp/dosbox/c/EXTRA /opt/drivers/patchmem.zip SPLIT8MB.EXE
+
 # video is not needed
 export SDL_VIDEODRIVER=dummy
 

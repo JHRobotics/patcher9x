@@ -38,11 +38,12 @@ RUN wget https://github.com/JHRobotics/simd95/releases/download/v1.1/simd95-v1.1
 # Download Cregfix
 RUN mkdir -p /opt/cregfix && wget https://github.com/mintsuki/cregfix/archive/refs/heads/trunk.zip -O /opt/cregfix/cregfix.zip
 
-# Download extra drivers
+# Download extra drivers + SPLIT8MB from PATCHMEM
 RUN mkdir -p /opt/drivers && \
     wget https://files.emulace.cz/drivers/intelinf.zip -O /opt/drivers/intelinf.zip && \
     wget https://files.emulace.cz/drivers/ahci.zip -O /opt/drivers/ahci.zip && \
-    wget https://files.emulace.cz/drivers/sata.zip -O /opt/drivers/sata.zip
+    wget https://files.emulace.cz/drivers/sata.zip -O /opt/drivers/sata.zip &&
+    wget https://files.emulace.cz/patchmem.zip -O /opt/drivers/patchmem.zip
 
 # Grab CWSDPMI binary
 RUN mkdir -p /opt/cwsdpmi && \
