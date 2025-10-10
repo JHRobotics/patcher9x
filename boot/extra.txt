@@ -12,3 +12,4 @@ SATA           Rloew's SATA driver + patch.
                http://lonecrusader.x10host.com/rloew/ptchsata.html
 INTELINF       LoneCrusader's newer Intel chipset support.
                http://lonecrusader.x10host.com/intel_inf.html
+
