@@ -1,4 +1,4 @@
-0.9.8x
+0.9.88
 - Support for Windows for Workgroups (WFW) 3.11 (by @mcayland)
 - Included memory patch (port of PATCHMEM by rloew)
 - Attempt to reset CR/MSR registers in loader (win.com)

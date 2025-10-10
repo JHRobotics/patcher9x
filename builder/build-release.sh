@@ -26,13 +26,13 @@ cd $SRCDIR
 # Extract archive to build-win32 and build Win32 executable
 rm -rf /tmp/build-win32 && mkdir -p /tmp/build-win32 && \
 cd /tmp/build-win32 && tar xf /tmp/patcher9x.tar.gz && \
-make SUFIX=.exe PROFILE=nocrt GUEST_CC=i686-w64-mingw32-gcc RELEASE=1 strip && \
+make WIN32=1 PROFILE=nocrt GUEST_CC=i686-w64-mingw32-gcc GUEST_WINDRES=i686-w64-mingw32-windres RELEASE=1 strip && \
 cd $SRCDIR
 
 # Extract archive to build-win64 and build Win64 executable
 rm -rf /tmp/build-win64 && mkdir -p /tmp/build-win64 && \
 cd /tmp/build-win64 && tar xf /tmp/patcher9x.tar.gz && \
-make SUFIX=.exe PROFILE=nocrt64 GUEST_CC=x86_64-w64-mingw32-gcc RELEASE=1 strip && \
+make WIN32=1 PROFILE=nocrt64 GUEST_CC=x86_64-w64-mingw32-gcc GUEST_WINDRES=x86_64-w64-mingw32-windres RELEASE=1 strip && \
 cd $SRCDIR
 
 # Extract archive to build-amd64 and build Linux executable
@@ -49,7 +49,7 @@ mkdir -p /tmp/archive-win32 && \
 cp /tmp/build-win32/patcher9x.exe /tmp/archive-win32 && \
 cp CHANGELOG /tmp/archive-win32/CHANGELOG.txt && \
 cp LICENSE /tmp/archive-win32/LICENCE.txt && \
-make SUFIX=.exe get-help > /tmp/archive-win32/README.txt && \
+make WIN32=1 get-help > /tmp/archive-win32/README.txt && \
 unix2dos /tmp/archive-win32/CHANGELOG.txt && \
 unix2dos /tmp/archive-win32/LICENCE.txt && \
 unix2dos /tmp/archive-win32/README.txt && \
@@ -60,7 +60,7 @@ mkdir -p /tmp/archive-win64 && \
 cp /tmp/build-win64/patcher9x.exe /tmp/archive-win64 && \
 cp CHANGELOG /tmp/archive-win64/CHANGELOG.txt && \
 cp LICENSE /tmp/archive-win64/LICENCE.txt && \
-make SUFIX=.exe get-help > /tmp/archive-win64/README.txt && \
+make WIN32=1 get-help > /tmp/archive-win64/README.txt && \
 unix2dos /tmp/archive-win64/CHANGELOG.txt && \
 unix2dos /tmp/archive-win64/LICENCE.txt && \
 unix2dos /tmp/archive-win64/README.txt && \
@@ -164,7 +164,8 @@ cp -p boot/autoexec.bat /tmp/dosbox/c/AUTOEXEC.BAT && \
 cp -p boot/cdrom.bat /tmp/dosbox/c/CDROM.BAT && \
 cp -p boot/fdconfig.sys /tmp/dosbox/c/FDCONFIG.SYS && \
 cp -p boot/info.bat /tmp/dosbox/c/INFO.BAT && \
-cp -p boot/info.txt /tmp/dosbox/c/INFO.TXT
+cp -p boot/info.txt /tmp/dosbox/c/INFO.TXT && \
+cp -p boot/extra.txt /tmp/dosbox/c/EXTRA.TXT
 
 # readme afrer boot
 sed "s/%VERSION%/$VERSION/" boot/readme.txt.template > /tmp/dosbox/c/README.TXT

@@ -13,9 +13,19 @@ ifeq ($(GIT_IS),true)
  VERSION_PATCH := $(shell $(GIT) rev-list --count main)
 endif
 
-SUFIX=
 ifeq ($(filter $(OS),Windows_NT),Windows_NT)
+  WIN32=1
+	HOST_WIN32=1
+endif
+
+SUFIX=
+HOST_SUFIX=
+
+ifdef WIN32
   SUFIX=.exe
+endif
+
+ifdef HOST_WIN32
   HOST_SUFIX=.exe
 endif
 
@@ -93,12 +103,14 @@ OBJS_MAKEPATCH = vmm/makepatch.h.o
 OBJS_MAKEDIFF  = vmm/makediff.h.o
 OBJS_BINDIFF   = rloew/bindiff.h.o
 
-ifeq ($(filter $(OS),Windows_NT),Windows_NT)
-  OBJS_MAKEPATCH += vmm/makepatch.h.res
-  OBJS_MAKEDIFF  += vmm/makediff.h.res
+ifdef WIN32
   OBJS_OUT       += patcher9x.g.res
 endif
 
+ifdef HOST_WIN32
+  OBJS_MAKEPATCH += vmm/makepatch.h.res
+  OBJS_MAKEDIFF  += vmm/makediff.h.res
+endif
 
 TESTS=test_bitstream$(SUFIX) test_pe$(SUFIX) test_pe2$(SUFIX) test_ds$(SUFIX) test_ds_compress$(SUFIX) test_w3$(SUFIX) test_patch$(SUFIX) test_ds2$(SUFIX)
 

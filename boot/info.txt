@@ -14,3 +14,8 @@ UDVD2.SYS      FreeDOS IDE CD/DVD from driver
 SHSUCDX.COM    Provides access to CD-ROM drives
 HIMEMX.EXE     Extended memory host for using XMS
 JEMM386.EXE    Expanded memory manager
+
+Extra
+============================================================
+To display the extra utilities, enter the command:
+TYPE EXTRA.TXT

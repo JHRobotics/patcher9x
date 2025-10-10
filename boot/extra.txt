@@ -1,0 +1,14 @@
+Extra utilities (in EXTRA folder)
+============================================================
+CREGFIX.COM    Clear control registry.
+               https://github.com/mintsuki/cregfix
+SIMD95.COM     Enable AVX/SSE instructions.
+               https://github.com/JHRobotics/simd95
+SPLIT8MB.EXE   Make space in low 16 MB, that needs some drivers.
+               From original Rloew's PATCHMEM
+AHCI           Rloew's AHCI driver.
+               http://lonecrusader.x10host.com/rloew/ahci9x.html
+SATA           Rloew's SATA driver + patch.
+               http://lonecrusader.x10host.com/rloew/ptchsata.html
+INTELINF       LoneCrusader's newer Intel chipset support.
+               http://lonecrusader.x10host.com/intel_inf.html

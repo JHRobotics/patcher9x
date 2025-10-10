@@ -1,10 +1,10 @@
 # Patch for Windows 3.11/95/98/98 SE/Me to fix CPU issues
-Virtualization of Microsoft Windows 3.11/9x systems is a bit problematic due to 2 major bugs:
-[TLB invalidation bug](#patch-for-windows-98me-to-fix-tlb-invalidation-bug) and [CPU speed limit bug](#patch-for-windows-9598-to-fix-cpu-speed-limit-bug).
+Virtualization of Microsoft Windows 3.11/9x systems is a bit problematic due to few major bugs:
+[TLB invalidation bug](#patch-to-fix-tlb-invalidation-bug), [CPU speed limit bug](#patch-to-fix-cpu-speed-limit-bug), [Memory Limit](#memory-limit-patch) and [Dirty control registers](#dirty-control-registry-patch).
 
 This program contains a set of patches to fix these bugs, and can be booted from a floppy on a virtual machine. It either applies the patch to the installed system, or it patches the installation files in order to create (relatively) bug-free installation media.
 
-## Patch for Windows 98/Me to fix TLB invalidation bug
+## Patch to fix TLB invalidation bug
 
 MS Windows 98 won't run on newer CPU (even in a virtual machine) due to the "TLB invalidation bug". The bug is described here: https://blog.stuffedcow.net/2015/08/win9x-tlb-invalidation-bug/
 
@@ -12,7 +12,7 @@ MS Windows 98 won't run on newer CPU (even in a virtual machine) due to the "TLB
 
 If you want to run a virtual machine without restriction with Windows 98 on AMD Zen 2 and newer (Ryzen 3000+) or Intel Core 11th generation and newer (code names Rocket Lake, Tiger Lake), you probably need this patch.
 
-## Patch for Windows 95/98 to fix CPU speed limit bug
+## Patch to fix CPU speed limit bug
 
 Windows 95 and 98 FE (first edition) won't run on any CPU with frequency of ~2GHz and more due to dividing by zero in the CPU speed test. The bug is described and located here: https://www.betaarchive.com/forum/viewtopic.php?t=29224
 
@@ -23,6 +23,20 @@ There is also an older patch for this bug [FIX95CPU](http://www.tmeeco.eu/9X4EVE
 ```
 patcher9x -cputest
 ```
+
+## Memory limit patch
+
+Windows 9x cannot work with more than about ~512 MB of RAM. There is no strict barrier, but due bugs in FAT driver (`VCACHE.VXD`) more memory causes that cache won't fit to system memory space and overwriting memory of another drivers. With more memory is more change to hit something important. There also few other bugs in `VMM.VXD` loader and itself `VMM.VXD`.
+
+![More RAM than system handle](/doc/memory.gif)
+
+Normally 512 MB of RAM is enough on old hardware, but due to design of virtual machine GPU adapters we need at least 1 GB of RAM for 3D acceleration to work properly. Second problem when we want run Windows 9X on bare metal on newer computers - we can't just reduce memory, because there no smaller RAM modules.
+
+This patch is simple integration of [Rudolph Loew's PATCHMEM](http://lonecrusader.x10host.com/rloew/patchmem.html).
+
+## Dirty control registry patch
+
+Some BIOSes do not sufficiently reset the CPU control registers (CR0, CR2-CR4) and MSR registers. This can lead to "protection error" message on system load. Patch works same way as [CREGFIX](https://github.com/mintsuki/cregfix), but it is integrated to `win.com`. This is of course works only when system is loaded from the Real mode, when you're using DOS memory manager it is very dangerous to simply reset control registers, so when `win.com` is loaded in V86 mode, patch doesn't touch anything. When using memory manager you need to run original `cregfix.com` before load of memory manager.
 
 ## Requirements
 
@@ -101,7 +115,7 @@ patcher9x --patch-all VMM32.VXD
 ```
 
 ## Boot floppy
-Boot floppy now contain CD driver and few utilities to prepare system disk. If you wish run Windows Installer from boot floppy, add `/NM` switch to `setup.exe` (because of different memory manager, the setup cannot determine real RAM size). Utilities are listed in [boot/info.txt](boot/info.txt).
+Boot floppy now contain CD driver and few utilities to prepare system disk. If you wish run Windows Installer from boot floppy, add `/NM` switch to `setup.exe` (because of different memory manager, the setup cannot determine real RAM size). Utilities are listed in [boot/info.txt](boot/info.txt). I also included some useful drivers and utilities listed in [boot/extra.txt](boot/extra.txt).
 
 ## Patching installation media
 Copy the content of *win9x* folder (or *win95* - for Windows 95 or *win98* - for Windows 98)
@@ -117,6 +131,9 @@ If the patch is successful, you can copy the modified files back to the image. T
 - `ESDI_506.PDR`
 - `SCSIPORT.PDR`
 - `NDIS.VXD`
+- `NDIS.386`
+- `VCACHE.VXD`
+- `WIN.COM` / `WIN.CNF`
 
 The Windows installer primarily takes files from the installation folder and if it can't find them, it'll scan the CAB archives instead.
 
@@ -144,7 +161,7 @@ make
 
 To cross compile, specify the `HOST_CC` and `GUEST_CC` variables to choose compiler, for example cross compiling to 32bit Windows:
 ```
-make HOST_CC=gcc GUEST_CC=mingw-w64-i686-gcc
+make HOST_CC=gcc GUEST_CC=mingw-w64-i686-gcc GUEST_WINDRES=mingw-w64-i686-windres WIN32=1
 ```
 
 To produce a production binary, add `RELEASE=1` to `make`.
@@ -199,4 +216,4 @@ If you want to know more about the code, see file [speed.inc](cpuspeed/speed.inc
 
 ## Development
 
-In future I would like include ~~patch "CPU speed limit" (95, 98 FE)~~ and patch 48-bit LBA (95, 98, ME). Memory limit patch I want include too.
+In future I would like include ~~patch "CPU speed limit" (95, 98 FE)~~ and patch 48-bit LBA (95, 98, ME). ~Memory limit patch I want include too.~

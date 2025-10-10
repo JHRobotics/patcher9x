@@ -1,2 +1,2 @@
 @echo off
-type info.txt
+more info.txt
