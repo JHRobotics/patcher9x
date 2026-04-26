@@ -330,6 +330,25 @@ void cputest()
 	
 }
 
+static int slow_cpu = 1;
+
+void cpu_bench()
+{
+	tick_init();
+	
+	tick_t t1 = looptest(SPEED_V1);
+	if(clock2ms(t1) < 10.0)
+	{
+		slow_cpu = 0;
+	}
+//	printf("SLOW CPU: %d %f\n", slow_cpu, clock2ms(t1));
+}
+
+int cpu_is_slow()
+{
+	return slow_cpu;
+}
+
 #else /* x86/AMD64 */
 
 /*
@@ -338,6 +357,16 @@ void cputest()
 void cputest()
 {
 	printf("CPU speed test only works for X86/AMD64 CPU!\n");
+}
+
+void cpu_bench()
+{
+	// ...
+}
+
+int cpu_is_slow()
+{
+	return 0;
 }
 
 #endif

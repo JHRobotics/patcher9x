@@ -299,7 +299,7 @@ int pe_w4_to_w3(pe_w4_t *w4, const char *dst)
  * Compress W3 with DS compression ad save as W4 file
  *
  **/
-int pe_w3_to_w4(pe_w3_t *w3, const char *dst)
+int pe_w3_to_w4(pe_w3_t *w3, const char *dst, int rle_only)
 {
 	void *buf;
 	pe_header_t hw4;
@@ -362,7 +362,7 @@ int pe_w3_to_w4(pe_w3_t *w3, const char *dst)
 					w4->chunks[i] = ftell(fw);
 					block_size = fread(buf, 1, PE_W4_CHUNKSIZE, w3->fp);
 					//printf("Compress: %d source pos: %d\n", block_size, w4->chunks[i]);
-					ds_compress(buf, block_size, &bsw4);
+					ds_compress(buf, block_size, &bsw4, rle_only);
 					
 					/* check if size is equals or great than PE_W4_CHUNKSIZE
 					 * (means compresed data are larger than uncompressed)

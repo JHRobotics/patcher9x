@@ -193,7 +193,7 @@ void pe_w3_free(pe_w3_t *w4);
 
 size_t pe_w4_decompress(pe_w4_t *w4, void *buf, size_t chunk_id);
 int pe_w4_to_w3(pe_w4_t *w4, const char *dst);
-int pe_w3_to_w4(pe_w3_t *w3, const char *dst);
+int pe_w3_to_w4(pe_w3_t *w3, const char *dst, int rle_only);
 int pe_w3_extract(pe_w3_t *w3, const char *file, const char *dst);
 
 

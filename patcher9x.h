@@ -307,6 +307,8 @@ void print_error(int code, const char *file, int line);
 
 /* cputest.c */
 void cputest();
+void cpu_bench();
+int cpu_is_slow();
 
 /* pwin32.c */
 void set_default_path(char *default_path);

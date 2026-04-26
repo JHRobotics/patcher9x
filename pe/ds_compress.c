@@ -27,6 +27,7 @@
 #include <assert.h>
 #include "doublespace.h"
 #include "nocrt.h"
+#include "pew.h"
 
 #define FS_SEGMENT_SIZE 512
 
@@ -139,114 +140,281 @@ void ds_out_chr(uint8_t c, bitstream_t *out)
 	bs_write_bit_le(out, buf2, 9);
 }
 
+/* maximum distance for DS compressed string */
+#define MAX_DEPTH 4414
+
+/* length of test block */
+#define BS_TEST_COUNT 11 // + 4
+static const size_t bs_tries[BS_TEST_COUNT+1] = {/*512, 256, 128, 64, */40, 28, 22, 18, 14, 10, 8, 6, 4, 3, 2, 0};
+
+#if 0
 /**
- * Find nearest and largest same string in block
- * NOTE: dummy and slow (O2 complexity)
+ * Find nearest and largest same string in block.
+ * NOTE: dummy and slow (O2 complexity), usable for reference only
  *
  **/
-static int ds_find(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_pos, size_t *dst_len)
+static int ds_find(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_pos, size_t *dst_len, size_t max_depth)
 {
-	size_t max_len = endpos - startpos;
-	
-	if(max_len > startpos)
+	const size_t test_max = endpos - startpos;
+	const size_t *max_len;
+
+	if(max_depth == 0) return 0;
+
+	if(max_depth > MAX_DEPTH)
 	{
-		max_len = startpos;
+		max_depth = MAX_DEPTH;
 	}
-	
-	//printf("max_len = %zu\n", max_len);
-	
-	while(max_len >= 2)
+
+	for(max_len = bs_tries; (*max_len) != 0; max_len++)
 	{
-		size_t pos = startpos-max_len;
-		
+		if((*max_len) > startpos || (*max_len) > test_max)
+		{
+			continue;
+		}
+
+		//size_t pos = startpos - 1;
+		ssize_t pos = startpos - (*max_len);
 		do
 		{
-			if(startpos - pos > 4414)
+			if(startpos - pos > max_depth)
 			{
 				break;
 			}
 			
-			if(memcmp(block+pos, block+startpos, max_len) == 0)
+			if(memcmp(block+pos, block+startpos, *max_len) == 0)
 			{
 				*dst_pos = pos;
-				*dst_len = max_len;
-				return 1;
-			}
-		} while(pos--);
-		
-		max_len--;
-	}
-	
-	return 0;	
-}
-
-/**
- * Find nearest and largest same string in block
- * NOTE: still dummy (same bad complexity) but little faster
- *
- **/
-static int ds_find_fast(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_pos, size_t *dst_len)
-{
-	size_t max_len = endpos - startpos;
-	
-	if(max_len > startpos)
-	{
-		max_len = startpos;
-	}
-		
-	while(max_len >= 2)
-	{
-		size_t pos = startpos-max_len;
-		
-		for(;;)
-		{
-			if(startpos - pos > 1024)
-			{
-				break;
-			}
-			
-			if(memcmp(block+pos, block+startpos, max_len) == 0)
-			{
-				*dst_pos = pos;
-				*dst_len = max_len;
+				*dst_len = *max_len;
 				
 				return 1;
 			}
 			
-			if(pos > max_len)
-			{
-				pos -= max_len;
-			}
-			else
-			{
-				break;
-			}
-		}
-		
-		if(max_len > 32)
-		{
-			max_len /= 2;
-		}
-		else if(max_len > 10)
-		{
-			max_len -= 2;
-		}
-		else
-		{
-			max_len--;
-		}
-		
+			pos--;
+		} while(pos >= 0);
 	}
 	
 	return 0;	
 }
+#endif
 
+/* DS hash table structures */
+#define HT_LIST_MAX 31
+#define HT_PRIME 1777
+
+#ifdef __DJGPP__
+/* tiny align to save some memory */
+#pragma pack(push)
+#pragma pack(1)
+#endif
+
+typedef struct ds_ht_item
+{
+	uint16_t cnt;
+	uint16_t pos[HT_LIST_MAX];
+} ds_ht_item_t;
+
+#ifdef __DJGPP__
+#pragma pack(pop)
+#endif
+
+typedef struct ds_ht_ts
+{
+	ds_ht_item_t items[HT_PRIME];
+} ds_ht_ts_t;
+
+typedef struct ds_ht
+{
+	ds_ht_ts_t tables[BS_TEST_COUNT];
+} ds_ht_t;
+
+
+/**
+ * Calculate hast table index from string.
+ * Based on djb2 function (http://www.cse.yorku.ca/~oz/hash.html).
+ * 
+ * @param buf: memory buffer
+ * @param size: memory size
+ *
+ * @return: hash
+ *
+*/
+INLINE size_t ht_ds_hash(const uint8_t *buf, size_t size)
+{
+	uint32_t hash = 5381;
+	while(size)
+	{
+		hash = ((hash << 5) + hash) + (*buf); /* hash * 33 + c */
+		buf++;
+		size--;
+	}
+	
+	return hash % HT_PRIME;
+}
+
+/**
+ * Create and init empty hash table for string lookup
+ *
+ * @return: hash table on success allocation or NULL
+ *
+ **/
+static ds_ht_t *ht_ds_alloc()
+{
+#if 1
+	ds_ht_t *ht = malloc(sizeof(ds_ht_t));
+	if(ht != NULL)
+	{
+		int i, j;
+		for(i = 0; i < BS_TEST_COUNT; i++)
+		{
+			for(j = 0; j < HT_PRIME; j++)
+			{
+				ht->tables[i].items[j].cnt = 0;
+			}
+		}
+	}
+	
+	return ht;
+#else
+	return NULL;
+#endif
+}
+
+/**
+ * Free the hash table
+ *
+ * @param ht: pointer to ht_ds_alloc result
+ *
+ **/
+static void ht_ds_free(ds_ht_t **ht)
+{
+	if((*ht) != NULL)
+	{
+		free(*ht);
+		*ht = NULL;
+	}
+}
+
+/**
+ * Update the hash table
+ *
+ * @param ht: hash table allocated by ht_ds_alloc
+ * @param block: memory block
+ * @param start: index to start updating (on fresh block start=0)
+ * @param cb_updates: number of bytes tu update
+ *
+ */
+static void ds_ht_update(ds_ht_t *ht, uint8_t *block, size_t start, size_t cb_updates)
+{
+	size_t i, cnt;
+
+	for(cnt = 1; cnt <= cb_updates; cnt++)
+	{
+		for(i = 0; i < BS_TEST_COUNT; i++)
+		{
+			const size_t s = bs_tries[i];
+			if(start + cnt >= s)
+			{
+				int found = 0;
+				const size_t pos = start + cnt - s;
+				size_t h = ht_ds_hash(block + pos, s);
+				size_t m = ht->tables[i].items[h].cnt;
+				size_t p;
+
+				if(m >= HT_LIST_MAX)
+					m -= HT_LIST_MAX;
+				else
+					m = 0;
+				
+				for(p = m; p < ht->tables[i].items[h].cnt; p++)
+				{
+					size_t pi = p % HT_LIST_MAX;
+					if(memcmp(block+pos, block+ht->tables[i].items[h].pos[pi], s) == 0)
+					{
+						ht->tables[i].items[h].pos[pi] = pos;
+						found = 1;
+						break;
+					}
+				}
+				
+				if(!found)
+				{
+					p = ht->tables[i].items[h].cnt;
+					ht->tables[i].items[h].pos[p % HT_LIST_MAX] = pos;
+					ht->tables[i].items[h].cnt++;
+#if 0
+					if(p >= HT_LIST_MAX)
+					{
+						printf("overlist: size=%d, p=%d (pos=%d)\n", s, p, pos);
+					}
+#endif
+				}
+			}
+		}
+	}
+}
+
+/**
+ * Lookup for repeat string on memory block
+ *
+ * @param ht: hash table allocated by ht_ds_alloc and updated by ds_ht_update
+ * @param block: memory block
+ * @param startpos: beginning position of string to lookup
+ * @param endpos: boundary of string length
+ * @param dst_pos: when success result index on block
+ * @param dst_len: when success result string length
+ *
+ * @return: 1 when lookup is success
+ **/
+static int ds_lookup(ds_ht_t *ht, uint8_t *block, size_t startpos, size_t endpos, size_t *dst_pos, size_t *dst_len)
+{
+	const size_t test_max = endpos - startpos;
+	size_t index;
+	
+	for(index = 0; index < BS_TEST_COUNT; index++)
+	{
+		const size_t s = bs_tries[index];
+		if(startpos >= s && test_max >= s)
+		{
+			size_t h = ht_ds_hash(block + startpos, s);
+			size_t c = ht->tables[index].items[h].cnt;
+			size_t m;
+			
+			for(m = 1; m <= HT_LIST_MAX && m <= c; m++)
+			{
+				const size_t p = (c-m) % HT_LIST_MAX;
+				const size_t pos = ht->tables[index].items[h].pos[p];
+				
+				/* position out of reach */
+				if(startpos - pos > MAX_DEPTH) continue;
+				
+				if(memcmp(block+pos, block+startpos, s) == 0)
+				{
+					*dst_pos = pos;
+					*dst_len = s;
+					return 1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+/**
+ * Check when memory is compressable RLE-like mehod. 
+ *
+ * @param block: memory block
+ * @param startpos: start index
+ * @param endpos: maximum index (block boundaries)
+ * @param dst_len: result lenth (number of byte repeat)
+ *
+ * @param: 1 when effective
+ *
+ **/
 INLINE int ds_rle(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_len)
 {
 	size_t pos = startpos;
 	size_t len = 0;
-	//printf("ds_rle(mem, %zu, %zu, dst_len);\n", startpos, endpos);
-	
+
 	while(pos < endpos)
 	{
 		if(block[pos] != block[startpos])
@@ -267,6 +435,7 @@ INLINE int ds_rle(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_le
 	return 0;
 }
 
+
 /**
  * Compress memory block to bitstream using DS (DriveSpace/DoubleSpace) compression
  *
@@ -277,16 +446,23 @@ INLINE int ds_rle(uint8_t *block, size_t startpos, size_t endpos, size_t *dst_le
  * @param out: output bitstream
  *
  **/
-void ds_compress(void *block, size_t block_size, bitstream_t *out)
+void ds_compress(void *block, size_t block_size, bitstream_t *out, int rle_only)
 {
 	uint8_t *ptr = block;
 	size_t j, i;
 	size_t segment_count = block_size/FS_SEGMENT_SIZE;
+	ds_ht_t *ht = NULL;
+	
 	if(block_size % FS_SEGMENT_SIZE != 0)
 	{
 		segment_count++;
 	}
-		
+	
+	if(!rle_only)
+	{
+		ht = ht_ds_alloc();
+	}
+
 	for(i = 0; i < segment_count; i++)
 	{
 		size_t smax = block_size - (i*FS_SEGMENT_SIZE);
@@ -302,14 +478,29 @@ void ds_compress(void *block, size_t block_size, bitstream_t *out)
 			size_t find_pos = 0;
 			size_t find_len = 0;
 			size_t rle_len  = 0;
-			
-			if(ds_find_fast(ptr, act_pos, act_end, &find_pos, &find_len))
+
+			if(ht && ds_lookup(ht, ptr, act_pos, act_end, &find_pos, &find_len))
 			{
 				#ifdef HEAVY_DEBUG
 				printf("ds_out_pos() = %zu %zu\n", find_pos, find_len);
 				#endif
+				
+				/* RLE could be sometimes better */
+				if(ds_rle(ptr, act_pos, act_end, &rle_len))
+				{
+					if(rle_len > find_len)
+					{
+						ds_out_chr(ptr[act_pos], out);
+						ds_out_pos(rle_len-1, 1, out);
+						j += rle_len;
+						ds_ht_update(ht, ptr, act_pos, rle_len);
+						continue;
+					}
+				}
+				
 				ds_out_pos(find_len, act_pos-find_pos, out);
 				j += find_len;
+				ds_ht_update(ht, ptr, act_pos, find_len);
 			}
 			else if(ds_rle(ptr, act_pos, act_end, &rle_len))
 			{
@@ -319,11 +510,21 @@ void ds_compress(void *block, size_t block_size, bitstream_t *out)
 				ds_out_chr(ptr[act_pos], out);
 				ds_out_pos(rle_len-1, 1, out);
 				j += rle_len;
+
+				if(ht)
+				{
+					ds_ht_update(ht, ptr, act_pos, rle_len);
+				}
 			}
 			else
 			{
 				ds_out_chr(ptr[act_pos], out);
 				j++;
+
+				if(ht)
+				{
+					ds_ht_update(ht, ptr, act_pos, 1);
+				}
 			}
 		} // for j
 		
@@ -337,4 +538,7 @@ void ds_compress(void *block, size_t block_size, bitstream_t *out)
 	bs_write_bit_le(out, 0, 8);
 	
 	bs_write_flush_le(out);
+	
+	ht_ds_free(&ht);
+	
 }

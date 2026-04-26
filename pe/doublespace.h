@@ -30,6 +30,6 @@
 #include <bitstream.h>
 
 size_t ds_decompress(bitstream_t *in, void *block, size_t block_size);
-void   ds_compress(void *block, size_t block_size, bitstream_t *out);
+void   ds_compress(void *block, size_t block_size, bitstream_t *out, int rle_only);
 
 #endif /* __DOUBLESPACE_H_INCLUDED__ */

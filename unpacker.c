@@ -885,9 +885,9 @@ int wx_to_w4(const char *in, const char *out)
 			w3 = pe_w3_read(&dos, &pe, fp);
 			if(w3 != NULL)
 			{
-				if(pe_w3_to_w4(w3, out) == PE_OK)
+				if(pe_w3_to_w4(w3, out, cpu_is_slow()) == PE_OK)
 				{
-					status = PATCH_OK;;
+					status = PATCH_OK;
 				}
 				
 				pe_w3_free(w3);

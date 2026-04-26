@@ -707,6 +707,8 @@ int main(int argc, char **argv)
   	return EXIT_FAILURE;
   }
   
+  cpu_bench();
+  
   batch_argv = calloc(argc, sizeof(char*));
   
   

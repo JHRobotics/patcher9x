@@ -964,7 +964,7 @@ int patch_apply_wx(const char *srcfile, const char *dstfile, const char *tmpname
 				if(w3 != NULL)
 				{
 					printf("Compressing file, please wait...\n");
-					if(pe_w3_to_w4(w3, dstfile) != PE_OK)
+					if(pe_w3_to_w4(w3, dstfile, cpu_is_slow()) != PE_OK)
 					{
 						status = PATCH_E_CONVERT;
 					}
