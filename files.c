@@ -546,6 +546,7 @@ int files_commit(pmodfiles_t *plist, int nobackup, uint64_t patches)
 					if(wx_to_w4(pmod->tname, pmod->fname) == PATCH_OK)
 					{
 						copy_done = 1;
+						fs_unlink(pmod->tname);
 						cnt++;
 					}
 				}

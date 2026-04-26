@@ -7,7 +7,7 @@
 #define PATCHER9X_MINOR 9
 
 #ifndef PATCHER9X_PATCH
-#define PATCHER9X_PATCH 91
+#define PATCHER9X_PATCH 93
 #endif
 
 /*#define PATCHER9X_TAG "RC1"*/
