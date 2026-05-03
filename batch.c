@@ -664,6 +664,109 @@ int batch_patch(options_t *options, int argc, char **argv)
 	return batch_patch_sel(options, argc-1, argv+1, patches);
 }
 
+/**
+ * Decompress or compress KWAJ (*.??_) setup files
+ *
+ * required argv[0]: input
+ * required argv[1]: output
+ * 
+ **/
+static int batch_kwaj(options_t *options, int argc, char **argv)
+{
+	int compress = 0;
+	int free_out_name = 0;
+	const char *in_name = NULL;
+	const char *out_name = NULL;
+	int i;
+	
+	for(i = 0; i < argc; i++)
+	{
+		if(strcmp(argv[i], "--compress") == 0)
+		{
+			compress = 1;
+		}
+		else if(strcmp(argv[i], "--type") == 0)
+		{
+			if(i+1 >= argc)
+			{
+				fprintf(stderr, "--type needs argument\n");
+				return PATCH_E_WRONG_TYPE;
+			}
+			else
+			{
+				if(strcmp(argv[i+1], "store") == 0)
+				{
+					// ...
+				}
+				else
+				{
+					fprintf(stderr, "only currently supported KWAJ compression is 'store'\n");
+					return PATCH_E_WRONG_TYPE;
+				}
+				i++;
+			}
+		}
+		else if(in_name == NULL)
+		{
+			in_name = argv[i];
+		}
+		else if(out_name == NULL)
+		{
+			out_name = argv[i];
+		}
+		else
+		{
+			fprintf(stderr, "waste argument %s\n", argv[i]);
+			return -1;
+		}
+	}
+	
+	if(in_name == NULL)
+	{
+		fprintf(stderr, "need packed/archive name\n");
+		return -1;
+	}
+	
+	if(out_name == NULL)
+	{
+		if(compress)
+		{
+			fprintf(stderr, "when compressing, need filename\n");
+			return -1;
+		}
+		out_name = kwaj_get_name(in_name);
+		if(out_name == NULL)
+		{
+			fprintf(stderr, "cannot determine file name from archive\n");
+			return -1;
+		}
+		else free_out_name = 1;
+		
+		//printf("kwaj: %s -> '%s'\n", in_name, out_name);
+	}
+	
+	int rc = -1;
+	if(compress == 0)
+	{
+		rc = kwaj_unpack(in_name, out_name);
+		if(rc != PATCH_OK)
+			fprintf(stderr, "kwaj_unpack failed: %d\n", rc);
+	}
+	else
+	{
+		rc = kwaj_pack(out_name, in_name, NULL);
+		if(rc != PATCH_OK)
+			fprintf(stderr, "kwaj_pack failed: %d\n", rc);
+	}
+	
+	if(free_out_name)
+	{
+		fs_path_free((char*)out_name);
+	}
+
+	return rc;
+}
+
 #include "batch.h"
 
 int batch_arg(const char *arg)

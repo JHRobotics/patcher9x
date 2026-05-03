@@ -1100,3 +1100,224 @@ void vxd_filelist_close(vxd_filelist_t *list)
 	free(list);
 }
 
+/**
+ * Unpack KWAJ file (installer *.??_ files)
+ *
+ * @return PATCH_OK on success
+ **/
+int kwaj_unpack(const char *archive, const char *dst)
+{
+	int rc = -1;
+	struct mskwaj_decompressor *decom = mspack_create_kwaj_decompressor(NULL);
+
+	if(decom != NULL)
+	{
+		if(decom->decompress(decom, archive, dst) == MSPACK_ERR_OK)
+		{
+			rc = PATCH_OK;
+		}
+		mspack_destroy_kwaj_decompressor(decom);
+	}
+
+	return rc;
+}
+
+#define KWAJ_MAGIC_LEN 8
+#define KWAJ_NAME_LEN 8
+#define KWAJ_EXT_LEN 3
+
+typedef struct _kwaj_t
+{
+	uint8_t magic[KWAJ_MAGIC_LEN];
+	uint16_t method;
+	uint16_t offset;
+	uint16_t flags;
+} kwaj_t;
+
+const uint8_t kwaj_magic[KWAJ_MAGIC_LEN] = {0x4B, 0x57, 0x41, 0x4A, 0x88, 0xF0, 0x27, 0xD1};
+
+/**
+ * Pack file to KWAJ
+ *
+ * @return PATCH_OK on success
+ **/
+int kwaj_pack(const char *src, const char *archive, const char *src_file_name)
+{
+	int rc = PATCH_E_WRONG_TYPE;
+#if 0
+	struct mskwaj_compressor *comp = mspack_create_kwaj_compressor(NULL);
+	if(comp != NULL)
+	{
+		if(comp->compress(comp, src, archive, -1) == MSPACK_ERR_OK)
+		{
+			rc = PATCH_OK;
+		}
+		mspack_destroy_kwaj_compressor(comp);
+	}
+#else
+	char stored_name[KWAJ_NAME_LEN+1] = "";
+	char stored_ext[KWAJ_EXT_LEN+1] = "";
+	kwaj_t header;
+	memcpy(header.magic, kwaj_magic, KWAJ_MAGIC_LEN);
+	header.method = MSKWAJ_COMP_NONE;
+	header.offset = sizeof(kwaj_t) + sizeof(uint16_t);
+	header.flags = MSKWAJ_HDR_HASLENGTH;
+	
+	ssize_t s = fs_file_size(src);
+	
+	const char *p = src_file_name;
+	if(p == NULL)	p = fs_basename(src);
+	if(p != NULL)
+	{
+		FILE *fr = fopen(src, "rb");
+		if(fr)
+		{
+			FILE *fw = fopen(archive, "wb");
+			if(fw)
+			{
+				char *ext = strrchr(p, '.');
+				
+				if(ext != NULL)
+				{
+					if(strlen(ext+1) > KWAJ_EXT_LEN)
+					{
+						memcpy(stored_ext, ext+1, KWAJ_EXT_LEN);
+						stored_ext[KWAJ_EXT_LEN] = '\0';
+					}
+					else
+					{
+						strcpy(stored_ext, ext+1);
+					}
+					
+					size_t name_len = ext - p;
+					if(name_len > KWAJ_NAME_LEN)
+					{
+						memcpy(stored_name, p, KWAJ_NAME_LEN);
+						stored_name[KWAJ_EXT_LEN] = '\0';
+					}
+					else
+					{
+						memcpy(stored_name, p, name_len);
+						stored_name[name_len] = '\0';
+					}
+				}
+				
+				if(strlen(stored_name))
+				{
+					header.offset += strlen(stored_name)+1;
+					header.flags |= MSKWAJ_HDR_HASFILENAME;
+				}
+				
+				if(strlen(stored_ext))
+				{
+					header.offset += strlen(stored_ext)+1;
+					header.flags |= MSKWAJ_HDR_HASFILEEXT;
+				}
+				
+				fwrite(&header, sizeof(header), 1, fw);
+				fwrite(&s, sizeof(uint16_t), 1, fw);
+				if(header.flags & MSKWAJ_HDR_HASFILENAME)
+				{
+					fwrite(stored_name, strlen(stored_name)+1, 1, fw);
+				}
+				if(header.flags & MSKWAJ_HDR_HASFILEEXT)
+				{
+					fwrite(stored_ext, strlen(stored_ext)+1, 1, fw);
+				}
+				
+				if(fs_file_copy(fr, fw, s) == s)
+				{
+					rc = PATCH_OK;
+				}
+				
+				fclose(fw);
+			} else rc = PATCH_E_WRITE;
+			fclose(fr);
+		} else rc = PATCH_E_READ;
+		
+		if(src_file_name == NULL)
+			fs_path_free((char*)p);
+	}
+#endif
+	return rc;
+}
+
+/**
+ * Dermine source name kwaj archive
+ * @param archive: kwaj archive path
+ *
+ * @return: file name on success (else NULL), result can be free
+ *          by fs_path_free
+ **/
+char *kwaj_get_name(const char *archive)
+{
+	FILE *fr = fopen(archive, "rb");
+	char *fn = NULL;
+	
+	if(fr != NULL)
+	{
+		kwaj_t h;
+		if(fread(&h, sizeof(kwaj_t), 1, fr) == 1)
+		{
+			if(memcmp(h.magic, kwaj_magic, KWAJ_MAGIC_LEN) == 0)
+			{
+				if(h.flags & MSKWAJ_HDR_HASFILENAME)
+				{
+					ssize_t offset = 0;
+					size_t name_len = 0;
+					size_t ext_len = 0;
+					if(h.flags & MSKWAJ_HDR_HASLENGTH) offset += 4;
+					if(h.flags & MSKWAJ_HDR_HASUNKNOWN1) offset += 2;
+					if(h.flags & MSKWAJ_HDR_HASUNKNOWN2) offset += 2;
+
+					if(offset > 0)
+						fseek(fr, offset, SEEK_CUR);
+
+					int c;
+					while((c = fgetc(fr)) != EOF)
+					{
+						if(c != '\0')
+						{
+							name_len++;
+						}
+						else break;
+					}
+					
+					if(h.flags & MSKWAJ_HDR_HASFILEEXT)
+					{
+						while((c = fgetc(fr)) != EOF)
+						{
+							if(c != '\0')
+							{
+								ext_len++;
+							}
+							else break;
+						}
+					}
+					
+					if(name_len > 0)
+					{
+						size_t s = name_len+1;
+						if(h.flags & MSKWAJ_HDR_HASFILEEXT)
+							s += ext_len+1;
+						
+						fn = malloc(s);
+						if(fn)
+						{
+							fseek(fr, sizeof(kwaj_t)+offset, SEEK_SET);
+							fread(fn, 1, name_len+1, fr);
+							if(h.flags & MSKWAJ_HDR_HASFILEEXT)
+							{
+								fn[name_len] = '.';
+								fread(fn+name_len+1, 1, ext_len+1, fr);
+							}
+						}
+					}
+				} // MSKWAJ_HDR_HASFILENAME
+			} // magic
+		} // fread(header)
+		fclose(fr);
+		return fn;
+	}  // fopen
+	return NULL;
+}

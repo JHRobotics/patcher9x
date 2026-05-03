@@ -55,6 +55,7 @@ batch_action_t actions[] = {
 	{FUNC_NAME(batch_vxd_convert),           "--vxd-convert", "archive.vxd"},
 	{FUNC_NAME(batch_vxd_extract_all),       "--vxd-extract-all", "archive.vxd [destination-dir]"},
 	{FUNC_NAME(batch_mz_strip),              "--mz-strip", "[--replace] [--dump] mzfile.{exe|dll|vxd} out.bin"},
+	{FUNC_NAME(batch_kwaj),                  "--kwaj", "packed.ex_ [unpacked.ext] [--compress] [--type store]"},
 	{FUNC_NAME(batch_patch),                 "--patch", "<patches> file.vxd [file2.vxd [...]]"},
 	{NULL, NULL, NULL}
 };

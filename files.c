@@ -47,6 +47,7 @@ static pfiles_t pfiles[] = {
 	{"NDIS.VXD",     "VMM32", PATCHES_CPU_SPEED_NDIS, 0},
 	{"NDIS.VXD",     "",      PATCHES_CPU_SPEED_NDIS, 1},
 	{"NDIS.386",     "",      PATCHES_CPU_SPEED_NDIS, 0}, /* WFW3.11 */
+	{"NDIS.38_",     "",      PATCH_KWAJ | PATCHES_CPU_SPEED_NDIS, 0}, /* WFW3.11 */
 	{"VCACHE.VXD",   "VMM32", PATCH_VX_UNPACK | PATCHES_MEMPATCH, 0}, /* patchmem */
 	{"win.cnf",      "",      PATCH_WIN_COM, 0}, /* win.com in CAB */
 	{"win.com",      "..",    PATCH_WIN_COM, 0}, /* win.com on WINDOWS dir or in ME CAB */
@@ -213,7 +214,16 @@ pmodfiles_t files_lookup(const char *upath, uint64_t global_flags, uint64_t glob
 		{
 			FILE *fp;
 			
-			if((pfile->flags & PATCH_VX_PACK) != 0)
+			if((pfile->flags & PATCH_KWAJ) != 0)
+			{
+				char *kname = fs_path_get(dir, pfile->file, "386");
+				if(kname == NULL) continue;
+				if(fs_file_exists(kname)) continue;
+				if(kwaj_unpack(fname, kname) != PATCH_OK) continue;
+				fp = fopen(kname, "rb");
+				fs_path_free(kname);
+			}
+			else if((pfile->flags & PATCH_VX_PACK) != 0)
 			{
 				if((lookup_flags & PATCH_LOOKUP_NO_VMM32) != 0)
 				{
@@ -526,28 +536,47 @@ int files_commit(pmodfiles_t *plist, int nobackup, uint64_t patches)
 		
 		if(pmod->applied != 0)
 		{
-			if(pmod->pfile != NULL && (pmod->pfile->flags & PATCH_VX_PACK) != 0)
+			if(pmod->pfile != NULL)
 			{
-				ssize_t fs_new = fs_file_size(pmod->tname);
-				ssize_t fs_old = fs_file_size(pmod->fname);
-				
-				if((pmod->pfile->flags & PATCH_FORCE_W3) != 0 || (patches & PATCH_FORCE_W3) != 0)
+				if((pmod->pfile->flags & PATCH_VX_PACK) != 0)
 				{
-					copy_done = 0; /* W3 is already W3 */
-				}
-				else if(
-					(fs_new >= 0 && fs_old >= 0 && fs_new > fs_old)
-					||
-					((pmod->pfile->flags & PATCH_FORCE_W4) != 0)
-				)
-				{
-					patch_backup_file(pmod->fname, nobackup);
-					printf("Compressing file, please wait...\n");
-					if(wx_to_w4(pmod->tname, pmod->fname) == PATCH_OK)
+					ssize_t fs_new = fs_file_size(pmod->tname);
+					ssize_t fs_old = fs_file_size(pmod->fname);
+					
+					if((pmod->pfile->flags & PATCH_FORCE_W3) != 0 || (patches & PATCH_FORCE_W3) != 0)
 					{
-						copy_done = 1;
-						fs_unlink(pmod->tname);
-						cnt++;
+						copy_done = 0; /* W3 is already W3 */
+					}
+					else if(
+						(fs_new >= 0 && fs_old >= 0 && fs_new > fs_old)
+						||
+						((pmod->pfile->flags & PATCH_FORCE_W4) != 0)
+					)
+					{
+						patch_backup_file(pmod->fname, nobackup);
+						printf("Compressing file, please wait...\n");
+						if(wx_to_w4(pmod->tname, pmod->fname) == PATCH_OK)
+						{
+							copy_done = 1;
+							fs_unlink(pmod->tname);
+							cnt++;
+						}
+					}
+				}
+				else if((pmod->pfile->flags & PATCH_KWAJ) != 0)
+				{
+					char *kname = fs_path_get2(pmod->fname, NULL, "386");
+					if(kname)
+					{
+						if(kwaj_pack(pmod->tname, pmod->fname, kname) == PATCH_OK)
+						{
+							printf("%s\n", kname);
+							fs_unlink(kname);
+							copy_done = 1;
+							fs_unlink(pmod->tname);
+							cnt++;
+						}
+						fs_path_free(kname);
 					}
 				}
 			}
@@ -602,6 +631,16 @@ void files_cleanup(pmodfiles_t *plist)
 		if(pmod->flags & L_F_CREATED)
 		{
 			fs_unlink(pmod->fname);
+		}
+		
+		if(pmod->pfile && (pmod->pfile->flags & PATCH_KWAJ) != 0)
+		{
+			char *kname = fs_path_get2(pmod->fname, NULL, "386");
+			if(kname)
+			{
+				fs_unlink(kname);
+				fs_path_free(kname);
+			}
 		}
 		
 		pmod_clean = pmod;

@@ -476,6 +476,28 @@ static int run_interactive(options_t *options)
   		}
   		fs_path_free(test_file);
   	}
+  	
+  	test_file = fs_path_get(upath, "WINSETUP.EX_", NULL); /* 3.11 */
+  	if(test_file)
+  	{
+  		if(fs_file_exists(test_file))
+  		{
+  			char *test_ndis = fs_path_get(upath, "NDIS.38_", NULL);
+  			if(test_ndis)
+  			{
+  				if(!fs_file_exists(test_ndis))
+  				{
+  					fprintf(stderr, "Warning: This directory looks like WFW 3.11 but file NDIS.38_ is missing! "
+  						"Are you sure, thah all images are installed and installation is WFW 3.11 not regular Windows 3.x?\n");
+  				}
+  				fs_path_free(test_ndis);
+  			}
+  			
+  			dir_is_install = 1;
+  			dir_is_3x = 1;
+  		}
+  		fs_path_free(test_file);
+  	}
   			
   	test_file = fs_path_get(upath, "KERNEL32.DLL", NULL); /* SYSTEM folder */
   	if(test_file)

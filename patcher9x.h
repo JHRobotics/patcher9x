@@ -66,6 +66,9 @@
 /* target is W3/W4 file */
 #define PATCH_VX_PACK 0x80000000
 
+/* target is packed in 3.11 format */
+#define PATCH_KWAJ 0x20000000
+
 /* target could be part of VMM32 */
 #define PATCH_VX_UNPACK 0x40000000
 
@@ -272,6 +275,9 @@ typedef struct vxd_filelist vxd_filelist_t;
 vxd_filelist_t *vxd_filelist_open(const char *file, const char *tmp);
 const char *vxd_filelist_get(vxd_filelist_t *list);
 void vxd_filelist_close(vxd_filelist_t *list);
+int kwaj_unpack(const char *archive, const char *dst);
+int kwaj_pack(const char *src, const char *archive, const char *src_file_name);
+char *kwaj_get_name(const char *archive);
 
 /* patch.c */
 int patch_apply(const char *srcfile, const char *dstfile, uint64_t flags, int *applied);
