@@ -73,6 +73,7 @@ static const char HELP_NAME[] = "Patch for Windows 3.11/9x for run on newest CPU
 	"\t\tcreg - CPU registry cleanup on startup\n"
 	"\t\tg4resfix - >4G resource fix\n"
 	"\t\t16m - move VXD above 16MB (disabled by defautl)\n"
+	"\t\tx2apic - VPICD x2APIC fix (Meteor Lake+, or earlier Intel with SGX/TDX)\n"
 	"\t\tdefault - default patch set\n"
 	"\t\tall - all patches\n"
 	"\t-unselect: comma separated patches (reversing -select)\n"
