@@ -1,3 +1,6 @@
+UNRELEASED
+- added VPICD x2APIC fix
+
 0.9.91
 - (!) W95 memory patch fixed (missed VMM patch)
 - added patch for load VXD above 16 MB (was part of original PATCHMEM)

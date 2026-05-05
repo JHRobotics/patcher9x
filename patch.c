@@ -80,6 +80,8 @@
 #include "w3_patch_16m_v3.h"
 #include "w3_patch_16m_v4.h"
 
+#include "vpicd_patch.h"
+
 typedef struct _ppatch_t
 {
 	uint64_t id;
@@ -129,6 +131,8 @@ ppatch_t ppathes[] = {
 	{PATCH_MEM_W3_16M_95,       "W95/A move VXD above 16M (rloew's patch)",                  NULL,                       &w3_16m_v2_sp},
 	{PATCH_MEM_W3_16M_ME,       "ME move VXD above 16M (rloew's patch)",                     NULL,                       &w3_16m_v3_sp},
 	{PATCH_MEM_W3_16M_95B,      "W95B/W95C move VXD above 16M (rloew's patch)",              NULL,                       &w3_16m_v4_sp},
+	{PATCH_VPICD_X2APIC,        "VPICD x2APIC fix - PIC reinit site",                        &vpicd_x2apic_s1_cp,        NULL},
+	{PATCH_VPICD_X2APIC,        "VPICD x2APIC fix - APIC detection site",                    &vpicd_x2apic_s2_cp,        NULL},
 	{0, NULL, NULL, NULL}
 };
 
@@ -1123,6 +1127,7 @@ uint64_t patch_select(const char *list)
 	if(strhastok(list, PATCH_SEP, "creg"))       patches |= PATCHES_CREG;
 	if(strhastok(list, PATCH_SEP, "g4resfix"))   patches |= PATCHES_G4RESFIX;
 	if(strhastok(list, PATCH_SEP, "16m"))        patches |= PATCHES_MEM_16M;
+	if(strhastok(list, PATCH_SEP, "x2apic"))     patches |= PATCH_VPICD_X2APIC;
 	if(strhastok(list, PATCH_SEP, "all"))        patches |= PATCHES_ALL;
 	if(strhastok(list, PATCH_SEP, "default"))    patches |= PATCHES_DEFAULT;
 

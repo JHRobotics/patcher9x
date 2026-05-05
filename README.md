@@ -79,6 +79,16 @@ When the system queries for reserved memory space, it assumes that results from 
 This patch fixes the stop at the >32-bit region address. The original patch was made by [SweetLow](https://github.com/LordOfMice/Tools/) and the
 [problem is described here](https://msfn.org/board/topic/186768-bug-fix-vmmvxd-on-handling-4gib-addresses-and-description-of-problems-with-resource-manager-on-newer-bioses/).
 
+## VPICD x2APIC patch
+
+`VPICD.VXD` reads `IA32_APIC_BASE` (MSR `0x1B`), clears bit 11 (`EN`, the APIC global-enable bit), and writes it back. It does this on Intel CPUs whenever `CPUID.01h:EDX` reports APIC and MSR support, both at APIC detection and again before each legacy 8259 reinit.
+
+On CPUs that support `IA32_XAPIC_DISABLE_STATUS` (architecturally enumerated by `IA32_ARCH_CAPABILITIES` bit 21), firmware may set `LEGACY_XAPIC_DISABLED`, which locks the LAPIC into x2APIC mode. In that state bit 10 (`EXTD`) of `IA32_APIC_BASE` is set, and clearing `EN` while `EXTD` is set raises `#GP` per the Intel SDM. Windows reports this as *"While initializing device VPICD: Windows protection error. You will need to restart your computer."* and stops, without identifying the actual cause.
+
+The lock is the default firmware state on Intel Core Ultra (code-named Meteor Lake) and later, where x2APIC is the default APIC mode and `xAPIC` fall-back is no longer recommended. On earlier CPUs that have the MSR (Sapphire Rapids and later, plus client CPUs with the CVE-2022-21233 microcode update) the lock is typically only set when SGX or TDX is enabled in firmware.
+
+This patch turns each of the two `WRMSR` opcodes in `VPICD.VXD` into two `NOP`s. The APIC is left in whatever mode firmware (or a UEFI legacy-boot wrapper such as [CSMWrap](https://github.com/CSMWrap/CSMWrap)) configured - typically `LINT0 = ExtINT`, `LINT1 = NMI`, which is exactly the routing the legacy 8259 needs. The detection-time flag VPICD sets is left intact so the rest of its internal state stays consistent.
+
 ## Requirements
 
 Currently supported operation systems:
